@@ -1,3 +1,7 @@
+/*
+* 对线程类的封装, 虽然c++11 已经引入了 thread 类
+*
+*/
 #ifndef _UBERS_THREAD_H_
 #define _UBERS_THREAD_H_
 #include <thread>
@@ -6,7 +10,6 @@
 #include <atomic>
 #include <boost/noncopyable.hpp>
 #include <boost/thread/latch.hpp>
-
 namespace UBERS
 {
 class Thread : public boost::noncopyable
@@ -22,8 +25,8 @@ private:
   bool started_ = false;
   std::unique_ptr<std::thread> thread_;
   pid_t tid_ = 0;
-  std::function<void()> func_;
-  boost::latch latch_ = 1;
+  ThreadFunc func_;
+  boost::latch latch_;
 };
 }
 #endif

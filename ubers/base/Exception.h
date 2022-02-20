@@ -7,7 +7,7 @@
 
 namespace UBERS
 {
-  //? 继承标准类可以写异常类
+//? 继承标准类可以写异常类
 class Exception : public std::exception
 {
   public:
@@ -31,7 +31,9 @@ class Exception : public std::exception
   private:
     void FillStackTrace();
     static std::string demangle(const char* symbol);
+    //* 异常信息
     std::string message_;
+    //* 异常发生时，保存发生异常的调用栈信息
     std::string stack_;
 };
 }

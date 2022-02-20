@@ -60,7 +60,8 @@ bool CurrentThread::isMainThread()
 }
 
 Thread::Thread(ThreadFunc func)
-  : func_(std::move(func))
+  : func_(std::move(func)),
+    latch_(1)
 {
 }
 

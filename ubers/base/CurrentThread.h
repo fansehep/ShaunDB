@@ -13,6 +13,7 @@ extern thread_local std::string t_tidString;
 
 inline int tid()
 {
+  //* 如果没有缓存，就缓存
   if(t_cachedTid == 0)
   {
     t_cachedTid = static_cast<pid_t>(syscall(SYS_gettid));
