@@ -28,6 +28,9 @@ public:
    const MessageCallBack& messagecallback, const WriteCompleteCallBack& writecallcompleteback);
 
 private:
+  //* 初始化Channel对象  初始化是 -1 还没有添加到 epoll中
+  //* 已经处于关注过程中
+  //* 已经被删除掉了
   enum{ kNew = -1, kAdded = 1, kDeleted = 2};
 
   static const int kInitEventSize = 16;
@@ -39,7 +42,9 @@ private:
   using TcpConnMap = std::unordered_map<int, TcpConnectionPtr>;
 
   std::vector<TcpConnectionPtr> connectionsPool_;
+
   ChannelMap channels_;
+  
   TcpConnMap connections_;
   int epollfd_;
   std::vector<struct epoll_event> events_;

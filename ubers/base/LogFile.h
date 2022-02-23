@@ -1,14 +1,14 @@
 #ifndef _UBERS_LOGFILE_H_
 #define _UBERS_LOGFILE_H_
-
+#include "File.h"
 #include <memory>
 #include <mutex>
 #include <string_view>
 #include <boost/noncopyable.hpp>
 
-namespace UBERS
+namespace UBERS::base::file
 {
-class WriteFile;
+
 class LogFile : public boost::noncopyable
 {
 public:

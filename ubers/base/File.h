@@ -8,7 +8,7 @@
 #include <boost/noncopyable.hpp>
 
 
-namespace UBERS
+namespace UBERS::base::file
 {
 //*默认文件缓冲区大小
 static const int kFileBufferSize = 64 * 1024;
@@ -23,7 +23,10 @@ public:
   void flush() { ::fflush(fp_); }
   size_t WriteLen() const { return this->WriteLen_;}
 private:
-  size_t write(const char* log, size_t len );
+  size_t write(const char* log, size_t len )
+  {
+    return ::fwrite_unlocked(log, 1, len, fp_);
+  }
   FILE* fp_;
   size_t WriteLen_ = 0;
   char buffer_[kFileBufferSize];

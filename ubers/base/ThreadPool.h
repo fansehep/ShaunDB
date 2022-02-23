@@ -8,7 +8,7 @@
 #include "Thread.h"
 #include "ThreadSafeQueue.hpp"
 
-namespace UBERS::base 
+namespace UBERS::base
 {
 class ThreadPool : public boost::noncopyable
 {

@@ -106,6 +106,12 @@ LogStream& LogStream::operator << (unsigned long long v)
   return *this;
 }
 
+LogStream& LogStream::operator << (unsigned int v)
+{
+  formatInteger(v);
+  return *this;
+}
+
 LogStream& LogStream::operator << (const void* p)
 {
   auto v = reinterpret_cast<uintptr_t>(p);

@@ -25,11 +25,11 @@ std::string TimeStamp::ToFormattedString(bool ShowToday)
   int64_t MicroSecond = static_cast<int64_t>(MicroSecondSinceEpoch_ % kMicroSecondsPerSecond);
   if(!ShowToday)
   {
-    snprintf(buf, sizeof(buf), "%04d %02d %02d %02d:%02d:%02d.%06ld", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec, MicroSecond);
+    snprintf(buf, sizeof(buf), "%04d %02d %02d %02d:%02d:%02d.%06ld ", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec, MicroSecond);
   }
   else
   {
-    snprintf(buf, sizeof(buf), "%04d %02d %02d", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday);
+    snprintf(buf, sizeof(buf), "%04d %02d %02d ", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday);
   }
   return buf;
   }

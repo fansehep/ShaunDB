@@ -13,6 +13,7 @@ namespace UBERS
 {
   namespace CurrentThread
   {
+    //* 缓存加速
     thread_local int t_cachedTid = 0;
     thread_local std::string t_tidString;
   } // namespace CurrentThread
@@ -61,15 +62,24 @@ bool CurrentThread::isMainThread()
 
 Thread::Thread(ThreadFunc func)
   : func_(std::move(func)),
-    latch_(1)
+    latch_(1),
+    started_(false),
+    tid_(0)
 {
 }
+
+Thread::~Thread()
+{
+  if(started_ && !thread_->joinable())
+    thread_->join();
+}
+
 
 void Thread::start()
 {
   assert(!started_);
   started_ = true;
-  thread_ = std::make_unique<std::thread>(std::thread(detail::RunInThread, func_, &tid_, &latch_));
+  thread_ = std::make_unique<std::jthread>(std::jthread(detail::RunInThread, func_, &tid_, &latch_));
   if(thread_ == nullptr)
   {
     started_ = false;

@@ -3,10 +3,10 @@
 #include <fcntl.h>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
-
-
+#include <errno.h>
+#include "Logging.h"
 using namespace UBERS;
-
+using namespace UBERS::base::file;
 
 WriteFile::WriteFile(std::string_view FileName)
           : fp_(fopen(FileName.data(), "ae"))
@@ -21,25 +21,26 @@ WriteFile::~WriteFile()
   fclose(fp_);
 }
 
-void WriteFile::append(const char* log, const size_t len)
+void WriteFile::append(const char* log, size_t len)
 {
-  size_t n = 0;
-  size_t remain = len;
-  do
+  size_t written = 0;
+  while(written != len)
   {
-    size_t x = this->write(log + n, remain);
-    if(x == 0)
+    size_t remain = len - written;
+    size_t n = write(log + written, remain);
+    if( n != remain)
     {
       int err = ferror(fp_);
       if(err)
       {
-        fprintf(stderr, "WriteFile error!\n");
+        fprintf(stderr, "WriteFile::append failed %s\n", strerror_tl(err));
         break;
       }
-      n += x; remain = len - n;
     }
-  } while (remain > 0);
-  WriteLen_ += len;
+    written += n;
+  }
+
+  WriteLen_ += written;
 }
 
 ReadSmallFile::ReadSmallFile(std::string_view fileName)

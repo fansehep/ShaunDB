@@ -9,6 +9,7 @@
 #include "Thread.h"
 #include "LogStream.h"
 
+//* 异步日志线程的封装
 namespace UBERS::base
 {
 class AsyncLogThread : public boost::noncopyable
@@ -33,16 +34,22 @@ private:
   using BufferVector = std::vector<std::unique_ptr<Buffer>>;
   using BufferPtr = std::unique_ptr<Buffer>;
 
+  //* 日志刷新时间
   const int flushSecond_;
   const size_t rollSize_;
   bool running_;
+  //* 日志名称
   std::string basename_;
+  //* 异步日志线程
   Thread thread_;
   std::mutex mutex_;
   std::condition_variable cond_;
+
   BufferPtr currentBuffer_;
   BufferPtr nextBuffer_;
   BufferVector buffers_;
+
+
   boost::latch latch_;
 };
 }

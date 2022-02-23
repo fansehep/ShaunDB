@@ -6,7 +6,6 @@
 namespace UBERS
 {
   thread_local char t_errnobuf[512];
-  thread_local char t_time[64];
 
 const char* strerror_tl(int SavedErrno)
 {
@@ -20,13 +19,13 @@ Logger::LogLevel initLogLevel()
 Logger::LogLevel g_logLevel = initLogLevel();
 
 const char* LogLevelName[7] = { \
-  "TRACE",
-  "DEBUG",
-  "INFO", 
-  "WARN",
-  "ERROR",
-  "FATAL",
-  "OFF",
+  "TRACE ",
+  "DEBUG ",
+  "INFO ", 
+  "WARN ",
+  "ERROR ",
+  "FATAL ",
+  "OFF ",
 };
 
 class T
@@ -52,11 +51,12 @@ LogStream& operator << (LogStream& s, const Logger::SourceFile& v)
   return s;
 }
 
+//* 默认输出函数，写入 STDOUT
 void defaultOutput(const char* msg, size_t len)
 {
   size_t n = fwrite(msg, 1, len, stdout);
 }
-
+//* 默认刷新函数
 void defaultFlush()
 {
   fflush(stdout);
@@ -72,17 +72,17 @@ Logger::Impl::Impl(LogLevel level, int SavedErrno, const SourceFile& file, int l
   : stream_(), level_(level), line_(line), Basename_(file)
 {
   CurrentThread::tid();
-  stream_ << CurrentThread::tidString() << " ";
+  stream_ << TimeStamp::now().ToFormattedString() << CurrentThread::tidString() << " ";
   stream_ << LogLevelName[level];
   if(SavedErrno != 0)
   {
-    stream_ << strerror_tl(SavedErrno) << " (errno = " << SavedErrno << " ) ";
+    stream_ << TimeStamp::now().ToFormattedString() << strerror_tl(SavedErrno) << " (errno = " << SavedErrno << " ) ";
   }
 }
 
 void Logger::Impl::finish()
 {
-  stream_ << " - " << Basename_.data_ << ":" << line_ << '\n';
+  stream_ << " - " << Basename_.data_ << " : " << line_ << '\n';
 }
 
 Logger::Logger(SourceFile file, int line) : impl_(INFO, 0, file, line)
@@ -110,7 +110,9 @@ Logger::Logger(SourceFile file, int line, bool toAbort)
 Logger::~Logger()
 {
   impl_.finish();
+  //* 获得 Impl 的内部 Buffer
   const LogStream::Buffer& buf(stream().buffer());
+  //*调用默认输出函数
   g_output(buf.data(), buf.length());
   if(impl_.level_ == FATAL)
   {

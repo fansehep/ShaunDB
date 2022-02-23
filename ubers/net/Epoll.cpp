@@ -29,8 +29,7 @@ Epoll::~Epoll()
 
 void Epoll::Poll(ChannelVec* activeChannels)
 {
-  int numEvents = ::epoll_wait(epollfd_, &*events_.begin(), \
-            static_cast<int>(events_.size()), -1);
+  int numEvents = ::epoll_wait(epollfd_, &*events_.begin(), static_cast<int>(events_.size()), -1);
   int savedErrno = errno;
   if(numEvents > 0)
   {
@@ -65,14 +64,19 @@ void Epoll::UpdateChannel(Channel* channel)
 {
   ownerLoop_->AssertInLoopThread();
   const int t_status = channel->status();
+  //* 当前的Channel 还没有被关注或者已经被杀掉了
   if(t_status == kNew || t_status == kDeleted)
   {
+
     int fd = channel->GetFd();
+    //* 新的 Channel 会设置为 kNew
     if(t_status == kNew)
     {
       channels_[fd] = channel;
     }
+    //* 设置该channel的状态
     channel->SetStatus(kAdded);
+    //* 对该channel进行设置，方便后续的
     Update(EPOLL_CTL_ADD, channel);
   }
   else
@@ -94,6 +98,7 @@ void Epoll::Update(int operation, Channel* channel) const
   struct epoll_event event;
   bzero(&event, sizeof(event));
   event.events = channel->GetEvent();
+  //* 利用 epoll_data 保存自己所对应的Channel对象，方
   event.data.ptr = channel;
   int fd = channel->GetFd();
   if(::epoll_ctl(epollfd_, operation, fd, &event) < 0)
@@ -117,7 +122,6 @@ void Epoll::CreateConnection(int Sockfd, const ConnectionCallBack& connectioncal
 {
   if(!connectionsPool_.empty())
   {
-    ;
 
   }
 }

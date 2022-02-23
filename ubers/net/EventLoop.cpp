@@ -47,6 +47,7 @@ EventLoop::EventLoop()
     t_LoopInthisThread = this;
   }
   wakeupChannel_->SetReadCallBack([this]{HandleRead();});
+
   wakeupChannel_->EnableEvents(kReadEventET);
 }   
 
@@ -68,11 +69,13 @@ void EventLoop::Loop()
   {
     ActiveChannels_.clear();
     epoll_->Poll(&ActiveChannels_);
+    //* 处于处理epoll 返回的事件中
     eventHandling_ = true;
     for(Channel* channel : ActiveChannels_)
     {
       channel->HandleEvent();
     }
+    //* 关闭epoll 处理的事件
     eventHandling_ = false;
     RunFunction();
   }
@@ -87,8 +90,9 @@ void EventLoop::Quit()
   }
 }
 
-void EventLoop::RunInLoop(const std::function<void()> func)
+void EventLoop::RunInLoop(const std::function<void()>& func)
 {
+  //* 是在当前线程添加的任务，直接处理即可
   if(isInLoopThread())
   {
     func();
@@ -99,18 +103,22 @@ void EventLoop::RunInLoop(const std::function<void()> func)
   }
 }
 
-void EventLoop::QueueInLoop(const std::function<void()> func)
+void EventLoop::QueueInLoop(const std::function<void()>& func)
 {
   {
     std::scoped_lock<std::mutex> l_guard(mutex_);
     functions_.emplace_back(func);
   }
+  //* 如果不是当前线程 或者 是当前线程调用的QueueInLoop但是处于 其他线程处理的任务
+  //* 也需要唤醒
   if(!isInLoopThread() || CallFunction_)
   {
+    //* 唤醒
     WakeUp();
   }
 }
 
+//* 定时器的三个函数
 std::weak_ptr<Timer> EventLoop::RunAt(const TimeStamp time, std::function<void()> func)
 {
   return timermanager_->AddTimer(std::move(func), time, 0.0);
@@ -126,6 +134,7 @@ std::weak_ptr<Timer> EventLoop::RunAfter(const double interval, std::function<vo
   return RunAt(time, std::move(func));
 }
 
+//* 向WakeUp 写入一个字节，让epoll触发
 void EventLoop::WakeUp() const
 {
   uint64_t a = 1;
@@ -139,7 +148,7 @@ void EventLoop::UpdateChannel(Channel* channel)
 {
   assert(channel->GetOwnerLoop() == this);
   AssertInLoopThread();
-  epoll_->RemoveChannel(channel);
+  epoll_->UpdateChannel(channel);
 }
 
 void EventLoop::AbortNotInLoopThread()
@@ -166,7 +175,7 @@ void EventLoop::CreateConnction(int Sockfd, const ConnectionCallBack& connection
 void EventLoop::HandleRead() const
 {
   uint64_t a = 1;
-  if(::write(wakeupFd_, &a, sizeof(a)) != sizeof(a))
+  if(::read(wakeupFd_, &a, sizeof(a)) != sizeof(a))
   {
     LOG_ERROR << "EventLoop::Wakeup() read " << "another bytes instead of 8 bytes";
   }
@@ -174,6 +183,7 @@ void EventLoop::HandleRead() const
 
 void EventLoop::RunFunction()
 {
+  //* 其他线程有没有加入到此线程的函数
   std::vector<std::function<void()>> functions;
   CallFunction_ = true;
 

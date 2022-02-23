@@ -34,22 +34,22 @@ class ThreadSafeQueue : public boost::noncopyable
 
     void WaitAndPop(type& x)
     {
-      std::unique_ptr<Node> Old_head = WaitPopHead();
+      std::unique_ptr<Node> Old_head = WaitPopHead(x);
     }
 
     std::shared_ptr<type> TryPop()
     {
       std::unique_ptr<Node> OldHead = TryPopHead();
-      return OldHead;
+      return OldHead ? OldHead->val_ : std::shared_ptr<type>();
     }
 
     bool TryPop(type& x)
     {
       std::unique_ptr<Node> Oldhead = TryPopHead();
-      return Oldhead ? Oldhead->val_ : std::shared_ptr<type>();
+      return Oldhead;
     }
 
-    [[nodiscard]] bool empty() 
+    [[nodiscard]] bool empty() const
     {
       std::scoped_lock<std::mutex> lock(headMutex_);
       return head_.get() == GetTail();
@@ -78,6 +78,7 @@ class ThreadSafeQueue : public boost::noncopyable
     std::unique_lock<std::mutex> WaitForData()
     {
       std::unique_lock<std::mutex> lock(headMutex_);
+      //* 头指针不等于尾指针，即有任务加入，wait成功
       cv_.wait(lock, [this]{return head_.get() != GetTail();});
       return lock;
     }

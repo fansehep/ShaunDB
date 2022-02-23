@@ -71,7 +71,7 @@ public:
   //
   void bzero()
   {
-    memset(data_, SIZE, 0);
+    ::bzero(data_, sizeof(data_));
   }
 
 private:
@@ -165,7 +165,7 @@ private:
   template<typename Type>
   void formatInteger(Type);
 
-  static const int kMaxNumericSize = 48;
+  static const int kMaxNumericSize = 21;
 };
 
 

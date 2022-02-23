@@ -57,9 +57,9 @@ private:
   int fd_;
   //* 关注的事件
   unsigned events_ = 0;
-  //* poll 实际返回的事件个数
+  //* epoll 实际返回的事件个数
   unsigned revents_ = 0;
-  //* poll 通道状态
+  //* epoll 通道状态
   int status_ = -1;
   //* 是否处于处理事件中
   bool eventHandling_ = false;

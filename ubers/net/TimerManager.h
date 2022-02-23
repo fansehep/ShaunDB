@@ -44,6 +44,7 @@ private:
   const int timerfd_;
   Channel TimerFdChannel_;
 
+  //* 优先队列
   std::priority_queue<std::shared_ptr<Timer>, std::vector<std::shared_ptr<Timer>>, TimerCmp> timers_;
 };
 }

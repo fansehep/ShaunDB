@@ -28,8 +28,8 @@ public:
   void Loop();
   void Quit();
 
-  void RunInLoop(const std::function<void()> func);
-  void QueueInLoop(const std::function<void()> func);
+  void RunInLoop(const std::function<void()>& func);
+  void QueueInLoop(const std::function<void()>& func);
 
   std::weak_ptr<Timer> RunAt(const TimeStamp time, std::function<void()> func);
   std::weak_ptr<Timer> RunEvery(const double interval, std::function<void()> func);
@@ -66,11 +66,14 @@ private:
   
   std::unique_ptr<Epoll> epoll_;
   std::unique_ptr<TimerManager> timermanager_;
+
   std::unique_ptr<Channel> wakeupChannel_;
+  //* 唤醒当前线程
   int wakeupFd_;
   
   std::vector<Channel*> ActiveChannels_;
   mutable std::mutex mutex_;
+
   std::vector<std::function<void()>> functions_;
 };
 }
