@@ -20,10 +20,6 @@ Epoll::Epoll(EventLoop* loop)
 
 Epoll::~Epoll()
 {
-  for(auto& item : connections_)
-  {
-    item.second.reset();
-  }
   ::close(epollfd_);
 }
 
@@ -116,13 +112,23 @@ void Epoll::Update(int operation, Channel* channel) const
   }
 }
 
-//FIXME
-void Epoll::CreateConnection(int Sockfd, const ConnectionCallBack& connectioncallback, \
-   const MessageCallBack& messagecallback, const WriteCompleteCallBack& writecallcompleteback)
+void Epoll::RemoveChannel(Channel* channel)
 {
-  if(!connectionsPool_.empty())
-  {
+  ownerLoop_->AssertInLoopThread();
+  int fd = channel->GetFd();
+  int status = channel->status();
+ // connectionsPool_.emplace_back(std::move(connections_[fd]));
+  ::close(fd);
 
+  if(status == kAdded)
+  {
+    Update(EPOLL_CTL_DEL, channel);
   }
+  channel->SetStatus(kNew);
 }
+
+
+
+//FIXME
+
 

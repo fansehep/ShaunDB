@@ -45,7 +45,7 @@ int main(void)
   UBERS::Logger::setOutPut(AsyncLogOutToFile);
   LOG_INFO << " this is a test";
   ThreadPoolLogTest();
- // sleep(4);
+  sleep(4);
   printf("000xxxx000\n");
   log.stop();
   return 0;

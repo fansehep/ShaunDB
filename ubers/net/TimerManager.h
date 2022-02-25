@@ -11,6 +11,7 @@ namespace UBERS::net
 class EventLoop;
 struct TimerCmp
 {
+  //* 如果超时时间相同，则比较序号，否则直接比较超时时间
   bool operator()(const std::shared_ptr<Timer>& a, const std::shared_ptr<Timer>& b)
   {
     if(a->GetExpiration() == b->GetExpiration())
@@ -45,7 +46,7 @@ private:
   Channel TimerFdChannel_;
 
   //* 优先队列
-  std::priority_queue<std::shared_ptr<Timer>, std::vector<std::shared_ptr<Timer>>, TimerCmp> timers_;
+  std::priority_queue< std::shared_ptr<Timer>, std::vector<std::shared_ptr<Timer> >, TimerCmp> timers_;
 };
 }
 #endif

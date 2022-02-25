@@ -49,9 +49,6 @@ public:
 
   bool isInLoopThread() const { return this->threadId_ == CurrentThread::tid();}
   bool EventHandling() const { return this->eventHandling_;}
-  void CreateConnction(int Sockfd, const ConnectionCallBack& connectioncallback, \
-                                   const MessageCallBack& messagecallback,  \
-                                   const WriteCompleteCallBack& writecompletecallback);
 
 private:
   void AbortNotInLoopThread();

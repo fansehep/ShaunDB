@@ -26,6 +26,9 @@ public:
   void Run() const { callback_();}
   bool IsDeleted() { return this->deleted_;}
   void SetDeleted(bool ue) {this->deleted_ = ue;}
+
+  static int64_t GetnumCreated() { return sNumCreated_.load();}
+
 private:
   //todo 定时器回调函数
   const TimerCallBack callback_;

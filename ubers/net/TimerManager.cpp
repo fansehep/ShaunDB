@@ -51,7 +51,7 @@ void ResetTimerFd(int timerFd, TimeStamp expiration)
   int ret = ::timerfd_settime(timerFd, 0, &newValue, &oldValue);
   if(ret)
   {
-    LOG_ERROR << "timerfd_settime";
+    LOG_SYSERR << "timerfd_settime";
   }
 }
 }//namespace UBERS::net::detail
@@ -117,7 +117,7 @@ void TimerManager::HandleRead()
   std::vector<std::shared_ptr<Timer>> expird = GetExpired(now);
   for(const auto& key : expird)
   {
-    if(key->IsDeleted())
+    if(!key->IsDeleted())
     {
       key->Run();
     }
@@ -134,7 +134,7 @@ std::vector<std::shared_ptr<Timer>> TimerManager::GetExpired(TimeStamp now)
     {
       expird.emplace_back(timers_.top());
     }
-    timers_.top();
+    timers_.pop();
   }
   return expird;
 }

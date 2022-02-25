@@ -23,7 +23,10 @@ ThreadPool::~ThreadPool()
 void ThreadPool::Stop()
 {
   running_ = false;
-  
+  for(auto& thd : threads_)
+  {
+    thd->Join();
+  }
 }
 
 

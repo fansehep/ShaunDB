@@ -77,6 +77,7 @@ void EventLoop::Loop()
     }
     //* 关闭epoll 处理的事件
     eventHandling_ = false;
+
     RunFunction();
   }
 }
@@ -165,12 +166,6 @@ void EventLoop::RemoveChannel(Channel* channel)
   epoll_->RemoveChannel(channel);
 }
 
-void EventLoop::CreateConnction(int Sockfd, const ConnectionCallBack& connectioncallback, \
-                                 const MessageCallBack& messagecallback,  \
-                                 const WriteCompleteCallBack& writecompletecallback)
-{
-  epoll_->CreateConnection(Sockfd, connectioncallback, messagecallback, writecompletecallback);
-}
 
 void EventLoop::HandleRead() const
 {

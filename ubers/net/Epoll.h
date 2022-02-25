@@ -13,7 +13,6 @@ struct epoll_event;
 namespace UBERS::net
 {
 class Channel;
-class TcpConnection;
 
 class Epoll : public boost::noncopyable
 {
@@ -24,8 +23,6 @@ public:
   void UpdateChannel(Channel* channel);
   void RemoveChannel(Channel* channel);
   void Poll(ChannelVec* activeChannels);
-  void CreateConnection(int Sockfd, const ConnectionCallBack& connectioncallback, \
-   const MessageCallBack& messagecallback, const WriteCompleteCallBack& writecallcompleteback);
 
 private:
   //* 初始化Channel对象  初始化是 -1 还没有添加到 epoll中
@@ -39,13 +36,11 @@ private:
   void Update(int operation, Channel* channel) const;
 
   using ChannelMap = std::unordered_map<int, Channel*>;
-  using TcpConnMap = std::unordered_map<int, TcpConnectionPtr>;
-
-  std::vector<TcpConnectionPtr> connectionsPool_;
+//  using TcpConnMap = std::unordered_map<int, TcpConnectionPtr>;
 
   ChannelMap channels_;
   
-  TcpConnMap connections_;
+
   int epollfd_;
   std::vector<struct epoll_event> events_;
   EventLoop* ownerLoop_;
