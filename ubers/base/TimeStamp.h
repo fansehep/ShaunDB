@@ -33,6 +33,7 @@ public:
 
   static const int kMicroSecondsPerSecond = 1000 * 1000;
 
+  void swap(TimeStamp time) { this->MicroSecondSinceEpoch_ = time.MicroSecondSinceEpoch_;}
 private:
   std::time_t MicroSecondSinceEpoch_ = 0;
 };

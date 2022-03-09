@@ -50,6 +50,9 @@ public:
   bool isInLoopThread() const { return this->threadId_ == CurrentThread::tid();}
   bool EventHandling() const { return this->eventHandling_;}
 
+  void CreatConnection(int sockfd, const ConnectionCallBack& conncallback, const MessageCallBack& messagecallback, \
+                      const WriteCompleteCallBack writecomcallback);
+
 private:
   void AbortNotInLoopThread();
   void HandleRead() const;

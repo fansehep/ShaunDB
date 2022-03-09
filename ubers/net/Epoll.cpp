@@ -10,7 +10,8 @@ using namespace UBERS::net;
 Epoll::Epoll(EventLoop* loop)
   : epollfd_(::epoll_create1(EPOLL_CLOEXEC)),
     events_(kInitEventSize),
-    ownerLoop_(loop)
+    ownerLoop_(loop),
+    connections_()
 {
   if(epollfd_ < 0)
   {
@@ -20,12 +21,17 @@ Epoll::Epoll(EventLoop* loop)
 
 Epoll::~Epoll()
 {
+  for(auto& item : connections_)
+  {
+    item.second.reset();
+  }
   ::close(epollfd_);
 }
 
 void Epoll::Poll(ChannelVec* activeChannels)
 {
-  int numEvents = ::epoll_wait(epollfd_, &*events_.begin(), static_cast<int>(events_.size()), -1);
+  LOG_INFO << " poll " << "channels.size() = " << channels_.size();
+  int numEvents = ::epoll_pwait(epollfd_, &*events_.begin(), static_cast<int>(events_.size()), 1, nullptr);
   int savedErrno = errno;
   if(numEvents > 0)
   {
@@ -52,7 +58,7 @@ void Epoll::FillActiveChannels(int numEvents, ChannelVec* activeChannels) const
   {
     auto *channel = static_cast<Channel*>(events_[i].data.ptr);
     channel->SetRevents(events_[i].events);
-    activeChannels->emplace_back(channel);
+    activeChannels->push_back(channel);
   }
 }
 
@@ -60,6 +66,7 @@ void Epoll::UpdateChannel(Channel* channel)
 {
   ownerLoop_->AssertInLoopThread();
   const int t_status = channel->status();
+  LOG_INFO << "fd = " << channel->GetFd() << "events = " << channel->GetEvent() << "states = " << t_status;
   //* 当前的Channel 还没有被关注或者已经被杀掉了
   if(t_status == kNew || t_status == kDeleted)
   {
@@ -107,7 +114,7 @@ void Epoll::Update(int operation, Channel* channel) const
     else
     {
       //* 程序挂掉了
-      LOG_OFF << "epoll_ctl op = " << operation << " fd = " << fd;
+      LOG_SYSERR << "epoll_ctl op = " << operation << " fd = " << fd;
     }
   }
 }
@@ -117,18 +124,40 @@ void Epoll::RemoveChannel(Channel* channel)
   ownerLoop_->AssertInLoopThread();
   int fd = channel->GetFd();
   int status = channel->status();
- // connectionsPool_.emplace_back(std::move(connections_[fd]));
+  connectionspool_.emplace_back(std::move(connections_[fd]));
   ::close(fd);
-
+  
   if(status == kAdded)
   {
     Update(EPOLL_CTL_DEL, channel);
   }
   channel->SetStatus(kNew);
 }
-
+void Epoll:: CreateConnection(int sockFd, const ConnectionCallBack& conncallback, const MessageCallBack& messagecallback, const WriteCompleteCallBack& writecompletecallback)
+{
+  if(!connectionspool_.empty())
+  {
+    connectionspool_.back()->ConnectReset(sockFd);
+    connections_[sockFd] = std::move(connectionspool_.back());
+    connectionspool_.pop_back();
+    ownerLoop_->RunInLoop([&conn = connections_[sockFd]] { conn->ConnectEstablished();});
+  }
+  else
+  {
+    auto conn = std::make_shared<TcpConnection>(ownerLoop_, sockFd);
+    conn->SetConnectionCallBack(conncallback);
+    conn->SetMessageCallBack(messagecallback);
+    conn->SetWriteCompleteCallBack(writecompletecallback);
+    conn->SetCloseCallBack([this](auto && PH1){ RemoveConnection(PH1);});
+    connections_[sockFd] = std::move(conn);
+    ownerLoop_->RunInLoop([&conn = connections_[sockFd]] { conn->ConnectEstablished();});
+  }
+}
 
 
 //FIXME
-
+void Epoll::RemoveConnection( const TcpConnectionPtr& conn)
+{
+  ownerLoop_->RunInLoop([&conn]{conn->ConnectDestroyed();});
+}
 

@@ -1,24 +1,27 @@
 #ifndef _UBERS_NET_SOCKETOPS_H_
 #define _UBERS_NET_SOCKETOPS_H_
 #include <arpa/inet.h>
-
+//#include "InetAddress.h"
 
 //* 对TCP网络系统调用的一些封装
 namespace UBERS::net::sockets
 {
+
 int CreateSocket(sa_family_t faml);
 //* 创建一个 TCP流式 非阻塞套接字,创建失败即终止
 int CreateStreamNonBlockOrDie();  
 //* 创建一个 UDP报文 非阻塞套接字，创建失败即终止
 int CreateDgramNonBlockingOrDie();
 //* 连接
-int Connect(int ClientSockfd, struct sockaddr* addr);
+int Connect(int ClientSockfd, struct sockaddr_in* addr);
 //* 绑定
-void BindOrDie(int ClientSockfd, struct sockaddr* addr);
+void BindOrDie(int ClientSockfd, struct sockaddr_in* addr);
 //* 监听
 void ListenOrDie(int SockFd);
 //* 接受连接
-int Accept(int Sockfd, struct sockaddr_in6* addr);
+int Accept(int Sockfd, struct sockaddr_in* addr);
+
+
 //* 读
 ssize_t Read(int Sockfd, void* buf, size_t count);
 //* 读，以iovec结构体读取
@@ -47,9 +50,9 @@ void SetReusePort(int Sockfd, bool ue);
 int GetSocketError(int Sockfd);
 
 //* 获取本地协议地址
-struct sockaddr_in GetLocalAddr(int Sockfd);
+struct sockaddr_in6 GetLocalAddr(int Sockfd);
 //* 获取相连接的对方协议地址
-struct sockaddr_in GetPeerAddr(int Sockfd);
+struct sockaddr_in6 GetPeerAddr(int Sockfd);
 
 
 //* 网络字节序和主机字节序的转换

@@ -2,6 +2,7 @@
 #include "../base/Logging.h"
 #include "Timer.h"
 #include "EventLoop.h"
+#include "../base/LogStream.h"
 #include <sys/timerfd.h>
 
 namespace UBERS::net::detail

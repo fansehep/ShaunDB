@@ -75,7 +75,11 @@ LogStream& LogStream::operator << (short v)
   formatInteger(v);
   return *this;
 }
-
+LogStream& LogStream::operator<< (long v)
+{
+  formatInteger(v);
+  return *this;
+}
 LogStream& LogStream::operator << (unsigned short v)
 {
   formatInteger(v);

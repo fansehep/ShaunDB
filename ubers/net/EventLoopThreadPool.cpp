@@ -15,7 +15,7 @@ void EventLoopThreadPool::Start(const ThreadInitCallBack& func)
 {
   assert(!started_);
   baseloop_->AssertInLoopThread();
-  started_ = false;
+  started_ = true;
   for(size_t i = 0; i < numThreads_; ++i)
   {
     auto *t = new EventLoopThread(func);

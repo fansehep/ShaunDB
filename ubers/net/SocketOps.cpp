@@ -6,11 +6,10 @@
 #include <sys/sendfile.h>
 #include "SocketOps.h"
 #include "../base/Logging.h"
-
 using namespace UBERS::net;
 
 
-inline int sockets::CreateSocket(sa_family_t faml)
+int sockets::CreateSocket(sa_family_t faml)
 {
   if(faml == AF_INET)
   {
@@ -22,7 +21,7 @@ inline int sockets::CreateSocket(sa_family_t faml)
   }
 }
 
-inline int sockets::CreateStreamNonBlockOrDie()
+int sockets::CreateStreamNonBlockOrDie()
 {
   int Sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
   if(Sockfd < 0)
@@ -32,7 +31,7 @@ inline int sockets::CreateStreamNonBlockOrDie()
   return Sockfd;
 }
 
-inline int sockets::CreateDgramNonBlockingOrDie()
+int sockets::CreateDgramNonBlockingOrDie()
 {
   int Sockfd = ::socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_UDP);
   if(Sockfd < 0)
@@ -42,21 +41,21 @@ inline int sockets::CreateDgramNonBlockingOrDie()
   return Sockfd;
 }
 
-inline int sockets::Connect(int ClientSockfd, struct sockaddr* addr)
+int sockets::Connect(int ClientSockfd, struct sockaddr_in* addr)
 {
-  return ::connect(ClientSockfd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in)));
+  return ::connect(ClientSockfd, reinterpret_cast<struct sockaddr*>(addr), static_cast<socklen_t>(sizeof(struct sockaddr_in)));
 }
 
-inline void sockets::BindOrDie(int ClientSockfd, struct sockaddr* addr)
+void sockets::BindOrDie(int ClientSockfd, struct sockaddr_in* addr)
 {
-  int Returnerrno = ::bind(ClientSockfd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in)));
+  int Returnerrno = ::bind(ClientSockfd, reinterpret_cast<struct sockaddr*>(addr), static_cast<socklen_t>(sizeof(struct sockaddr_in)));
   if(Returnerrno < 0)
   {
     LOG_SYSERR << "sockets::Bind";
   }
 }
 
-inline void sockets::ListenOrDie(int SockFd)
+void sockets::ListenOrDie(int SockFd)
 {
   int Returnerrno = ::listen(SockFd, SOMAXCONN);
   if(Returnerrno < 0)
@@ -65,7 +64,7 @@ inline void sockets::ListenOrDie(int SockFd)
   }
 }
 
-inline int sockets::Accept(int Sockfd, struct sockaddr_in6* addr)
+int sockets::Accept(int Sockfd, struct sockaddr_in* addr)
 {
   socklen_t addrLen = static_cast<socklen_t>(sizeof(*addr));
   int connfd = ::accept4(Sockfd, reinterpret_cast<struct sockaddr*>(addr), &addrLen, SOCK_NONBLOCK | SOCK_CLOEXEC);
@@ -102,38 +101,40 @@ inline int sockets::Accept(int Sockfd, struct sockaddr_in6* addr)
   return connfd;
 }
 
-inline ssize_t sockets::Read(int Sockfd, void* buf, size_t count)
+
+
+ssize_t sockets::Read(int Sockfd, void* buf, size_t count)
 {
   return ::read(Sockfd, buf, count);
 }
 
-inline ssize_t sockets::Readv(int Sockfd, const struct iovec* iov, int iovcnt)
+ssize_t sockets::Readv(int Sockfd, const struct iovec* iov, int iovcnt)
 {
   return ::readv(Sockfd, iov, iovcnt);
 }
 
-inline ssize_t sockets::Write(int Sockfd, const void* buf, size_t count)
+ssize_t sockets::Write(int Sockfd, const void* buf, size_t count)
 {
   return ::write(Sockfd, buf, count);
 }
 
-inline ssize_t sockets::RecvFrom(int Sockfd, void* buf, size_t count, struct sockaddr_in* addr)
+ssize_t sockets::RecvFrom(int Sockfd, void* buf, size_t count, struct sockaddr_in* addr)
 {
   return ::recvfrom(Sockfd, buf, count, 0, reinterpret_cast<sockaddr*>(addr), \
         reinterpret_cast<socklen_t*>(sizeof(struct sockaddr_in)));
 }
 
-inline ssize_t sockets::Sendto(int Sockfd, const void* buf, size_t count, struct sockaddr_in* addr)
+ssize_t sockets::Sendto(int Sockfd, const void* buf, size_t count, struct sockaddr_in* addr)
 {
   return ::sendto(Sockfd, buf, count, 0, reinterpret_cast<sockaddr*>(addr), sizeof(struct sockaddr_in));
 }
 
-inline ssize_t sockets::SendFile(int Outfd, int Intfd, off_t* offset, size_t count)
+ssize_t sockets::SendFile(int Outfd, int Intfd, off_t* offset, size_t count)
 {
   return ::sendfile(Outfd, Intfd, offset, count);
 }
 
-inline void sockets::Close(int Sockfd)
+void sockets::Close(int Sockfd)
 {
   if(::close(Sockfd) < 0)
   {
@@ -141,7 +142,7 @@ inline void sockets::Close(int Sockfd)
   }
 }
 
-inline void sockets::ShutDownWrite(int Sockfd)
+void sockets::ShutDownWrite(int Sockfd)
 {
   if(::shutdown(Sockfd, SHUT_WR) < 0)
   {
@@ -149,25 +150,25 @@ inline void sockets::ShutDownWrite(int Sockfd)
   }
 }
 
-inline void sockets::SetKeepAlive(int Sockfd, bool ue)
+void sockets::SetKeepAlive(int Sockfd, bool ue)
 {
   int op = ue ? 1 : 0;
   ::setsockopt(Sockfd, SOL_SOCKET, SO_KEEPALIVE, &op, static_cast<socklen_t>(sizeof(op)));
 }
 
-inline void sockets::SetTcpNoDelay(int Sockfd, bool ue)
+void sockets::SetTcpNoDelay(int Sockfd, bool ue)
 {
   int op = ue ? 1 : 0;
   ::setsockopt(Sockfd, IPPROTO_TCP, TCP_NODELAY, &op, static_cast<socklen_t>(sizeof(op)));
 }
 
-inline void sockets::SetReuseAddr(int Sockfd, bool ue)
+void sockets::SetReuseAddr(int Sockfd, bool ue)
 {
   int op = ue ? 1 : 0;
   ::setsockopt(Sockfd, SOL_SOCKET, SO_REUSEADDR, &op, static_cast<socklen_t>(sizeof(op)));
 }
 
-inline void sockets::SetReusePort(int Sockfd, bool ue)
+void sockets::SetReusePort(int Sockfd, bool ue)
 {
   int op = ue ? 1 : 0;
   int ret = ::setsockopt(Sockfd, SOL_SOCKET, SO_REUSEPORT, &op, static_cast<socklen_t>(sizeof(op)));
@@ -177,7 +178,7 @@ inline void sockets::SetReusePort(int Sockfd, bool ue)
   }
 }
 
-inline int sockets::GetSocketError(int Sockfd)
+int sockets::GetSocketError(int Sockfd)
 {
   int optval;
   auto optlen = static_cast<socklen_t>(sizeof(optval));
@@ -191,9 +192,9 @@ inline int sockets::GetSocketError(int Sockfd)
   }
 }
 
-inline struct sockaddr_in sockets::GetLocalAddr(int Sockfd)
+struct sockaddr_in6 sockets::GetLocalAddr(int Sockfd)
 {
-  struct sockaddr_in peeraddr;
+  struct sockaddr_in6 peeraddr;
   bzero(&peeraddr, sizeof(peeraddr));
   auto addrlen = static_cast<socklen_t>(sizeof(peeraddr));
   if(::getpeername(Sockfd, reinterpret_cast<struct sockaddr*>(&peeraddr), &addrlen) < 0)
@@ -203,9 +204,9 @@ inline struct sockaddr_in sockets::GetLocalAddr(int Sockfd)
   return peeraddr;
 }
 
-inline struct sockaddr_in sockets::GetPeerAddr(int Sockfd)
+struct sockaddr_in6 sockets::GetPeerAddr(int Sockfd)
 {
-  struct sockaddr_in localaddr;
+  struct sockaddr_in6 localaddr;
   bzero(&localaddr, sizeof(localaddr));
   auto addrlen = static_cast<socklen_t>(sizeof(localaddr));
   if(::getsockname(Sockfd, reinterpret_cast<struct sockaddr*>(&localaddr), &addrlen) < 0)

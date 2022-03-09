@@ -33,6 +33,8 @@ Ignore_SigPipe InitObject;
 EventLoop::EventLoop()
   :quit_(false),
    threadId_(CurrentThread::tid()),
+   eventHandling_(false),
+   CallFunction_(false),
    epoll_(std::make_unique<Epoll>(this)),
    timermanager_(std::make_unique<TimerManager>(this)),
    wakeupFd_(CreateEventFd()),
@@ -80,6 +82,7 @@ void EventLoop::Loop()
 
     RunFunction();
   }
+  looping_ = false;
 }
 
 void EventLoop::Quit()
@@ -193,3 +196,9 @@ void EventLoop::RunFunction()
   }
   CallFunction_ = false;
 }
+
+void EventLoop::CreatConnection(int sockfd, const ConnectionCallBack& conncallback, const MessageCallBack& messagecallback, \
+                      const WriteCompleteCallBack writecomcallback)
+{
+  epoll_->CreateConnection(sockfd, conncallback, messagecallback, writecomcallback);
+}                      

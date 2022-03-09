@@ -43,7 +43,7 @@ private:
   //todo 定时器序号
   int64_t sequence_;
   //todo 当前已经创建的定时器数量
-  static std::atomic<int64_t> sNumCreated_;
+  inline static std::atomic<int64_t> sNumCreated_{0};
 };
 }
 #endif

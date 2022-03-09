@@ -6,26 +6,29 @@
 #include "../base/ThreadPool.h"
 #include "../net/EventLoop.h"
 
-namespace UBERS::net
-{
+namespace UBERS::net{
+
 class HttpRequest;
 class HttpResponse;
 
 class HttpServer : public boost::noncopyable
 {
-public:
-  using HttpCallBack = std::function<void (const HttpRequest&, HttpResponse*)>;
+  using HttpCallback = std::function<void (const HttpRequest&, HttpResponse*)>;
+  // using std::placeholders;
+  HttpServer(EventLoop* loop, struct sockaddr_in& listenaddr);
 
+  EventLoop* GetLoop() { return server_.GetEventLoop();}
 
+  void SetThreadNums(int n) { this->server_.SetThreadNums(n);}
 
-
-private:
+  void Start();
+private: 
   void OnConnection(const TcpConnectionPtr& conn);
-  void OnMessage(const TcpConnectionPtr& conn, Buffer* buf, TimeStamp ReceiveTime);
+  void OnMessage(const TcpConnectionPtr& conn, Buffer* buf);
   void OnRequest(const TcpConnectionPtr&, const HttpRequest&);
 
   TcpServer server_;
-  HttpCallBack httpcallback_;
+  HttpCallback httpcallback_;
 };
 }
 #endif
