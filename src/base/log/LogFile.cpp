@@ -6,7 +6,7 @@
 #include <sys/types.h>
 
 namespace fver::base::log {
-LogFile::LogFile(const char* logpath) : logpath_(logpath) {
+LogFile::LogFile(const char* logpath) : logpath_(logpath), logfd_(-1) {
   timestamp_ = fver::base::TimeStamp::Now();
   curlogfilename_ = timestamp_.ToFormatToday() + ".log";
   auto tempfilepath = logpath_ + curlogfilename_;
@@ -17,7 +17,7 @@ LogFile::LogFile(const char* logpath) : logpath_(logpath) {
   }
 }
 
-LogFile::LogFile(const std::string& logpath) : logpath_(logpath) {
+LogFile::LogFile(const std::string& logpath) : logpath_(logpath), logfd_(-1) {
   timestamp_ = fver::base::TimeStamp::Now();
   curlogfilename_ = timestamp_.ToFormatToday() + ".log";
   auto tempfilepath = logpath_ + curlogfilename_;
@@ -27,9 +27,13 @@ LogFile::LogFile(const std::string& logpath) : logpath_(logpath) {
                timestamp_.ToFormatTodayNowMs(), __FILE__, __LINE__, logpath);
   }
 }
+
+LogFile::LogFile() {}
 
 LogFile::~LogFile() {
-  close(logfd_);
+  if (logfd_ > 0) {
+    close(logfd_);
+  }
 }
 
 bool LogFile::FasyncToDisk() {
@@ -47,9 +51,9 @@ bool LogFile::Write(const char* str, int len) {
   return false;
 }
 
-bool LogFile::Write(std::string& str) {
+bool LogFile::Write(const std::string& str) {
   auto write_len = write(logfd_, str.c_str(), str.size());
-  if (write_len == str.size()) {
+  if (write_len == static_cast<long int>(str.size())) {
     return true;
   }
   return false;
@@ -76,5 +80,17 @@ bool LogFile::ChangeLogFile() {
 std::string LogFile::GetCurrentLogFileName() { return this->curlogfilename_; }
 
 std::string LogFile::GetCurrentLogPathName() { return this->logpath_; }
+
+void LogFile::SetLogPath(const std::string& logpath) {
+  logpath_ = logpath;
+  timestamp_ = fver::base::TimeStamp::Now();
+  curlogfilename_ = timestamp_.ToFormatToday() + ".log";
+  auto tempfilepath = logpath_ + curlogfilename_;
+  logfd_ = open(tempfilepath.c_str(), O_CREAT | O_RDWR);
+  if (logfd_ < 0) {
+    fmt::print("{} {} {} :error can not open file! path: {}",
+               timestamp_.ToFormatTodayNowMs(), __FILE__, __LINE__, logpath);
+  }
+}
 
 }  // namespace fver::base::log

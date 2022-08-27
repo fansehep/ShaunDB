@@ -13,9 +13,11 @@ class LogFile : public NonCopyable {
  public:
   LogFile(const char* logpath);
   LogFile(const std::string& logpath);
+  LogFile();
   ~LogFile();
+  void SetLogPath(const std::string& logpath);
   bool Write(const char* str, int len);
-  bool Write(std::string& str);
+  bool Write(const std::string& str);
   // clear current log file all info
   bool Clear();
   bool FasyncToDisk();

@@ -21,12 +21,16 @@ class LogBuffer {
   char* GetBufferPtr();
   uint32_t GetCurrentSize();
   uint32_t GetMaxSize();
+  void SetBufHorSize(double bufsize);
+  bool IsSync();
+  bool IsChangeBuffer();
   static constexpr uint32_t kSmallBufferSize = 91920;
   static constexpr uint32_t kMidBufferSize = 163840;
   static constexpr uint32_t kBigBufferSize = 655460;
 
  private:
   uint32_t maxsize_;
+  double bufhorisize_;
   char* bufferptr_;
   uint32_t cursize_;
 };

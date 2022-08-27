@@ -2,23 +2,34 @@
 
 #include <fmt/format.h>
 
-
 #include <cstring>
+
+#include "../TimeStamp.hpp"
 
 namespace fver::base::log {
 
 LogBuffer::LogBuffer(uint32_t maxsize)
-    : maxsize_(maxsize), bufferptr_(nullptr), cursize_(0) {
-  bufferptr_ = new char(maxsize_);
+    : maxsize_(maxsize), bufferptr_(nullptr), cursize_(0), bufhorisize_(0.5) {
+  if (maxsize == 0) {
+    return;
+  }
+  bufferptr_ = new (std::nothrow) char(maxsize_);
   if (nullptr == bufferptr_) {
+    fmt::print("{} {} {} new error!",
+               TimeStamp::Now().ToFormatTodayNowMs(), __FILE__, __LINE__);
     exit(-1);
   }
 }
 
 LogBuffer::LogBuffer()
-    : maxsize_(kSmallBufferSize), bufferptr_(nullptr), cursize_(0) {
-  bufferptr_ = new char(maxsize_);
+    : maxsize_(kSmallBufferSize),
+      bufferptr_(nullptr),
+      cursize_(0),
+      bufhorisize_(0.5) {
+  bufferptr_ = new (std::nothrow) char(maxsize_);
   if (nullptr == bufferptr_) {
+    fmt::print("{} {} {} new error!",
+               TimeStamp::Now().ToFormatTodayNowMs(), __FILE__, __LINE__);
     exit(-1);
   }
 }
@@ -68,10 +79,11 @@ bool LogBuffer::Expansion(uint32_t bufsize) {
   if (bufferptr_) {
     delete bufferptr_;
   }
-  bufferptr_ = new char(bufsize);
+  bufferptr_ = new (std::nothrow) char(bufsize);
   if (bufferptr_ == nullptr) {
     auto now = fver::base::TimeStamp::Now().ToFormatTodayNowMs();
     fmt::print("{} {} {} new error!\n", now.c_str(), __FILE__, __LINE__);
+    exit(-1);
   }
   cursize_ = 0;
   maxsize_ = bufsize;
@@ -83,5 +95,23 @@ char* LogBuffer::GetBufferPtr() { return bufferptr_; }
 uint32_t LogBuffer::GetCurrentSize() { return cursize_; }
 
 uint32_t LogBuffer::GetMaxSize() { return maxsize_; }
+
+bool LogBuffer::IsSync() {
+  if (static_cast<double>(cursize_) / static_cast<double>(maxsize_) >= bufhorisize_) {
+    return true;
+  }
+  return false;
+}
+
+bool LogBuffer::IsChangeBuffer() {
+  if (static_cast<double>(cursize_) / static_cast<double>(maxsize_) >= 0.8) {
+    return true;
+  }
+  return false;
+}
+
+void LogBuffer::SetBufHorSize(double bufsize) {
+  bufhorisize_ = bufsize;
+}
 
 }  // namespace fver::base::log
