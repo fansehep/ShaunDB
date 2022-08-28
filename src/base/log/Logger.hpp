@@ -1,6 +1,7 @@
 #ifndef SRC_BASE_LOGGER_H_
 #define SRC_BASE_LOGGER_H_
 
+#include <execinfo.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <stdarg.h>
@@ -8,6 +9,7 @@
 #include <string.h>
 
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <ostream>
 #include <string>
@@ -20,13 +22,14 @@
 namespace fver::base::log {
 
 const std::string LogLevelNums[] = {
-    "INFO", "TRACE", "DEBUG", "ERROR", "WARN", "EXIT ",
+    "INFO", "TRACE", "DEBUG", "ERROR", "WARN", "EXIT",
 };
 
 // default log output function
 // usually will put it to the STD_OUT
 
-class Logger : public NonCopyable {
+class Logger : public NonCopyable,
+               public std::enable_shared_from_this<Logger> {
  public:
   enum LogLevel : int {
     kInfo,
@@ -37,6 +40,7 @@ class Logger : public NonCopyable {
     kExit,
   };
   Logger(AsyncLogThread* logthread);
+  Logger(const std::unique_ptr<AsyncLogThread>& thrd);
   Logger();
   ~Logger() = default;
   template <typename... Args>
@@ -55,6 +59,9 @@ class Logger : public NonCopyable {
         fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
     if (logway_ == AsyncLogThread::kLogStdOut) {
       fmt::print("{}", logment_);
+      if (lev == LogLevel::kExit) {
+        exit(-1);
+      }
       return;
     } else {
       std::lock_guard<std::mutex> lgk(mtx_);

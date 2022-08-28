@@ -16,29 +16,35 @@ AsyncLogThread::AsyncLogThread(LogWay logway, const std::string& logpath)
   // make the log to file
 }
 
-AsyncLogThread::AsyncLogThread() : logway_(kLogStdOut), file_(), stop_(true) {}
+AsyncLogThread::AsyncLogThread() : logway_(kLogStdOut), file_(), stop_(true) {
+#ifdef DEBUG
+  printf("AsyncLogThread Constructor!\n");
+#endif
+}
 
-void AsyncLogThread::PushLogWorker(const Logger* lger) {
+void AsyncLogThread::PushLogWorker(const std::shared_ptr<Logger> lger) {
   std::lock_guard<std::mutex> lgk(this->mtx_);
-  logworkers_.push_back(const_cast<Logger*>(lger));
+  tmpworkers_.push_back(lger);
 }
 
 void AsyncLogThread::Init(const std::string& logpath,
                           const uint32_t threadlocalbufsize, const int loglev,
                           const double bufhosize) {
+  stop_ = true;
   logway_ = AsyncLogThread::kLogToFile;
   file_.SetLogPath(logpath);
   bufsize_ = threadlocalbufsize;
   loglevel_ = loglev;
   bufhorizontalsize_ = bufhosize;
-  for (auto thrd : logworkers_) {
-    thrd->SetCurrentLogLevel(static_cast<Logger::LogLevel>(loglevel_));
-    thrd->SetCurrentLogBufferSize(bufsize_);
-    thrd->SetBufferHorSize(bufhosize);
-  }
-  logthread_ = std::make_unique<std::thread>([&]() {
+  logthread_ = std::make_unique<std::thread>([this]() {
     while (stop_) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      if (!tmpworkers_.empty()) {
+        std::lock_guard<std::mutex> mtx(this->mtx_);
+        logworkers_.insert(logworkers_.end(), tmpworkers_.begin(),
+                           tmpworkers_.end());
+        tmpworkers_.clear();
+      }
       for (auto& thrd : logworkers_) {
         if (thrd->IsSync() || thrd->IsLogToDisk()) {
           // 这里属于被动必须刷盘

@@ -26,7 +26,7 @@ class AsyncLogThread : public NonCopyable {
   AsyncLogThread();
   ~AsyncLogThread();
   AsyncLogThread(LogWay logway, const std::string& logpath);
-  void PushLogWorker(const Logger* lger);
+  void PushLogWorker(const std::shared_ptr<Logger> lger);
   LogWay GetLogWay() { return logway_; }
   void SetLogLevel(int loglv) { loglevel_ = loglv; }
   int GetLogLevel() { return loglevel_; }
@@ -42,7 +42,11 @@ class AsyncLogThread : public NonCopyable {
   uint32_t bufsize_;
   double bufhorizontalsize_;
   int loglevel_;
-  std::vector<Logger*> logworkers_;
+  std::vector<std::shared_ptr<Logger>> logworkers_;
+  // 当程序创建新的线程时, 此时的thread_local Logger 要被 AsyncLoggingThread 所管理
+  // 所以将新创建的 Logger push 到 tmpworkers_ 在 AsyncLoggingThread 遍历的时候
+  // 使用很短的锁区间 即可达到线程安全
+  std::vector<std::shared_ptr<Logger>> tmpworkers_;
   std::unique_ptr<std::thread> logthread_;
   LogFile file_;
   bool stop_;

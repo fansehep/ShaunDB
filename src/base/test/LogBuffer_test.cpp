@@ -9,5 +9,6 @@ int main() {
   buf.Push("1123");
   buf.Push("1231231");
   printf("logbuffer ptr = %s\n", buf.GetBufferPtr());
+  
   return 0;
 }

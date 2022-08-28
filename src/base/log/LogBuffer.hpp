@@ -24,9 +24,9 @@ class LogBuffer {
   void SetBufHorSize(double bufsize);
   bool IsSync();
   bool IsChangeBuffer();
-  static constexpr uint32_t kSmallBufferSize = 91920;
-  static constexpr uint32_t kMidBufferSize = 163840;
-  static constexpr uint32_t kBigBufferSize = 655460;
+  static constexpr uint32_t kSmallBufferSize = 9192;
+  static constexpr uint32_t kMidBufferSize = 16384;
+  static constexpr uint32_t kBigBufferSize = 65546;
 
  private:
   uint32_t maxsize_;

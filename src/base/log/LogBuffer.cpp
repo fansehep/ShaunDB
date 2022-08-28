@@ -23,7 +23,6 @@ LogBuffer::LogBuffer(uint32_t maxsize)
 
 LogBuffer::LogBuffer()
     : maxsize_(kSmallBufferSize),
-      bufferptr_(nullptr),
       cursize_(0),
       bufhorisize_(0.5) {
   bufferptr_ = new (std::nothrow) char(maxsize_);
@@ -104,6 +103,9 @@ bool LogBuffer::IsSync() {
 }
 
 bool LogBuffer::IsChangeBuffer() {
+  if (maxsize_ == 0) {
+    return false;
+  }
   if (static_cast<double>(cursize_) / static_cast<double>(maxsize_) >= 0.8) {
     return true;
   }
