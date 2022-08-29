@@ -11,7 +11,25 @@ Logger::Logger()
     : prebuf_(0),
       tailbuf_(0),
       curloglevel_(LogLevel::kInfo),
-      logway_(AsyncLogThread::kLogStdOut) {
+      logway_(AsyncLogThread::kLogStdOut),
+      threadid_(pthread_self()) {
+#ifdef DEBUG
+  fmt::print("thid: {} logger construct\n", threadid_);
+#endif
+      curbufptr_ = &prebuf_;
+}
+
+Logger::Logger(uint32_t bufsize)
+    : prebuf_(bufsize),
+      tailbuf_(bufsize),
+      curloglevel_(LogLevel::kInfo),
+      logway_(AsyncLogThread::kLogToFile),
+      threadid_(pthread_self()),
+      unlogtimes_(0),
+      time_() {
+#ifdef DEBUG
+  fmt::print("Logger Constructor! LogWay: {}\n", logway_);
+#endif
   curbufptr_ = &prebuf_;
 }
 
@@ -29,42 +47,6 @@ LogBuffer* Logger::GetLogBufferPtr() {
 }
 
 bool Logger::IsSync() { return curbufptr_->IsSync(); }
-
-Logger::Logger(AsyncLogThread* logthread)
-    : prebuf_(0),
-      tailbuf_(0),
-      logway_(AsyncLogThread::kLogStdOut),
-      threadid_(pthread_self()) {
-  if (!logthread) {
-    return;
-  }
-  this->logway_ = logthread->GetLogWay();
-  if (logway_ == AsyncLogThread::kLogToFile) {
-    SyncToFile();
-  }
-  curloglevel_ = static_cast<LogLevel>(logthread->GetLogLevel());
-  logthread->PushLogWorker(shared_from_this());
-}
-
-Logger::Logger(const std::unique_ptr<AsyncLogThread>& thd)
-    : prebuf_(0),
-      tailbuf_(0),
-      logway_(AsyncLogThread::kLogStdOut),
-      threadid_(pthread_self()),
-      unlogtimes_(0),
-      curbufptr_(&prebuf_) {
-#ifdef DEBUG
-  printf("Logger Push the AsyncLogThread");
-#endif
-  if (!thd.get()) {
-    printf("AsyncLogThread is nullptr\n");
-    return;
-  }
-  this->logway_ = thd->GetLogWay();
-  SyncToFile();
-  curloglevel_ = static_cast<LogLevel>(thd->GetLogLevel());
-  thd->PushLogWorker(shared_from_this());
-}
 
 void Logger::SyncToFile() {
   logway_ = AsyncLogThread::kLogToFile;
@@ -85,6 +67,10 @@ void Logger::AddLogTimes() { unlogtimes_++; }
 
 void Logger::ClearLogTimes() { unlogtimes_ = 0; }
 
+void Logger::SetLogToFile() {
+  logway_ = AsyncLogThread::kLogToFile;
+}
+
 bool Logger::IsLogToDisk() {
   if (unlogtimes_ >= 10) {
     return true;
@@ -96,5 +82,11 @@ void Logger::ChangeBufferPtr() {
   std::lock_guard<std::mutex> lgk(mtx_);
   curbufptr_ = (curbufptr_ == &prebuf_) ? &tailbuf_ : &prebuf_;
 }
+
+void Logger::SetLogWay(AsyncLogThread::LogWay lw) {
+  logway_ = lw;
+}
+
+
 
 }  // namespace fver::base::log

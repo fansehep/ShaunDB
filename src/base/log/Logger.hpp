@@ -28,9 +28,11 @@ const std::string LogLevelNums[] = {
 // default log output function
 // usually will put it to the STD_OUT
 
-class Logger : public NonCopyable,
-               public std::enable_shared_from_this<Logger> {
+struct LoggerImp;
+
+class Logger {
  public:
+  friend struct LoggerImp;
   enum LogLevel : int {
     kInfo,
     kTrace,
@@ -39,9 +41,9 @@ class Logger : public NonCopyable,
     kWarn,
     kExit,
   };
-  Logger(AsyncLogThread* logthread);
-  Logger(const std::unique_ptr<AsyncLogThread>& thrd);
+  Logger(AsyncLogThread* thrd);
   Logger();
+  Logger(uint32_t bufsize);
   ~Logger() = default;
   template <typename... Args>
   void NewLogStateMent(const char* filename, const int line, const LogLevel lev,
@@ -49,6 +51,10 @@ class Logger : public NonCopyable,
     if (lev < curloglevel_) [[unlikely]] {
       return;
     }
+#ifdef DEBUG
+    fmt::print("{} {} curlogway_ : {} curloglevel_: {} \n", __FILE__, __LINE__,
+               logway_, curloglevel_);
+#endif
     time_ = fver::base::TimeStamp::Now();
     // time + loglevel +  filename + line + thread_id + info
     // threadid_ has been cache
@@ -85,6 +91,7 @@ class Logger : public NonCopyable,
   bool IsLogToDisk();
   bool IsChangeBuffer();
   void ChangeBufferPtr();
+  void SetLogWay(AsyncLogThread::LogWay lw);
 
  private:
   // the asynclogginthread will call unlogtimes_ if not ++
@@ -100,6 +107,26 @@ class Logger : public NonCopyable,
   fver::base::log::LogBuffer prebuf_;
   fver::base::log::LogBuffer tailbuf_;
   fver::base::log::LogBuffer* curbufptr_;
+};
+
+struct LoggerImp {
+  Logger* logptr_;
+  LoggerImp() { logptr_ = new Logger(); }
+  LoggerImp(AsyncLogThread* logthread) {
+    logptr_ = new Logger(LogBuffer::kMidBufferSize);
+    if (logthread) {
+#ifdef DEBUG
+      fmt::print("{} {} logger ready to push\n", __FILE__, __LINE__);
+#endif
+      logthread->PushLogWorker(this);
+    } else {
+#ifdef DEBUG
+      fmt::print("{} {} logger set asynclogthread::logstdout\n", __FILE__,
+                 __LINE__);
+#endif
+      logptr_->SetLogWay(AsyncLogThread::kLogStdOut);
+    }
+  }
 };
 
 };  // namespace fver::base::log

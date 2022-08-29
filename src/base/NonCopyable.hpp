@@ -1,6 +1,5 @@
 #ifndef SRC_BASE_NONCOPYABLE_H_
 #define SRC_BASE_NONCOPYABLE_H_
-#include <boost/core/noncopyable.hpp>
 namespace fver {
 namespace base {
 

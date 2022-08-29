@@ -13,6 +13,7 @@
 namespace fver::base::log {
 
 class Logger;
+struct LoggerImp;
 
 class AsyncLogThread : public NonCopyable {
  public:
@@ -26,27 +27,28 @@ class AsyncLogThread : public NonCopyable {
   AsyncLogThread();
   ~AsyncLogThread();
   AsyncLogThread(LogWay logway, const std::string& logpath);
-  void PushLogWorker(const std::shared_ptr<Logger> lger);
+  void PushLogWorker(LoggerImp* lgimp);
   LogWay GetLogWay() { return logway_; }
   void SetLogLevel(int loglv) { loglevel_ = loglv; }
   int GetLogLevel() { return loglevel_; }
   void SetBufSize(uint32_t bufsize) { bufsize_ = bufsize; }
   uint32_t GetBufSize() { return bufsize_; }
   double GetBufHorizontalSize() { return bufhorizontalsize_; }
-
+  void SetLogWay(LogWay lw);
+  size_t GetLoggerSize() {return logworkers_.size();}
+  size_t GetTmpLoggerSize() {return tmpworkers_.size();}
  private:
   void SetLogPath(const std::string& logpath);
-  void SetLogWay(LogWay lw);
   std::mutex mtx_;
   LogWay logway_;
   uint32_t bufsize_;
   double bufhorizontalsize_;
   int loglevel_;
-  std::vector<std::shared_ptr<Logger>> logworkers_;
+  std::vector<LoggerImp*> logworkers_;
   // 当程序创建新的线程时, 此时的thread_local Logger 要被 AsyncLoggingThread 所管理
   // 所以将新创建的 Logger push 到 tmpworkers_ 在 AsyncLoggingThread 遍历的时候
   // 使用很短的锁区间 即可达到线程安全
-  std::vector<std::shared_ptr<Logger>> tmpworkers_;
+  std::vector<LoggerImp*> tmpworkers_;
   std::unique_ptr<std::thread> logthread_;
   LogFile file_;
   bool stop_;

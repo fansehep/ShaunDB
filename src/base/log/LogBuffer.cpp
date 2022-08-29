@@ -9,7 +9,7 @@
 namespace fver::base::log {
 
 LogBuffer::LogBuffer(uint32_t maxsize)
-    : maxsize_(maxsize), bufferptr_(nullptr), cursize_(0), bufhorisize_(0.5) {
+    : maxsize_(maxsize), bufferptr_(nullptr), cursize_(0), bufhorisize_(0.8) {
   if (maxsize == 0) {
     return;
   }
@@ -36,6 +36,7 @@ LogBuffer::LogBuffer()
 LogBuffer::~LogBuffer() {
   if (bufferptr_) {
     delete bufferptr_;
+    bufferptr_ = nullptr;
   }
 }
 
@@ -46,6 +47,9 @@ bool LogBuffer::Clear() {
 }
 
 bool LogBuffer::Push(const std::string& str) {
+  if (maxsize_ == 0) {
+    return false;
+  }
   // 当日志过多时, 丢弃以前的日志.
   if (maxsize_ - cursize_ < str.size()) [[unlikely]] {
     Clear();
@@ -65,6 +69,9 @@ bool LogBuffer::Push(const char* str, uint32_t len) {
 }
 
 bool LogBuffer::Push(const char* str) {
+  if (maxsize_ == 0) {
+    return false;
+  }
   int len = strlen(str);
   if (maxsize_ - cursize_ < static_cast<uint32_t>(len)) [[unlikely]] {
     Clear();

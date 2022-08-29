@@ -9,11 +9,12 @@ class test {
  public:
   test() { printf("test constructor!\n"); }
   ~test() { printf("test distructor!\n"); }
+  void Print(int b) { a = b; }
 
  private:
+  int a;
 };
 
 }  // namespace gvfl::base
-gvfl::base::test a;
-
+static thread_local gvfl::base::test test_t;
 #endif
