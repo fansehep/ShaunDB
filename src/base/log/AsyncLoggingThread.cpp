@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <functional>
+#include <string_view>
 
 #include "Logger.hpp"
 
@@ -22,7 +23,7 @@ AsyncLogThread::AsyncLogThread()
       stop_(true),
       logworkers_(),
       tmpworkers_(),
-      logthread_() {
+      logthread_(nullptr) {
 #ifdef DEBUG
   printf("AsyncLogThread Constructor!\n");
 #endif
@@ -47,7 +48,7 @@ void AsyncLogThread::Init(const std::string& logpath,
   fmt::print("{} {} cur logger nums = {} tmpworkers = {} \n", __FILE__,
              __LINE__, logworkers_.size(), tmpworkers_.size());
 #endif
-  logthread_ = std::make_unique<std::thread>([this]() {
+  logthread_ = new std::thread([this]() {
     while (stop_) {
       // 1. 简单的sleep_for
       // 2. 后续可以改进为 conditionvariable 让AsyncLogThread 阻塞
@@ -70,26 +71,18 @@ void AsyncLogThread::Init(const std::string& logpath,
         // 1. buf 到达了阈值需要刷盘
         // 2. 时间到了 10 * 100 = 1s 必须刷盘
         // 3. asynglogthread_ 需要被析构，此时必须刷所有buf
-        if (thrd->logptr_->IsSync() || thrd->logptr_->IsLogToDisk() || !stop_) {
-          // 这里属于被动必须刷盘
-          // 当前正在写的buf 达到了阈值, 默认是 0.8
-          // 单个 LoggerImp 拥有两个 buf, 达到阈值后, 立即交换buf
-          // 有效减少锁的时间
-          if (thrd->logptr_->IsChangeBuffer() || !stop_) {
-            thrd->logptr_->ChangeBufferPtr();
-          }
-          file_.Write(thrd->logptr_->GetLogBufferPtr()->GetBufferPtr(),
-                      thrd->logptr_->GetLogBufferPtr()->GetCurrentSize());
-#ifdef DEBUG
-          const std::string logtemp(
-              thrd->logptr_->GetLogBufferPtr()->GetBufferPtr(),
-              thrd->logptr_->GetLogBufferPtr()->GetCurrentSize());
-          fmt::print("{} {} buf: {}\n", __FILE__, __LINE__, logtemp);
-#endif
-          thrd->logptr_->GetLogBufferPtr()->Clear();
-          // 超过 10 * 100 = 1s 默认必须刷盘
+        if (thrd->logptr_->IsTimeOut() || thrd->logptr_->IsFillThresold() ||
+            !stop_) {
+          // 1. 改变当前线程正在写的 buf (thread safe)
+          thrd->logptr_->ChangeBufferPtr();
+          // 2. 写入被换下来的 buf
+          file_.Write(thrd->logptr_->GetBufPtr(), thrd->logptr_->GetBufSize());
+          // 3. 清空被换下来的 buf
+          thrd->logptr_->ClearTmpBuf();
+          // 4. 重置单个 logger 超时时间
           thrd->logptr_->ClearLogTimes();
         } else {
+          // 5. 当前没有写入, 超时时间 +1
           thrd->logptr_->AddLogTimes();
         }
       }
@@ -102,7 +95,7 @@ AsyncLogThread::~AsyncLogThread() {
   // if (logthread_->joinable()) {
   //   logthread_->join();
   // }
-  if (logthread_.get()) {
+  if (logthread_) {
     if (logthread_->joinable()) {
 #ifdef DEBUG
       fmt::print("AsyncLogThread destructor!\n");

@@ -3,18 +3,20 @@
 
 #include <stdio.h>
 
+#include <thread>
+
 namespace gvfl::base {
 
 class test {
  public:
   test() { printf("test constructor!\n"); }
   ~test() { printf("test distructor!\n"); }
-  void Print(int b) { a = b; }
+  void Print(int t_b) { a = t_b; }
+  thread_local static int b;
 
  private:
   int a;
 };
 
 }  // namespace gvfl::base
-static thread_local gvfl::base::test test_t;
 #endif

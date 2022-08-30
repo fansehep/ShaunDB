@@ -7,6 +7,7 @@ int main() {
   fmt::print("Logging_test_init! {}\n", 1);
   fmt::print("{} {}\n", glogthread->GetLoggerSize(),
              glogthread->GetTmpLoggerSize());
+  sleep(5);
   LOG_INFO("today i want to learn Rust");
   fmt::print("{} {}\n", glogthread->GetLoggerSize(),
              glogthread->GetTmpLoggerSize());

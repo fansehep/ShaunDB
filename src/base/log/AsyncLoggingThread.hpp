@@ -34,7 +34,7 @@ class AsyncLogThread : public NonCopyable {
   void SetBufSize(uint32_t bufsize) { bufsize_ = bufsize; }
   uint32_t GetBufSize() { return bufsize_; }
   double GetBufHorizontalSize() { return bufhorizontalsize_; }
-  void SetLogWay(LogWay lw);
+  void SetLogWay(LogWay lw) {logway_ = lw;}
   size_t GetLoggerSize() {return logworkers_.size();}
   size_t GetTmpLoggerSize() {return tmpworkers_.size();}
  private:
@@ -49,7 +49,7 @@ class AsyncLogThread : public NonCopyable {
   // 所以将新创建的 Logger push 到 tmpworkers_ 在 AsyncLoggingThread 遍历的时候
   // 使用很短的锁区间 即可达到线程安全
   std::vector<LoggerImp*> tmpworkers_;
-  std::unique_ptr<std::thread> logthread_;
+  std::thread* logthread_;
   LogFile file_;
   bool stop_;
 };

@@ -14,11 +14,10 @@
 #include <ostream>
 #include <string>
 
-#include "../NonCopyable.hpp"
 #include "../TimeStamp.hpp"
 #include "AsyncLoggingThread.hpp"
 #include "LogBuffer.hpp"
-
+#include "ThreadLocalBuffer.hpp"
 namespace fver::base::log {
 
 const std::string LogLevelNums[] = {
@@ -41,7 +40,6 @@ class Logger {
     kWarn,
     kExit,
   };
-  Logger(AsyncLogThread* thrd);
   Logger();
   Logger(uint32_t bufsize);
   ~Logger() = default;
@@ -70,43 +68,35 @@ class Logger {
       }
       return;
     } else {
-      std::lock_guard<std::mutex> lgk(mtx_);
-      curbufptr_->Push(logment_);
-    }
-    if (IsChangeBuffer()) {
-      ChangeBufferPtr();
+#ifdef DEBUG
+      fmt::print("{} {} logment: {}\n", __FILE__, __LINE__, logment_);
+#endif
+      buf_->Push(logment_);
     }
   }
 
   void SetCurrentLogLevel(LogLevel lev);
-  void SetCurrentLogBufferSize(uint32_t bufsize);
-  void SetBufferHorSize(double horsize);
-  void SetLogToFile();
-  void ChangeBuffer();
-  bool IsSync();
-  void SyncToFile();
-  LogBuffer* GetLogBufferPtr();
   void AddLogTimes();
   void ClearLogTimes();
-  bool IsLogToDisk();
-  bool IsChangeBuffer();
   void ChangeBufferPtr();
-  void SetLogWay(AsyncLogThread::LogWay lw);
-
+  bool IsChangeBuffer();
+  int GetUnlogTimes();
+  void SetLogToFile();
+  void SetLogToStdOut();
+  // timeout must log to disk
+  bool IsTimeOut();
+  // >= default 80% must log to disk
+  bool IsFillThresold();
+  char* GetBufPtr() {return buf_->GetBeginPtr();}
+  int GetBufSize() {return buf_->GetSize();}
+  void ClearTmpBuf() {buf_->ClearTmpBuf();}
  private:
-  // the asynclogginthread will call unlogtimes_ if not ++
-  int unlogtimes_;
   pthread_t threadid_;
   AsyncLogThread::LogWay logway_;
   LogLevel curloglevel_;
   std::string logment_;
-  std::mutex mtx_;
-  double bufhorsize_;
   fver::base::TimeStamp time_;
-  // use two buffers provide data condition
-  fver::base::log::LogBuffer prebuf_;
-  fver::base::log::LogBuffer tailbuf_;
-  fver::base::log::LogBuffer* curbufptr_;
+  std::shared_ptr<ThreadLocalBuffer> buf_;
 };
 
 struct LoggerImp {
@@ -124,7 +114,7 @@ struct LoggerImp {
       fmt::print("{} {} logger set asynclogthread::logstdout\n", __FILE__,
                  __LINE__);
 #endif
-      logptr_->SetLogWay(AsyncLogThread::kLogStdOut);
+      logptr_->SetLogToStdOut();
     }
   }
 };
