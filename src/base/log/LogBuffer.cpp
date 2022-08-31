@@ -41,7 +41,7 @@ LogBuffer::~LogBuffer() {
 }
 
 bool LogBuffer::Clear() {
-  std::memset(bufferptr_, 0, maxsize_);
+  std::memset(bufferptr_, 0, cursize_);
   cursize_ = 0;
   return true;
 }
@@ -51,7 +51,7 @@ bool LogBuffer::Push(const std::string& str) {
     return false;
   }
   // 当日志过多时, 丢弃以前的日志.
-  if (maxsize_ - cursize_ < str.size()) [[unlikely]] {
+  if (maxsize_ - cursize_ < static_cast<uint32_t>(str.size())) [[unlikely]] {
     Clear();
   }
   std::memcpy(bufferptr_ + cursize_, str.c_str(), str.size());

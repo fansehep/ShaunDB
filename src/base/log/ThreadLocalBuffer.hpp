@@ -33,6 +33,8 @@ class ThreadLocalBuffer : public NonCopyable {
   char* GetBeginPtr();
   void ClearTmpBuf();
   uint32_t GetSize();
+  char* GetCurBufPtr() {return prebuf_.GetBufferPtr();}
+  int GetCurBufSize() {return prebuf_.GetCurrentSize();}
  private:
   double bufhorsize_;
   std::atomic<int> unlogtimes_;

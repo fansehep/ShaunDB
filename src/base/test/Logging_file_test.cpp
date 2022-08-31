@@ -9,11 +9,6 @@ int main() {
              glogthread->GetTmpLoggerSize());
   sleep(5);
   LOG_INFO("today i want to learn Rust");
-  fmt::print("{} {}\n", glogthread->GetLoggerSize(),
-             glogthread->GetTmpLoggerSize());
-  LOG_WARN("you can't you must learn Golang!");
-  fmt::print("{} {}\n", glogthread->GetLoggerSize(),
-             glogthread->GetTmpLoggerSize());
-  sleep(5);
+  delete glogthread;
   return 0;
 }

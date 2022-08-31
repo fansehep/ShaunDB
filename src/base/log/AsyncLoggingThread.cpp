@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "Logger.hpp"
+#include "ThreadLocalBuffer.hpp"
 
 namespace fver::base::log {
 
@@ -53,7 +54,7 @@ void AsyncLogThread::Init(const std::string& logpath,
       // 1. 简单的sleep_for
       // 2. 后续可以改进为 conditionvariable 让AsyncLogThread 阻塞
       // 3. 当 Logger 需要写日志时 cond = true
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      //  std::this_thread::sleep_for(std::chrono::milliseconds(0));
       // tmpworkers_ 为了其他新创建的线程当有新的 LoggerImp 创建加入时
       // 先加入到 tmpworkers_ 然后在遍历的时候,将他们 push 到 logworkers_
       // 1. 有效减少锁的范围
@@ -66,13 +67,27 @@ void AsyncLogThread::Init(const std::string& logpath,
         logworkers_.insert(logworkers_.end(), tmpworkers_.begin(),
                            tmpworkers_.end());
         tmpworkers_.clear();
+#ifdef DEBUG
+        fmt::print("{} {} swap tmpworkers\n", __FILE__, __LINE__);
+#endif
       }
-      for (auto& thrd : logworkers_) {
+#ifdef DEBUG
+      fmt::print("{} {} cur logger nums = {} tmpworkers = {} \n", __FILE__,
+                 __LINE__, logworkers_.size(), tmpworkers_.size());
+#endif
+      const int N = logworkers_.size();
+      for (int i = 0; i < N; ++i) {
+        auto thrd = logworkers_[i];
         // 1. buf 到达了阈值需要刷盘
         // 2. 时间到了 10 * 100 = 1s 必须刷盘
         // 3. asynglogthread_ 需要被析构，此时必须刷所有buf
         if (thrd->logptr_->IsTimeOut() || thrd->logptr_->IsFillThresold() ||
             !stop_) {
+#ifdef DEBUG
+          fmt::print(
+              "{} {} cur logger nums = {} tmpworkers = {} ready to write\n",
+              __FILE__, __LINE__, logworkers_.size(), tmpworkers_.size());
+#endif
           // 1. 改变当前线程正在写的 buf (thread safe)
           thrd->logptr_->ChangeBufferPtr();
           // 2. 写入被换下来的 buf
@@ -83,6 +98,10 @@ void AsyncLogThread::Init(const std::string& logpath,
           thrd->logptr_->ClearLogTimes();
         } else {
           // 5. 当前没有写入, 超时时间 +1
+#ifdef DEBUG
+          fmt::print("{} {} add logtimes istimeout: {}\n", __FILE__, __LINE__,
+                     thrd->logptr_->IsTimeOut());
+#endif
           thrd->logptr_->AddLogTimes();
         }
       }
@@ -95,6 +114,9 @@ AsyncLogThread::~AsyncLogThread() {
   // if (logthread_->joinable()) {
   //   logthread_->join();
   // }
+#ifdef DEBUG
+  fmt::print("{} {} AsyncLogThread destructor!\n", __FILE__, __LINE__);
+#endif
   if (logthread_) {
     if (logthread_->joinable()) {
 #ifdef DEBUG

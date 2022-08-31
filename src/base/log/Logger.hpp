@@ -13,10 +13,10 @@
 #include <mutex>
 #include <ostream>
 #include <string>
+#include <string_view>
 
 #include "../TimeStamp.hpp"
 #include "AsyncLoggingThread.hpp"
-#include "LogBuffer.hpp"
 #include "ThreadLocalBuffer.hpp"
 namespace fver::base::log {
 
@@ -72,6 +72,13 @@ class Logger {
       fmt::print("{} {} logment: {}\n", __FILE__, __LINE__, logment_);
 #endif
       buf_->Push(logment_);
+#ifdef DEBUG
+      std::string_view ment(GetBufPtr(), GetBufSize());
+      fmt::print("{} {} buf: {} {}\n", __FILE__, __LINE__, GetBufSize(), ment);
+      std::string_view ment2(GetPreBufPtr(), GetPreBufSize());
+      fmt::print("{} {} buf: {} {}\n", __FILE__, __LINE__, GetPreBufSize(),
+                 ment2);
+#endif
     }
   }
 
@@ -87,10 +94,13 @@ class Logger {
   bool IsTimeOut();
   // >= default 80% must log to disk
   bool IsFillThresold();
-  char* GetBufPtr() {return buf_->GetBeginPtr();}
-  int GetBufSize() {return buf_->GetSize();}
-  void ClearTmpBuf() {buf_->ClearTmpBuf();}
+  char* GetBufPtr() { return buf_->GetBeginPtr(); }
+  int GetBufSize() { return buf_->GetSize(); }
+  void ClearTmpBuf() { buf_->ClearTmpBuf(); }
+
  private:
+  char* GetPreBufPtr() { return buf_->GetCurBufPtr(); }
+  int GetPreBufSize() { return buf_->GetCurBufSize(); }
   pthread_t threadid_;
   AsyncLogThread::LogWay logway_;
   LogLevel curloglevel_;
