@@ -7,9 +7,12 @@ namespace fver::net {
 
 class Socket : public fver::base::NonCopyable {
  public:
-  
+  int GetFd() {
+    return fd_;
+  }
+  bool BindAddress();
  private:
-  int fd;
+  int fd_;
 };
 
 }  // namespace fver::net

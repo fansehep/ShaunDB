@@ -2,10 +2,11 @@
 #define SRC_BASE_THREADSAFEQUEUE_H_
 #include <condition_variable>
 #include <memory>
-#include "NonCopyable.hpp"
 #include <mutex>
+
+#include "NonCopyable.hpp"
 namespace fver::base {
-//* 线程安全的队列 用于线程池
+//* 线程安全的队列
 template <typename type>
 class ThreadSafeQueue : public NonCopyable {
  public:

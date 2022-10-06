@@ -10,19 +10,21 @@
 
 #include "NonCopyable.hpp"
 
-namespace fver::base {
+namespace fver {
+namespace base {
 
-class Fthread : public NonCopyable {
+
+class Thread : public NonCopyable {
  public:
-  explicit Fthread(std::function<void()> func) : func_(func), started_(false) {}
-  ~Fthread() = default;
-  void Join() {thread_->join();}
-  void Stop() {thread_->request_stop();}
+  explicit Thread(std::function<void()> func) : func_(func), started_(false) {}
+  ~Thread() = default;
+  void Join() { thread_->join(); }
+  void Stop() { thread_->request_stop(); }
   void Start() {
     started_ = true;
     thread_ = std::make_unique<std::jthread>(func_);
   }
-  bool JoinAble() {return thread_->joinable();}
+  bool JoinAble() { return thread_->joinable(); }
   bool IsStarted() { return started_; }
 
  private:
@@ -31,6 +33,7 @@ class Fthread : public NonCopyable {
   std::function<void()> func_;
 };
 
-}  // namespace fver::base
+}  // namespace base
+}  // namespace fver
 
 #endif

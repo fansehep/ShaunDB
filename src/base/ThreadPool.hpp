@@ -26,7 +26,7 @@ class ThreadPool : public NonCopyable {
   void RunInThread();
   Task Initfunc_;
   bool running_;
-  std::vector<std::unique_ptr<Fthread>> workers_;
+  std::vector<std::unique_ptr<Thread>> workers_;
   ThreadSafeQueue<Task> que_;
 };
 
