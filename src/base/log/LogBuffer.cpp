@@ -1,10 +1,10 @@
-#include "LogBuffer.hpp"
+#include "src/base/log/LogBuffer.hpp"
 
 #include <fmt/format.h>
 
 #include <cstring>
 
-#include "../TimeStamp.hpp"
+#include "src/base/TimeStamp.hpp"
 
 namespace fver::base::log {
 

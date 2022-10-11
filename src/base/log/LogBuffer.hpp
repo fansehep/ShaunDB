@@ -2,7 +2,7 @@
 #define SRC_BASE_LOG_LOGBUFFER_H_
 
 #include <string.h>
-#include "../TimeStamp.hpp"
+#include "src/base/TimeStamp.hpp"
 #include <ostream>
 #include <string>
 

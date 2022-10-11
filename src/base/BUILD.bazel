@@ -1,0 +1,12 @@
+package(default_visibility=["//visibility:public"])
+
+
+cc_library(
+    name="base_lib",
+    srcs=[
+        "NonCopyable.hpp",
+        "TimeStamp.hpp",
+        "TimeStamp.cpp",
+    ],
+    visibility=["//visibility:public"],
+)

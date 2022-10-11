@@ -15,9 +15,9 @@
 #include <string>
 #include <string_view>
 
-#include "../TimeStamp.hpp"
-#include "AsyncLoggingThread.hpp"
-#include "ThreadLocalBuffer.hpp"
+#include "src/base/TimeStamp.hpp"
+#include "src/base/log/AsyncLoggingThread.hpp"
+#include "src/base/log/ThreadLocalBuffer.hpp"
 namespace fver::base::log {
 
 const std::string LogLevelNums[] = {

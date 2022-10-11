@@ -3,11 +3,11 @@
 
 #include <iostream>
 
-#include "AsyncLoggingThread.hpp"
-#include "Logger.hpp"
+#include "src/base/log/AsyncLoggingThread.hpp"
+#include "src/base/log/Logger.hpp"
 
-fver::base::log::AsyncLogThread* glogthread = nullptr;
-thread_local fver::base::log::LoggerImp logger(glogthread);
+extern fver::base::log::AsyncLogThread* glogthread;
+extern thread_local fver::base::log::LoggerImp logger;
 
 namespace fver::base::log {
 
@@ -18,29 +18,29 @@ inline void Init(const std::string& logpath, const Logger::LogLevel lev,
 }
 
 }  // namespace fver::base::log
-#define LOG_INFO(str, ...)                                                   \
+#define LOG_INFO(str, ...)                                                  \
   logger.logptr_->NewLogStateMent(__FILE__, __LINE__,                       \
-                                   fver::base::log::Logger::LogLevel::kInfo, \
-                                   str, ##__VA_ARGS__)
-#define LOG_TRACE(str, ...)                                                   \
+                                  fver::base::log::Logger::LogLevel::kInfo, \
+                                  str, ##__VA_ARGS__)
+#define LOG_TRACE(str, ...)                                                  \
   logger.logptr_->NewLogStateMent(__FILE__, __LINE__,                        \
-                                   fver::base::log::Logger::LogLevel::kTrace, \
-                                   str, ##__VA_ARGS__)
-#define Log_DEBUG(str, ...)                                                   \
+                                  fver::base::log::Logger::LogLevel::kTrace, \
+                                  str, ##__VA_ARGS__)
+#define Log_DEBUG(str, ...)                                                  \
   logger.logptr_->NewLogStateMent(__FILE__, __LINE__,                        \
-                                   fver::base::log::Logger::LogLevel::kDebug, \
-                                   str, ##__VA_ARGS__)
-#define LOG_ERROR(str, ...)                                                   \
+                                  fver::base::log::Logger::LogLevel::kDebug, \
+                                  str, ##__VA_ARGS__)
+#define LOG_ERROR(str, ...)                                                  \
   logger.logptr_->NewLogStateMent(__FILE__, __LINE__,                        \
-                                   fver::base::log::Logger::LogLevel::kError, \
-                                   str, ##__VA_ARGS__)
-#define LOG_WARN(str, ...)                                                   \
+                                  fver::base::log::Logger::LogLevel::kError, \
+                                  str, ##__VA_ARGS__)
+#define LOG_WARN(str, ...)                                                  \
   logger.logptr_->NewLogStateMent(__FILE__, __LINE__,                       \
-                                   fver::base::log::Logger::LogLevel::kWarn, \
-                                   str, ##__VA_ARGS__)
-#define LOG_EXIT(str, ...)                                                   \
+                                  fver::base::log::Logger::LogLevel::kWarn, \
+                                  str, ##__VA_ARGS__)
+#define LOG_EXIT(str, ...)                                                  \
   logger.logptr_->NewLogStateMent(__FILE__, __LINE__,                       \
-                                   fver::base::log::Logger::LogLevel::kExit, \
-                                   str, ##__VA_ARGS__)
+                                  fver::base::log::Logger::LogLevel::kExit, \
+                                  str, ##__VA_ARGS__)
 
 #endif

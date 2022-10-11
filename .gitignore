@@ -1,2 +1,6 @@
 *.log
 *.out
+/external
+/bazel-*
+/compile_commands.json
+/.cache/

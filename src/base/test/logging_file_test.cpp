@@ -1,7 +1,7 @@
-#include "../log/Logging.hpp"
+#include "src/base/log/Logging.hpp"
 
 int main() {
-  fver::base::log::Init("/home/fan/GitHub/UBERS/src/base/test/",
+  fver::base::log::Init("/home/fan/GitHub/fver/src/base/test/",
                         fver::base::log::Logger::LogLevel::kInfo,
                         fver::base::log::LogBuffer::kSmallBufferSize, 0.5);
   fmt::print("Logging_test_init! {}\n", 1);

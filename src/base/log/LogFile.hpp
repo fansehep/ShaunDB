@@ -5,8 +5,8 @@
 #include <sys/file.h>
 #include <unistd.h>
 #include <string>
-#include "../NonCopyable.hpp"
-#include "../TimeStamp.hpp"
+#include "src/base/NonCopyable.hpp"
+#include "src/base/TimeStamp.hpp"
 namespace fver::base::log {
 
 class LogFile : public NonCopyable {

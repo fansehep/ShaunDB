@@ -8,8 +8,8 @@
 #include <string_view>
 #include <atomic>
 
-#include "../NonCopyable.hpp"
-#include "LogBuffer.hpp"
+#include "src/base/NonCopyable.hpp"
+#include "src/base/log/LogBuffer.hpp"
 
 namespace fver::base::log {
 
