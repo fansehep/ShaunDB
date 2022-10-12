@@ -5,7 +5,7 @@ package(default_visibility=["//visibility:public"])
 
 cc_library(
     name="fver_log_lib",
-    hdrs = glob(["*.hpp"]),
+    hdrs=glob(["*.hpp"]),
     srcs=glob([
         "*.cpp",
     ]),
@@ -13,6 +13,30 @@ cc_library(
         "//src/base:base_lib",
     ],
     visibility=["//visibility:public"],
-    copts = FVER_FLAGS,
-    linkopts = ["-lfmt"],
+    copts=FVER_FLAGS,
+    linkopts=["-lfmt"],
+)
+
+cc_library(
+    name="fver_log_file_lib",
+    hdrs=glob(["logfile.hpp", ]),
+    srcs=glob(["logfile.cpp", ]),
+    copts=FVER_FLAGS,
+    deps=[
+        "//src/base:base_lib",
+    ],
+    linkopts=["-lfmt"],
+)
+
+cc_library(
+    name="fver_log_out_std_lib",
+    hdrs=glob(["*.hpp"]),
+    srcs=glob([
+        "*.cpp",
+    ]),
+    deps=[
+        "//src/base:base_lib",
+    ],
+    copts=FVER_FLAGS,
+    linkopts=["-lfmt"],
 )

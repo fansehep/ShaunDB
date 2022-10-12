@@ -15,7 +15,7 @@ FVER_FLAGS = [
     # "-Werror",
     "-DNOMINMAX",
     "-std=c++20",
-    "-g",
+    "-g0",
     "-O0",
 ]
 

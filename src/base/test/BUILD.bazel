@@ -3,13 +3,41 @@ package(default_visibility=["//visibility:public"])
 
 
 cc_test(
-    name="log_file_test",
+    name="logfile_test",
     srcs=glob([
-        "logging_file_test.cpp"]),
+        "logfile_test.cpp"]),
+    deps=[
+        "//src/base/log:fver_log_file_lib",
+        "//src/base:base_lib",
+    ],
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+)
+
+cc_test(
+    name="log_out_test",
+    srcs=glob([
+        "log_out_test.cpp",
+    ]),
+    deps=[
+        "//src/base/log:fver_log_out_std_lib",
+        "//src/base:base_lib",
+    ],
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+    linkopts=["-lfmt"],
+)
+
+cc_test(
+    name="log_to_file_test",
+    srcs=glob([
+        "log_to_file.cpp",
+    ]),
     deps=[
         "//src/base/log:fver_log_lib",
         "//src/base:base_lib",
     ],
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
+    linkopts=["-lfmt"],
 )

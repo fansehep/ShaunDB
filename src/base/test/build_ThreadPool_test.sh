@@ -1,2 +1,0 @@
-#!/bin/bash
-clang++ ThreadPool_test.cpp ../log/LogBuffer.cpp ../log/LogFile.cpp ../log/Logger.cpp ../log/ThreadLocalBuffer.cpp ../log/AsyncLoggingThread.cpp ../ThreadPool.cpp ../TimeStamp.cpp -o threadpool_test -lpthread -lfmt -g -Og -Wall -std=c++20
