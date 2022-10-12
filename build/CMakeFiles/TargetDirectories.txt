@@ -1,2 +1,0 @@
-/home/fan/GitHub/UBERS/build/CMakeFiles/edit_cache.dir
-/home/fan/GitHub/UBERS/build/CMakeFiles/rebuild_cache.dir
