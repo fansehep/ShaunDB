@@ -1,12 +1,10 @@
 package(default_visibility=["//visibility:public"])
 
 
-
 cc_library(
-    name="base_lib",
+    name="util_hash_lib",
     hdrs=glob["*.hpp"],
     srcs=glob["*.cpp"],
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
-    linkopts=["-lpthread"],
 )
