@@ -1,103 +1,207 @@
 #include "src/base/log/logthread.hpp"
 
+#include <pthread.h>
+
+#include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 
 #include "src/base/log/logger.hpp"
-
-#define DEBUG
 
 namespace fver {
 namespace base {
 namespace log {
 
 LogThread::LogThread()
-    : loglev_(Logger::kInfo),
-      isSync_(false),
-      isRunning_(false),
-      isAdd_(false),
-      sleepPerLoopMs_(100),
-      activeLoggern_(0),
-      writePerLoop_(0) {}
+    : loglev_(Logger::kInfo), isSync_(false), isRunning_(false) {
+  cond_ = std::make_shared<std::condition_variable>();
+  sumWrites_ = std::make_shared<std::atomic<uint64_t>>(0);
+}
 
-void LogThread::AddLogger(Logger* log) {
+void LogThread::AddLogger(std::shared_ptr<Logger> log) {
   std::lock_guard<std::mutex> lg(mtx_);
   log->setLogLev(loglev_);
   if (true == isRunning_) {
     log->setLogToFile();
   }
+  log->configInit(cond_, sumWrites_);
   logVectmp_.push_back(log);
+  // 不要阻塞, 快速将新加入的 log 加入到 logVectmp_ 中管理.
+  cond_->notify_one();
 }
 
-void LogThread::Init(const std::string& logpath, const int lev) {
-  file_.SetLogPath(logpath);
+void LogThread::Init(const std::string& logpath, const int lev,
+                     const bool isSync, const std::string& logPrename) {
+  file_.SetLogPath(logpath, logPrename);
   loglev_ = lev;
-  isSync_ = true;
+  isSync_ = isSync;
   isRunning_ = true;
-  for (auto& iter : logVectmp_) {
-    iter->setLogToFile();
-  }
-  syncThread_ = std::thread([&]() {
-    while (isRunning_) {
-      //* 将新加入的Logger加入到 logVectmp 中
-      activeLoggern_ = 0;
-      writePerLoop_ = 0;
-      isAdd_ = false;
-      {
-        std::lock_guard<std::mutex> lg(mtx_);
-        if (logVectmp_.size() > 0) {
-          logworkers_.insert(logworkers_.end(), logVectmp_.begin(),
-                             logVectmp_.end());
-          logVectmp_.clear();
+  // 如果不启用sync
+  if (false == isSync) {
+    syncThread_ = std::thread([&]() {
+      while (isRunning_) {
+        // 将新加入的Logger加入到 logVectmp 中
+        {
+          std::lock_guard<std::mutex> lg(mtx_);
+          if (logVectmp_.size() > 0) {
+            logworkers_.insert(logworkers_.end(), logVectmp_.begin(),
+                               logVectmp_.end());
+            logVectmp_.clear();
+          }
         }
-        isAdd_ = true;
-      }
-      // 如果有新的Logger加入不切换当前线程.
-      // 刷入一次即可
-      if (!isAdd_) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleepPerLoopMs_));
-      }
-      for (auto& log_iter : logworkers_) {
-        auto buf_ptr = log_iter->SwapBuffer();
-        writePerLoop_ += buf_ptr->offset_;
-        file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
-        buf_ptr->offset_ = 0;
-        activeLoggern_++;
-      }
-      // 根据当前每秒刷入到日志的写入量, 决定当前 loop thread sleep
-      // sleepPerLoopMs
-      sleepPerLoopMs_ = static_cast<uint64_t>(
-          1000.0 - ((static_cast<double>(writePerLoop_) /
-                     static_cast<double>(activeLoggern_ * 2048.0)) *
-                    1000.0));
-      file_.Sync();
-#ifdef DEBUG
-      fmt::print("activelog = {} writeperloop = {} sleepPerLoopMs = {}\n",
-                 activeLoggern_, writePerLoop_, sleepPerLoopMs_);
-#endif
-    }
 
-    // need stop to log
-    if (!isRunning_) {
-      for (auto& log_iter : logworkers_) {
-        auto buf_ptr = log_iter->SwapBuffer();
-        file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
-        buf_ptr->offset_ = 0;
+        std::unique_lock<std::mutex> lock(logMutex_);
+        cond_->wait_for(lock, std::chrono::milliseconds(750));
+        const int N = static_cast<int>(logworkers_.size());
+
+        for (int i = 0; i < N; i++) {
+          auto log_iter = logworkers_[i];
+          auto mlock = log_iter->getMutex();
+          mlock->lock();
+          auto buf_ptr = log_iter->SwapBuffer();
+          mlock->unlock();
+          if (buf_ptr->offset_ == 0) {
+            // thread_local 变量被析构, 我们需要将被释放的 Logger 移除
+            // 但释放前必须, 将他的两个buf 刷入到磁盘中
+            if (false == log_iter->isHolderByThread_) {
+              mlock->lock();
+              auto tbuf_ptr = log_iter->SwapBuffer();
+              mlock->unlock();
+
+              if (0 == tbuf_ptr->offset_) {
+                // 偏移量也为 0, 所以直接删除即可
+                // 让他与最后一个交换, 再删除
+                std::swap(logworkers_[i], logworkers_.back());
+                logworkers_.pop_back();
+              } else {
+                file_.WriteStr(tbuf_ptr->bufptr_, tbuf_ptr->offset_);
+                std::swap(logworkers_[i], logworkers_.back());
+                logworkers_.pop_back();
+              }
+            }
+            continue;
+          }
+          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
+          buf_ptr->offset_ = 0;
+        }
       }
 
-      for (auto& log_iter : logworkers_) {
-        auto buf_ptr = log_iter->SwapBuffer();
-        file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
-        buf_ptr->offset_ = 0;
+      //刷新所有的 buf
+      if (!isRunning_) {
+        for (auto& log_iter : logworkers_) {
+          auto mlock = log_iter->getMutex();
+          mlock->lock();
+          auto buf_ptr = log_iter->SwapBuffer();
+          if (buf_ptr->offset_ == 0) {
+            mlock->unlock();
+            continue;
+          }
+          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
+          buf_ptr->offset_ = 0;
+          mlock->unlock();
+        }
+
+        for (auto& log_iter : logworkers_) {
+          auto mlock = log_iter->getMutex();
+          mlock->lock();
+          auto buf_ptr = log_iter->SwapBuffer();
+          if (buf_ptr->offset_ == 0) {
+            mlock->unlock();
+            continue;
+          }
+          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
+          buf_ptr->offset_ = 0;
+          mlock->unlock();
+        }
       }
-    }
-    file_.Sync();
-  });
+    });
+  } else {
+    syncThread_ = std::thread([&]() {
+      while (isRunning_) {
+        // 将新加入的Logger加入到 logVectmp 中
+        {
+          std::lock_guard<std::mutex> lg(mtx_);
+          if (logVectmp_.size() > 0) {
+            logworkers_.insert(logworkers_.end(), logVectmp_.begin(),
+                               logVectmp_.end());
+            logVectmp_.clear();
+          }
+        }
+
+        std::unique_lock<std::mutex> lock(logMutex_);
+        cond_->wait_for(lock, std::chrono::milliseconds(750));
+        const int N = static_cast<int>(logworkers_.size());
+
+        for (int i = 0; i < N; i++) {
+          auto log_iter = logworkers_[i];
+          auto mlock = log_iter->getMutex();
+          mlock->lock();
+          auto buf_ptr = log_iter->SwapBuffer();
+          mlock->unlock();
+          if (buf_ptr->offset_ == 0) {
+            // thread_local 变量被析构, 我们需要将被释放的 Logger 移除
+            // 但释放前必须, 将他的两个buf 刷入到磁盘中
+            if (false == log_iter->isHolderByThread_) {
+              mlock->lock();
+              auto tbuf_ptr = log_iter->SwapBuffer();
+              mlock->unlock();
+
+              if (0 == tbuf_ptr->offset_) {
+                // 偏移量也为 0, 所以直接删除即可
+                // 让他与最后一个交换, 再删除
+                std::swap(logworkers_[i], logworkers_.back());
+                logworkers_.pop_back();
+              } else {
+                file_.WriteStr(tbuf_ptr->bufptr_, tbuf_ptr->offset_);
+                std::swap(logworkers_[i], logworkers_.back());
+                logworkers_.pop_back();
+              }
+            }
+            continue;
+          }
+          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
+          buf_ptr->offset_ = 0;
+        }
+        file_.Sync();
+      }
+
+      //刷新所有的 buf
+      if (!isRunning_) {
+        for (auto& log_iter : logworkers_) {
+          auto mlock = log_iter->getMutex();
+          mlock->lock();
+          auto buf_ptr = log_iter->SwapBuffer();
+          if (buf_ptr->offset_ == 0) {
+            mlock->unlock();
+            continue;
+          }
+          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
+          buf_ptr->offset_ = 0;
+          mlock->unlock();
+        }
+
+        for (auto& log_iter : logworkers_) {
+          auto mlock = log_iter->getMutex();
+          mlock->lock();
+          auto buf_ptr = log_iter->SwapBuffer();
+          if (buf_ptr->offset_ == 0) {
+            mlock->unlock();
+            continue;
+          }
+          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
+          buf_ptr->offset_ = 0;
+          mlock->unlock();
+        }
+      }
+    });
+  }
 }
 
 void LogThread::Stop() {
   isRunning_ = false;
+  cond_->notify_one();
   syncThread_.join();
 }
 

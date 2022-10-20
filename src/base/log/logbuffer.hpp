@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <condition_variable>
+#include <cstring>
 #include <memory>
 #include <mutex>
 #include <ostream>
@@ -24,7 +25,9 @@ struct Buffer {
   uint32_t buflen_;
   Buffer() : bufptr_(nullptr), offset_(0), buflen_(0) {}
   Buffer(uint32_t len)
-      : bufptr_(new (std::nothrow) char[len]), offset_(0), buflen_(len) {}
+      : bufptr_(new (std::nothrow) char[len]), offset_(0), buflen_(len) {
+    std::memset(bufptr_, 0, len);
+  }
   ~Buffer() {
     if (nullptr != bufptr_) {
       delete[] bufptr_;
@@ -41,7 +44,7 @@ class LogBuffer {
   ~LogBuffer() = default;
   bool Push(const std::string& logment);
   Buffer* SwapBuffer();
-
+  std::mutex* getMutex();
   void ClearOffset(Buffer* buf);
 
  private:

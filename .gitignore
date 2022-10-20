@@ -5,3 +5,5 @@
 /compile_commands.json
 /.cache/
 .gdb_history
+*.INFO
+logbenchmark2022*

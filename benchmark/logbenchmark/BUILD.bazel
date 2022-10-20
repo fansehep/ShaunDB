@@ -1,0 +1,20 @@
+load("//:copts.bzl", "FVER_FLAGS")
+package(default_visibility=["//visibility:public"])
+
+
+cc_test(
+  name="flog_vs_glog_benchmark",
+  srcs=glob([
+    "fverlog_glog_benchmark.cpp",
+  ]),
+  deps=[
+    "//src/base:base_lib",
+    "//src/base/log:fver_log_lib",
+  ],
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  linkopts=["-lgtest",
+            "-lbenchmark",
+            "-lglog",
+            "-lpthread",],
+)

@@ -14,7 +14,8 @@ cc_library(
     ],
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
-    linkopts=["-lfmt"],
+    linkopts=["-lfmt",
+              "-lpthread",],
 )
 
 cc_library(

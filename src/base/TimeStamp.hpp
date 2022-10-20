@@ -14,12 +14,16 @@ class TimeStamp {
  public:
   constexpr TimeStamp() : sinceepoch_(0) {}
   ~TimeStamp() = default;
+  TimeStamp(const uint64_t time_sec, const uint64_t time_usec)
+      : time_sec_(time_sec), time_usec_(time_usec) {}
   TimeStamp(std::time_t newtime) : sinceepoch_(newtime) {}
   TimeStamp(const TimeStamp& lef) : sinceepoch_(lef.sinceepoch_) {}
   // return 2022-08-26
   std::string ToFormatToday();
   // return 2022-08-26 17:10 45.505045
   std::string ToFormatTodayNowMs();
+  std::string ToFormatTodayNowUs();
+  std::string ToFormatLogName();
   static TimeStamp Now();
 
  private:
@@ -29,6 +33,8 @@ class TimeStamp {
   static constexpr uint64_t kMicroSecondsPerSecond = 1000ull * 1000;
 
   std::time_t sinceepoch_;
+  uint64_t time_sec_;
+  uint64_t time_usec_;
 };
 
 }  // namespace base

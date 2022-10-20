@@ -19,6 +19,7 @@ namespace log {
 class LogFile : public NonCopyable {
  public:
   LogFile(const std::string& path);
+  LogFile(const std::string& path, const std::string& logPrename);
   LogFile();
   ~LogFile();
   /**
@@ -28,6 +29,7 @@ class LogFile : public NonCopyable {
    */
   bool SetLogPath(const std::string& path);
   
+  bool SetLogPath(const std::string& path, const std::string& logPrename);
   void Write(const std::string& str);
   void WriteStr(const char* str, const int size);
   /**

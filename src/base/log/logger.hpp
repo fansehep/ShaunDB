@@ -23,13 +23,18 @@ namespace base {
 namespace log {
 
 class LogThread;
+struct LogImp;
 
 const std::string kLogLevelNums[] = {
-    "INFO", "TRACE", "DEBUG", "ERROR", "WARN", "EXIT",
+    "I", "T", "D", "E", "W", "E",
 };
+
+constexpr static uint64_t kLogThreshold = 2097152 / 200;
 
 class Logger {
  public:
+  friend LogImp;
+  friend LogThread;
   enum LogLevel {
     kInfo,
     kTrace,
@@ -37,38 +42,74 @@ class Logger {
     kError,
     kWarn,
     kExit,
+    KDEBUG_INFO,
+    kDEBUG_TRACE,
+    kDEBUG_DEBUG,
+    kDEBUG_ERROR,
   };
   Logger();
-  Logger(LogThread* logthread, uint32_t bufsize = 2048);
   Logger(uint32_t bufSize);
-  ~Logger() = default;
+  ~Logger();
   void ClearSum() { sumWrites_ = 0; }
   template <typename... Args>
-  void LogMent(const char* filename, const int line, const LogLevel lev,
-               const std::string format_str, Args&&... args) {
+  constexpr void LogMent(const char* filename, const int line,
+                         const LogLevel lev, const std::string format_str,
+                         Args&&... args) {
     if (lev < curLogLevel_) {
       return;
-    }
-    timeNow_ = TimeStamp::Now();
+    } else if (lev > kExit) {
+// DEBUG 模式, 预编译选择性打印日志
+#ifdef DEBUG
+  timeNow_ = TimeStamp::Now();
     logstr_ = fmt::format(
-        "{} {} {}:{}: {}\n", timeNow_.ToFormatTodayNowMs(), kLogLevelNums[lev],
+        "{}{} {}:{}: {}\n", kLogLevelNums[lev], timeNow_.ToFormatTodayNowMs(),
         filename, line,
         fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
     if (!isSync_) {
       fmt::print("{}", logstr_);
     } else {
-      fmt::print("sumwrites = {}", sumWrites_);
-      sumWrites_ += logstr_.size();
+      if (sumWrites_->load() >= kLogThreshold) {
+#ifdef FVER_LOG_DEBUG
+        fmt::print("logger notify to the thread");
+#endif
+        cond_->notify_one();
+        sumWrites_ = 0;
+      }
+#ifdef FVER_LOG_DEBUG
+      fmt::print("sumwrites = {}", sumWrites_->load());
+#endif
+      // 忽略返回值
+      buf_.Push(logstr_);
+    }
+#endif
+      return;
+    }
+    timeNow_ = TimeStamp::Now();
+    logstr_ = fmt::format(
+        "{}{} {}:{}] {}\n", kLogLevelNums[lev], timeNow_.ToFormatTodayNowUs(),
+        filename, line,
+        fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
+    if (!isSync_) {
+      fmt::print("{}", logstr_);
+    } else {
+      if (sumWrites_->load() >= kLogThreshold) {
+#ifdef FVER_LOG_DEBUG
+        fmt::print("logger notify to the thread");
+#endif
+        cond_->notify_one();
+        sumWrites_ = 0;
+      }
+#ifdef FVER_LOG_DEBUG
+      fmt::print("sumwrites = {}", sumWrites_->load());
+#endif
+      // 忽略返回值
       buf_.Push(logstr_);
     }
   }
 
   LogBuffer* getBufferPtr() { return &buf_; }
 
-  Buffer* SwapBuffer() {
-    sumWrites_ = 0;
-    return buf_.SwapBuffer();
-  }
+  Buffer* SwapBuffer() { return buf_.SwapBuffer(); }
 
   void setLogLev(int lev) { curLogLevel_ = static_cast<LogLevel>(lev); }
 
@@ -77,17 +118,34 @@ class Logger {
     isSync_ = true;
   }
 
-  uint32_t getSum() { return sumWrites_; }
-
   void ClearOffset(Buffer* buf) { buf_.ClearOffset(buf); }
+
+  void configInit(std::shared_ptr<std::condition_variable> cond,
+                  std::shared_ptr<std::atomic<uint64_t>> sumWrite) {
+    cond_ = cond;
+    sumWrites_ = sumWrite;
+  }
+
+  std::mutex* getMutex() { return buf_.getMutex(); }
 
  private:
   bool isSync_;
-  std::atomic<uint32_t> sumWrites_;
+  //
+  std::shared_ptr<std::condition_variable> cond_;
+  std::shared_ptr<std::atomic<uint64_t>> sumWrites_;
   std::string logstr_;
   TimeStamp timeNow_;
   LogLevel curLogLevel_;
   LogBuffer buf_;
+  // 当 thread_local 变量被析构时, std::shared_ptr<Logger> 的
+  // 引用计数会 -1, 当前的Logger
+  bool isHolderByThread_;
+};
+
+struct LogImp {
+  std::shared_ptr<Logger> log;
+  LogImp(LogThread* thread);
+  ~LogImp();
 };
 
 }  // namespace log

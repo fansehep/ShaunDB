@@ -5,7 +5,7 @@
 
 fver::base::log::LogThread logthread;
 
-thread_local fver::base::log::Logger logger(&logthread);
+thread_local fver::base::log::LogImp logimp(&logthread);
 
 namespace fver {
 
@@ -13,8 +13,9 @@ namespace base {
 
 namespace log {
 
-void Init(const std::string logpath, const int lev) {
-  logthread.Init(logpath, lev);
+void Init(const std::string& logpath, const int lev, const bool isSync,
+          const std::string& logPrename) {
+  logthread.Init(logpath, lev, isSync, logPrename);
 }
 
 }  // namespace log

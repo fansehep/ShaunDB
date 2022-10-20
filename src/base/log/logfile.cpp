@@ -17,6 +17,9 @@ LogFile::~LogFile() {
   if (fileptr_ != nullptr) {
     Sync();
     std::fclose(fileptr_);
+#ifdef FVER_LOG_DEBUG
+    fmt::print("log file {} {} close\n", curLogPath_, curLogName_);
+#endif
   }
   fileptr_ = nullptr;
 }
@@ -26,10 +29,30 @@ LogFile::LogFile(const std::string& path) : fileptr_(nullptr) {
   assert(path.back() != '/');
   curLogName_ = fmt::format("{}/{}.log", path, nowTime_.ToFormatToday());
   fileptr_ = std::fopen(curLogName_.c_str(), "wbx");
+#ifdef FVER_LOG_DEBUG
   if (nullptr == fileptr_) {
     fmt::print("{} {} {} logfile init: {} has current log.\n",
                nowTime_.ToFormatTodayNowMs(), __FILE__, __LINE__, path);
   }
+#endif
+  fileptr_ = std::fopen(curLogName_.c_str(), "w+");
+  assert(fileptr_ != nullptr);
+  // init
+  curLogPath_ = path;
+}
+
+LogFile::LogFile(const std::string& path, const std::string& logPrename) {
+  nowTime_ = TimeStamp::Now();
+  assert(path.back() != '/');
+  curLogName_ = fmt::format("{}/{}-{}-{}.log", path, logPrename, rand(),
+                            nowTime_.ToFormatToday());
+  fileptr_ = std::fopen(curLogName_.c_str(), "wbx");
+#ifdef FVER_LOG_DEBUG
+  if (nullptr == fileptr_) {
+    fmt::print("{} {} {} logfile init: {} has current log.\n",
+               nowTime_.ToFormatTodayNowMs(), __FILE__, __LINE__, path);
+  }
+#endif
   fileptr_ = std::fopen(curLogName_.c_str(), "w+");
   assert(fileptr_ != nullptr);
   // init
@@ -41,10 +64,35 @@ bool LogFile::SetLogPath(const std::string& path) {
   assert(path.back() != '/');
   curLogName_ = fmt::format("{}/{}.log", path, nowTime_.ToFormatToday());
   fileptr_ = std::fopen(curLogName_.c_str(), "wbx");
+#ifdef FVER_LOG_DEBUG
   if (nullptr == fileptr_) {
     fmt::print("{} {} {} logfile init: {} has current log.",
                nowTime_.ToFormatTodayNowMs(), __FILE__, __LINE__, path);
   }
+#endif
+  fileptr_ = std::fopen(curLogName_.c_str(), "w+");
+  assert(fileptr_ != nullptr);
+  // init
+  if (fileptr_ == nullptr) {
+    return false;
+  }
+  curLogPath_ = path;
+  return true;
+}
+
+bool LogFile::SetLogPath(const std::string& path,
+                         const std::string& logPrename) {
+  nowTime_ = TimeStamp::Now();
+  assert(path.back() != '/');
+  curLogName_ =
+      fmt::format("{}/{}-{}.log", path, logPrename, nowTime_.ToFormatLogName());
+  fileptr_ = std::fopen(curLogName_.c_str(), "wbx");
+#ifdef FVER_LOG_DEBUG
+  if (nullptr == fileptr_) {
+    fmt::print("{} {} {} logfile init: {} has current log.",
+               nowTime_.ToFormatTodayNowMs(), __FILE__, __LINE__, path);
+  }
+#endif
   fileptr_ = std::fopen(curLogName_.c_str(), "w+");
   assert(fileptr_ != nullptr);
   // init
@@ -58,7 +106,7 @@ bool LogFile::SetLogPath(const std::string& path) {
 void LogFile::Write(const std::string& logment) {
   assert(fileptr_ != nullptr);
   auto write_size =
-      std::fwrite(logment.data(), sizeof(logment[0]), logment.size(), fileptr_);
+      std::fwrite(logment.data(), sizeof(char), logment.size(), fileptr_);
   assert(write_size == logment.size());
 }
 
