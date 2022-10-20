@@ -12,7 +12,7 @@
 #include <memory>
 #include <string>
 
-#include "src/base/TimeStamp.hpp"
+#include "src/base/timestamp.hpp"
 #include "src/base/log/logbuffer.hpp"
 
 using ::fver::base::TimeStamp;
@@ -91,6 +91,10 @@ class Logger {
         fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
     if (!isSync_) {
       fmt::print("{}", logstr_);
+      // 发生错误, 将堆栈信息打印出来
+      if (lev == kExit) [[unlikely]] {
+
+      }
     } else {
       if (sumWrites_->load() >= kLogThreshold) {
 #ifdef FVER_LOG_DEBUG
@@ -104,6 +108,10 @@ class Logger {
 #endif
       // 忽略返回值
       buf_.Push(logstr_);
+      // 将发生堆栈信息写入到日志文件中.
+      if (lev == kExit) [[unlikely]] {
+
+      }
     }
   }
 

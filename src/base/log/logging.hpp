@@ -30,6 +30,7 @@ void Init(const std::string& logpath, const int lev, const bool isSync,
 }  // namespace base
 }  // namespace fver
 
+
 #define LOG_INFO(str, ...)                                           \
   logimp.log->LogMent(__FILE_NAME__, __LINE__,                       \
                       fver::base::log::Logger::LogLevel::kInfo, str, \
@@ -38,7 +39,7 @@ void Init(const std::string& logpath, const int lev, const bool isSync,
   logimp.log->LogMent(__FILE_NAME__, __LINE__,                        \
                       fver::base::log::Logger::LogLevel::kTrace, str, \
                       ##__VA_ARGS__)
-#define Log_DEBUG(str, ...)                                           \
+#define LOG_DEBUG(str, ...)                                           \
   logimp.log->LogMent(__FILE_NAME__, __LINE__,                        \
                       fver::base::log::Logger::LogLevel::kDebug, str, \
                       ##__VA_ARGS__)
@@ -54,6 +55,8 @@ void Init(const std::string& logpath, const int lev, const bool isSync,
   logimp.log->LogMent(__FILE_NAME__, __LINE__,                       \
                       fver::base::log::Logger::LogLevel::kExit, str, \
                       ##__VA_ARGS__)
+
+// DLOG_* 只在 编译启用 -DDEBUG 才会有输出
 
 #define DLOG_INFO(str, ...)                                                \
   logimp.log->LogMent(__FILE_NAME__, __LINE__,                             \

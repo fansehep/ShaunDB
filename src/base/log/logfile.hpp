@@ -6,8 +6,8 @@
 
 #include <string>
 
-#include "src/base/NonCopyable.hpp"
-#include "src/base/TimeStamp.hpp"
+#include "src/base/noncopyable.hpp"
+#include "src/base/timestamp.hpp"
 
 using ::fver::base::NonCopyable;
 using ::fver::base::TimeStamp;

@@ -1,5 +1,4 @@
-#include "TimeStamp.hpp"
-
+#include "src/base/timestamp.hpp"
 #include <fmt/format.h>
 
 namespace fver {
@@ -40,7 +39,7 @@ std::string TimeStamp::ToFormatTodayNowUs() {
   return fmt::format(
       "{}{:0>2}{:0>2} {}:{:0>2}:{:0>2}.{} {}", tm_time.tm_year + 1900,
       tm_time.tm_mon + 1, tm_time.tm_mday, tm_time.tm_hour + 8, tm_time.tm_min,
-      tm_time.tm_sec, microseconds, (time_sec_ * kMillSec + time_usec_) % 10000);
+      tm_time.tm_sec, microseconds, (time_sec_ * kMillSec + time_usec_) % 100000);
 }
 
 std::string TimeStamp::ToFormatLogName() {

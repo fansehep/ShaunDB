@@ -4,7 +4,7 @@
 #include <memory>
 #include <mutex>
 
-#include "NonCopyable.hpp"
+#include "src/base/noncopyable.hpp"
 namespace fver::base {
 //* 线程安全的队列
 template <typename type>

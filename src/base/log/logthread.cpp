@@ -1,5 +1,6 @@
 #include "src/base/log/logthread.hpp"
 
+#include <asm-generic/errno-base.h>
 #include <pthread.h>
 
 #include <atomic>
@@ -7,17 +8,46 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <sys/signal.h>
 
 #include "src/base/log/logger.hpp"
+#include "src/base/log/logging.hpp"
+#include "src/base/backtrace.hpp"
 
 namespace fver {
 namespace base {
 namespace log {
 
+void SignalExecute(int signal) {
+  switch(signal) {
+    case SIGINT: {
+      std::string error_log;
+      backtrace(&error_log);
+      LOG_EXIT("SIGNAL: {}", error_log);
+#ifdef FVER_LOG_DEBUG
+      fmt::print("SIGNAL: \n");
+#endif
+      exit(-1);
+      break;
+    }
+    case SIGQUIT: {
+      std::string error_log;
+      backtrace(&error_log);
+      LOG_EXIT("SIGQUIT: {}", error_log);
+      exit(-1);
+      break;
+    }
+  }
+}
+
 LogThread::LogThread()
     : loglev_(Logger::kInfo), isSync_(false), isRunning_(false) {
   cond_ = std::make_shared<std::condition_variable>();
   sumWrites_ = std::make_shared<std::atomic<uint64_t>>(0);
+
+  // 信号注册
+  signal(SIGINT, SignalExecute);
+  signal(SIGQUIT, SignalExecute);
 }
 
 void LogThread::AddLogger(std::shared_ptr<Logger> log) {

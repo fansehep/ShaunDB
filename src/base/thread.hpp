@@ -8,7 +8,7 @@
 #include <string>
 #include <thread>
 
-#include "NonCopyable.hpp"
+#include "src/base/noncopyable.hpp"
 
 namespace fver {
 namespace base {

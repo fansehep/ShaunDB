@@ -5,9 +5,9 @@
 #include <queue>
 #include <vector>
 
-#include "NonCopyable.hpp"
-#include "Thread.hpp"
-#include "ThreadSafeQueue.hpp"
+#include "src/base/noncopyable.hpp"
+#include "src/base/thread.hpp"
+#include "src/base/threadsafequeue.hpp"
 
 namespace fver::base {
 

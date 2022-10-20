@@ -41,3 +41,16 @@ cc_test(
     copts=FVER_FLAGS,
     linkopts=["-lfmt"],
 )
+
+cc_test(
+    name="signal_test",
+    srcs=glob([
+        "signal_test.cpp",
+    ]),
+    deps=[
+        "//src/base:base_lib",
+    ],
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+    linkopts=["-lfmt"],
+)
