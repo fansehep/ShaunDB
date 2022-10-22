@@ -19,8 +19,8 @@
 // 使用 4 个线程并发写入文件, 不启用 sync 模式
 // 且启用最低 INFO 日志等级
 // 3 个随机数, 1个随机数的 to_string
-// 测试对比 15s 内谁写入的日志数量最多
-// 10285
+// 测试对比 10s 内谁写入的日志数量最多
+// 本机测试 一般fverlog 的相同时间写入量是 glog 的 1.8 倍
 static void TEST_FLOG_TO_FILE_NOSYNC(benchmark::State& state) {
   fver::base::log::Init("/home/fan/GitHub/fver/benchmark/logbenchmark",
                         kLogLevel::kInfo, false, "test");

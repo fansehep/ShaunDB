@@ -2,40 +2,33 @@
 
 #include <asm-generic/errno-base.h>
 #include <pthread.h>
+#include <sys/signal.h>
 
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
-#include <sys/signal.h>
 
+#include "src/base/backtrace.hpp"
 #include "src/base/log/logger.hpp"
 #include "src/base/log/logging.hpp"
-#include "src/base/backtrace.hpp"
 
 namespace fver {
 namespace base {
 namespace log {
 
 void SignalExecute(int signal) {
-  switch(signal) {
+  switch (signal) {
     case SIGINT: {
-      std::string error_log;
-      backtrace(&error_log);
-      LOG_EXIT("SIGNAL: {}", error_log);
-#ifdef FVER_LOG_DEBUG
-      fmt::print("SIGNAL: \n");
-#endif
+      auto error_log = fver::base::stackTrace(true);
+      fmt::print("SIGINT:{}\n", error_log);
       exit(-1);
-      break;
     }
     case SIGQUIT: {
-      std::string error_log;
-      backtrace(&error_log);
-      LOG_EXIT("SIGQUIT: {}", error_log);
+      auto error_log = fver::base::stackTrace(true);
+      LOG_ERROR("SIGQUIT:{}\n", error_log);
       exit(-1);
-      break;
     }
   }
 }

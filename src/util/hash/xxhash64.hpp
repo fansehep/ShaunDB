@@ -10,9 +10,6 @@
 #include <string>
 #include <string_view>
 
-#include "city_hash.h"
-#include "farmhash.h"
-
 class XXHash64 {
  public:
   /// create new XXHash (64 bit)

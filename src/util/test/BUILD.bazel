@@ -1,0 +1,20 @@
+package(default_visibility=["//visibility:public"])
+
+load("//:copts.bzl", "FVER_FLAGS")
+
+
+cc_test(
+  name="bloomfilter_test",
+  srcs=glob(["bloomfilter_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/util:fver_util_lib",
+  ],
+  linkopts=[
+    "-lpthread",
+    "-lgtest",
+    "-luuid",
+    "-lgtest_main",
+  ],
+)

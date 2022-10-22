@@ -9,10 +9,5 @@ cc_library(
     srcs=glob(["*.cpp"]),
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
-    linkopts=["-lpthread",
-              "-lunwind",
-              "-lunwind-setjmp",
-              "-lunwind-x86_64",
-              "-lunwind-coredump",
-              "-lunwind-ptrace",],
+    linkopts=["-lpthread",],
 )

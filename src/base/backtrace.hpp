@@ -2,7 +2,7 @@
 #define SRC_BASE_BACKTRACE_H_
 
 #include <cxxabi.h>
-#include <libunwind.h>
+#include <execinfo.h>
 
 #include <string>
 
@@ -10,39 +10,54 @@ namespace fver {
 
 namespace base {
 
-void backtrace(std::string* error_log);
+static std::string stackTrace(bool demangle) {
+  std::string stack;
+  const int max_frames = 200;
+  void* frame[max_frames];
+  int nptrs = ::backtrace(frame, max_frames);
+  char** strings = ::backtrace_symbols(frame, nptrs);
+  if (strings) {
+    size_t len = 256;
+    char* demangled = demangle ? static_cast<char*>(::malloc(len)) : nullptr;
+    for (int i = 1; i < nptrs;
+         ++i)  // skipping the 0-th, which is this function
+    {
+      if (demangle) {
+        // https://panthema.net/2008/0901-stacktrace-demangled/
+        // bin/exception_test(_ZN3Bar4testEv+0x79) [0x401909]
+        char* left_par = nullptr;
+        char* plus = nullptr;
+        for (char* p = strings[i]; *p; ++p) {
+          if (*p == '(')
+            left_par = p;
+          else if (*p == '+')
+            plus = p;
+        }
 
-static thread_local bool g_tl_entered = false;
-
-static int GetStackTrace(void** result, int max_depth, int skip_count) {
-  void* ip;
-  int n = 0;
-  unw_cursor_t cursor;
-  unw_context_t uc;
-
-  if (g_tl_entered) {
-    return 0;
-  }
-  g_tl_entered = true;
-
-  unw_getcontext(&uc);
-  unw_init_local(&cursor, &uc);
-  skip_count++;  // Do not include the "GetStackTrace" frame
-
-  while (n < max_depth) {
-    int ret = unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)&ip);
-    if (ret < 0) break;
-    if (skip_count > 0) {
-      skip_count--;
-    } else {
-      result[n++] = ip;
+        if (left_par && plus) {
+          *plus = '\0';
+          int status = 0;
+          char* ret =
+              abi::__cxa_demangle(left_par + 1, demangled, &len, &status);
+          *plus = '+';
+          if (status == 0) {
+            demangled = ret;  // ret could be realloc()
+            stack.append(strings[i], left_par + 1);
+            stack.append(demangled);
+            stack.append(plus);
+            stack.push_back('\n');
+            continue;
+          }
+        }
+      }
+      // Fallback to mangled names
+      stack.append(strings[i]);
+      stack.push_back('\n');
     }
-    ret = unw_step(&cursor);
-    if (ret <= 0) break;
+    free(demangled);
+    free(strings);
   }
-
-  g_tl_entered = false;
-  return n;
+  return stack;
 }
 
 }  // namespace base
