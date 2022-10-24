@@ -1,0 +1,15 @@
+package(default_visibility=["//visibility:public"])
+
+load("//:copts.bzl", "FVER_FLAGS")
+
+
+cc_test(
+  name = "echo_server_test",
+  srcs = glob(["echo_server_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps = [
+    "//src/net:fver_net_lib",
+    "//src/base/log:fver_log_lib",
+  ],
+)

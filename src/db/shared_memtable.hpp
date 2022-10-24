@@ -25,7 +25,7 @@ class SharedMemtable : public NonCopyable {
   SharedMemtable(int N = kDefaultSharedMemtableSize);
   void Put(std::shared_ptr<PutContext> put_context);
   void Get(std::shared_ptr<GetContext> get_context);
-
+  void Delete(std::shared_ptr<DeleteContext> del_context);
  private:
   uint64_t seed_;
   int memtableN_;

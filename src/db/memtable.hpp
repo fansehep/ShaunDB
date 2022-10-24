@@ -16,6 +16,7 @@ public:
   ~Memtable() = default;
   void Put(std::shared_ptr<PutContext> put_context);
   void Get(std::shared_ptr<GetContext> get_context);
+  void Delete(std::shared_ptr<DeleteContext> del_context);
 private:
   std::map<std::string, std::string> memMap_;
   util::BloomFilter<> bloomFilter_;

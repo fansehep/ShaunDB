@@ -24,6 +24,7 @@ class ThreadSafeQueue : public NonCopyable {
     }
     cv_.notify_one();
   }
+
   std::shared_ptr<type> WaitAndPop() {
     std::unique_ptr<Node> Old_head = WaitPopHead();
     return Old_head->val_;

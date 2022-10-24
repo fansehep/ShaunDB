@@ -29,10 +29,24 @@ void SharedMemtable::Get(std::shared_ptr<GetContext> get_context) {
       memtableN_;
   vec_memtable_[index].Get(get_context);
   if (get_context->code.getCode() == kOk) {
-    LOG_INFO("get memtable: {} key: {} value: {} ok", index, get_context->key, get_context->value);
+    LOG_INFO("get memtable: {} key: {} value: {} ok", index, get_context->key,
+             get_context->value);
   } else {
-    LOG_WARN("get memtable: {} key: {} vlaue: {}", index, get_context->key,
+    LOG_WARN("get memtable: {} key: {} error: {}", index, get_context->key,
              get_context->code.getCodeStr());
+  }
+}
+
+void SharedMemtable::Delete(std::shared_ptr<DeleteContext> del_context) {
+  auto index =
+      XXHash64::hash(del_context->key.data(), del_context->key.size(), seed_) %
+      memtableN_;
+  vec_memtable_[index].Delete(del_context);
+  if (del_context->code.getCode() == kOk) {
+    LOG_INFO("del memtable: {} key: {} ok", index, del_context->key);
+  } else {
+    LOG_WARN("del memtable: {} key: {} fail {}", index, del_context->key,
+             del_context->code.getCodeStr());
   }
 }
 

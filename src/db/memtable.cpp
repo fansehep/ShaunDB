@@ -27,6 +27,17 @@ void Memtable::Get(std::shared_ptr<GetContext> get_context) {
   return;
 }
 
+void Memtable::Delete(std::shared_ptr<DeleteContext> del_context) {
+  if (false == bloomFilter_.IsMatch(del_context->key)) {
+    del_context->code.setCode(kNotFound);
+    return;
+  }
+  auto iter = memMap_.find(std::string(del_context->key));
+  if (iter == memMap_.end()) {
+    del_context->code.setCode(kNotFound);
+  }
+  return;
+}
 
 }
 

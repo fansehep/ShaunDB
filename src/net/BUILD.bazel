@@ -1,0 +1,18 @@
+package(default_visibility=["//visibility:public"])
+
+load("//:copts.bzl", "FVER_FLAGS")
+
+cc_library(
+    name="fver_net_lib",
+    hdrs=glob(["*.hpp"]),
+    srcs=glob(["*.cpp"]),
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+    linkopts=[
+      "-lpthread",
+      "-levent",
+    ],
+    deps=[
+      "//src/base/log:fver_log_lib",
+    ],
+)
