@@ -44,6 +44,7 @@ class EchoServer {
     return 1;
   }
 
+  //TODO, if the data has be read ok, should return -1;
   int readHd(char* buf, size_t size, Connection* conn) {
     assert(buf_.buflen_ > 0);
     std::string_view message(buf, size);

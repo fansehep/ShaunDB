@@ -31,6 +31,7 @@ static constexpr uint32_t kMaxConnectionN = 1000;
 class NetServer : public base::NonCopyable {
  public:
   friend Connection;
+  friend ConnImp;
   NetServer() : eventBase_(nullptr), listener_(nullptr) {}
   ~NetServer() = default;
   bool Init(const uint32_t port, writeHandle wh, closeHandle ch,
@@ -105,6 +106,7 @@ class NetServer : public base::NonCopyable {
       }
       case _EVENT_LOG_ERR: {
         LOG_ERROR("{}", msg);
+        break;
       }
       default: {
         LOG_WARN("{}", msg);

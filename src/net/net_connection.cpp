@@ -19,9 +19,10 @@ namespace net {
 
 void ConnectionReadCallback(struct bufferevent* buf, void* data) {
   auto conn = static_cast<Connection*>(data);
+  struct evbuffer* bev = bufferevent_get_input(buf);
   int len = 0;
   for (;;) {
-    len = bufferevent_read(buf, conn->readBuf_.bufptr_ + conn->readBuf_.offset_,
+    len = evbuffer_remove(bev, conn->readBuf_.bufptr_ + conn->readBuf_.offset_,
                            conn->readBuf_.buflen_);
     if (len <= 0) {
       break;
@@ -36,7 +37,7 @@ void ConnectionReadCallback(struct bufferevent* buf, void* data) {
         conn->readHandle_(conn->readBuf_.bufptr_, conn->readBuf_.offset_, conn);
     // 重置 readBuf_ 的偏移量
     // 如果 server 没读完, 则返回 -1, 然后保存本次数据, 下一次继续读完就行了.
-    if (simple_read_len < 0) {
+    if (simple_read_len > 0) {
       conn->readBuf_.offset_ = 0;
     }
   }
@@ -44,10 +45,14 @@ void ConnectionReadCallback(struct bufferevent* buf, void* data) {
 
 void ConnectionWriteCallback(struct bufferevent* buf, void* data) {
   auto conn = static_cast<Connection*>(data);
-  LOG_INFO("Begin to write handle!");
+  LOG_INFO("Begin to write handle1!");
+  auto output = bufferevent_get_output(buf);
+  if (evbuffer_get_length(output) == 0) {
+    return;
+  }
   if (conn->writeHandle_) {
     conn->writeHandle_(conn);
-    LOG_INFO("Begin to write handle!");
+    LOG_INFO("Begin to write handle2!");
   }
 }
 
@@ -103,7 +108,7 @@ bool Connection::Init() {
     LOG_INFO("conn ip: {} port: {} create connection", this->peerIP_,
              this->peerPort_);
   }
-  bufferevent_enable(buf_, EV_READ);
+  bufferevent_enable(buf_, EV_READ | EV_WRITE);
   return true;
 }
 

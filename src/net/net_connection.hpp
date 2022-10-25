@@ -2,13 +2,13 @@
 #define SRC_NET_NET_CONNECTION_H_
 
 extern "C" {
+#include <assert.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 #include <event2/listener.h>
 #include <event2/util.h>
 #include <sys/socket.h>
-#include <assert.h>
 }
 
 #include <functional>
@@ -26,12 +26,12 @@ namespace net {
 class NetServer;
 class Connection;
 
-//TODO: please use std::shared_ptr<Connection> to instead of Connection.
-// a easy way is create TCPConnectionImp
-// we can easy to do it!.
-// struct TCPConnectionImp {
-//  std::shared_ptr<Connection> conn_;
-// }
+// TODO: please use std::shared_ptr<Connection> to instead of Connection.
+//  a easy way is create TCPConnectionImp
+//  we can easy to do it!.
+//  struct TCPConnectionImp {
+//   std::shared_ptr<Connection> conn_;
+//  }
 
 static constexpr uint32_t kConnectionBufferSize = 4096;
 static void ConnectionWriteCallback(struct bufferevent* buf, void* data);
@@ -42,8 +42,7 @@ static void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
 using writeHandle = std::function<int(Connection*)>;
 using closeHandle = std::function<int(Connection*)>;
 using timeoutHandle = std::function<int(Connection*)>;
-using readHandle =
-    std::function<int(char*, size_t, Connection*)>;
+using readHandle = std::function<int(char*, size_t, Connection*)>;
 
 class Connection : public NonCopyable {
  public:
@@ -87,6 +86,13 @@ class Connection : public NonCopyable {
   std::string peerIP_;
   // 连接对等方的 port
   uint32_t peerPort_;
+};
+
+struct ConnImp {
+  std::shared_ptr<Connection> conn_;
+  template <typename... Args>
+  ConnImp(Args&&... args)
+      : conn_(std::make_shared<Connection>(std::forward<Args>(args)...)) {}
 };
 
 }  // namespace net

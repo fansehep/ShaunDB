@@ -25,11 +25,20 @@ namespace log {
 class LogThread;
 struct LogImp;
 
-const std::string kLogLevelNums[] = {
-    "I", "T", "D", "E", "W", "E",
+// 'Q' means quit the progress
+// TODO: change all the name.
+// TODO: need to use fmt::format_to to format the logment
+// but now we usually use fver::base::log::Buffer to save the logment
+// and to the string => Buffer, we must memcpy once.
+// the fmt::format_to need us to
+// auto vec_char_out = vector<char>();
+// then fmt::format_to(std::back_iterator(vec_char_out), "...");
+static const char kLogLevelNums[]  = {
+    'I', 'T', 'D', 'E', 'W', 'Q',
 };
 
-constexpr static uint64_t kLogThreshold = 2097152 / 200;
+// 10486 = 2097152 / 200;
+constexpr static uint64_t kLogThreshold = 10486;
 
 class Logger {
  public:
@@ -110,7 +119,7 @@ class Logger {
       buf_.Push(logstr_);
       // 将发生堆栈信息写入到日志文件中.
       if (lev == kExit) [[unlikely]] {
-
+        return;
       }
     }
   }
