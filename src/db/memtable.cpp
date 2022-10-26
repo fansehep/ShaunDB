@@ -8,7 +8,7 @@ namespace fver {
 namespace db {
 
 void Memtable::Set(std::shared_ptr<SetContext> set_context) {
-  memMap_.insert(set_context->key, set_context->value);
+  memMap_.insert(std::pair{set_context->key, set_context->value});
   bloomFilter_.Insert(set_context->key);
   set_context->code.setCode(kOk);
   return;
@@ -16,7 +16,7 @@ void Memtable::Set(std::shared_ptr<SetContext> set_context) {
 
 // should be append the value
 void Memtable::Put(std::shared_ptr<PutContext> put_context) {
-  memMap_.insert(put_context->key, put_context->value);
+  memMap_.insert(std::pair{put_context->key, put_context->value});
   bloomFilter_.Insert(put_context->key);
   put_context->code.setCode(kOk);
   return;

@@ -31,6 +31,7 @@ bool NetServer::Init(const uint32_t port, writeHandle wh, closeHandle ch,
     return false;
   }
   port_ = port;
+  maxConnCount_ = maxCount;
   return true;
 }
 

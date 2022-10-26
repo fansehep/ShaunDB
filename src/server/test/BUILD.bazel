@@ -23,3 +23,15 @@ cc_test(
     "@com_google_googletest//:gtest_main",
   ],
 )
+
+cc_test(
+  name="shaunkv_server",
+  srcs=glob(["shaunkv_server_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/base/log:fver_log_lib",
+    "//src/server:fver_server_lib",
+    "//src/db:fver_db_lib",
+  ],
+)

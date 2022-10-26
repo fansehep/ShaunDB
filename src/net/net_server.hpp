@@ -70,6 +70,7 @@ class NetServer : public base::NonCopyable {
   readHandle read_handle_;
 
   uint32_t port_;
+  uint32_t maxConnCount_;
   struct sockaddr_in sin_;
   struct event_base* eventBase_;
   struct evconnlistener* listener_;

@@ -3,5 +3,6 @@ log_config:
   log_lev: Info
   log_name: yaml_test
   log_issync: false
+
 server_config:
   listen_port: 9090

@@ -37,7 +37,7 @@ void Test_TO_FILE() {
       while (running) {
           LOG_INFO("I Love Rust or {}", "Go");
           sum.fetch_add(1);
-          printf("sumwrites = %d\n", sum.load());
+          fmt::print("sum_write = {}", sum.load());
       }
     });
   }

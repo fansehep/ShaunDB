@@ -8,6 +8,7 @@
 #include "src/net/net_server.hpp"
 #include "src/server/redis_protocol.hpp"
 
+using ::fver::db::DB;
 using ::fver::base::NonCopyable;
 using ::fver::net::Connection;
 using ::fver::net::NetServer;
@@ -19,6 +20,7 @@ namespace fver {
 
 namespace server {
 
+
 struct ServerConfig {
   std::string logpath;
   int logLev;
@@ -29,7 +31,7 @@ struct ServerConfig {
 
 class Server : public NonCopyable {
  public:
-  bool Init(const ServerConfig& config);
+  bool Init(const struct ServerConfig& conf);
   void Run();
   void Stop();
 
@@ -41,7 +43,7 @@ class Server : public NonCopyable {
 
  private:
   std::thread net_server_thread_;
-  fver::db::DB db_;
+  DB db_;
   NetServer server_;
 };
 

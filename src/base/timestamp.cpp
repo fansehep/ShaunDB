@@ -68,7 +68,6 @@ uint64_t TimeStamp::GetTimeofDayUs() {
 TimeStamp TimeStamp::Now() {
   struct timeval tval;
   gettimeofday(&tval, nullptr);
-  int64_t seconds = tval.tv_sec;
   return TimeStamp(tval.tv_sec, tval.tv_usec);
 }
 

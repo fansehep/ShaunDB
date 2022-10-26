@@ -9,9 +9,15 @@ namespace fver {
 
 namespace server {
 
-bool Server::Init(const ServerConfig& config) {
-  
+bool Server::Init(const struct ServerConfig& conf) {
+  fver::base::log::Init(conf.logpath, conf.logLev, conf.isSync, conf.log_name);
+  return server_.Init(conf.listen_port, std::bind(&Server::writeHD, this, _1),
+                      std::bind(&Server::closeHD, this, _1),
+                      std::bind(&Server::timeoutHD, this, _1),
+                      std::bind(&Server::readHD, this, _1, _2, _3));
 }
+
+void Server::Run() { server_.Run(); }
 
 int Server::readHD(char* buf, size_t size, Connection* conn) {
   auto read_result = redis::parseRedisProtocol(buf, size);
@@ -61,6 +67,22 @@ int Server::readHD(char* buf, size_t size, Connection* conn) {
   }
   return -1;
 }
+
+int Server::writeHD(Connection* conn) { return 1; }
+
+int Server::closeHD(Connection* conn) {
+  LOG_INFO("conn ip: {} port: {} close", conn->getPeerIP(),
+           conn->getPeerPort());
+  return 1;
+}
+
+int Server::timeoutHD(Connection* conn) {
+  LOG_INFO("conn ip: {} port: {} timeout", conn->getPeerIP(),
+           conn->getPeerPort());
+  return 1;
+}
+
+void Server::Stop() {}
 
 }  // namespace server
 

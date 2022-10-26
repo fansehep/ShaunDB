@@ -34,6 +34,7 @@ bool ConfigParse(ServerConfig *config, const std::string &path) {
   config->log_name = yaml_doc["log_config"]["log_name"].as<std::string>();
   config->isSync = yaml_doc["log_config"]["log_issync"].as<bool>();
   config->listen_port = yaml_doc["server_config"]["listen_port"].as<uint32_t>();
+  return true;
 }
 
 }  // namespace server

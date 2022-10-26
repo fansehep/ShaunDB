@@ -7,6 +7,8 @@ namespace fver {
 
 namespace server {
 
+// ./bazel-bin/src/server/test/yaml_parse_test
+//
 class YamlParseTest : public ::testing::Test {
  public:
   YamlParseTest() = default;
@@ -17,7 +19,11 @@ class YamlParseTest : public ::testing::Test {
 
 TEST_F(YamlParseTest, simple_config_test) {
   struct ServerConfig conf;
-  ConfigParse(&conf, "./yaml_parse_test.yaml");
+  ConfigParse(&conf, "./src/server/test/yaml_parse_test.yaml");
+  LOG_INFO(
+      "conf.isSync: {} \n conf.log_name: {} \n conf.logpath: {} \n "
+      "conf.loglev: {} \n conf.listen_port: {}",
+      conf.isSync, conf.log_name, conf.logpath, conf.logLev, conf.listen_port);
   ASSERT_EQ(conf.isSync, false);
   ASSERT_EQ(conf.log_name, "yaml_test");
   ASSERT_EQ(conf.logpath, "./");
