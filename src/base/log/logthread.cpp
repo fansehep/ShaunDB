@@ -52,7 +52,9 @@ void LogThread::AddLogger(std::shared_ptr<Logger> log) {
   log->configInit(cond_, sumWrites_);
   logVectmp_.push_back(log);
   // 不要阻塞, 快速将新加入的 log 加入到 logVectmp_ 中管理.
-  cond_->notify_one();
+  if (true == isRunning_) {
+    cond_->notify_one();
+  }
 }
 
 void LogThread::Init(const std::string& logpath, const int lev,
@@ -111,7 +113,7 @@ void LogThread::Init(const std::string& logpath, const int lev,
         }
       }
 
-      //刷新所有的 buf
+      // 刷新所有的 buf
       if (!isRunning_) {
         for (auto& log_iter : logworkers_) {
           auto mlock = log_iter->getMutex();
@@ -190,7 +192,7 @@ void LogThread::Init(const std::string& logpath, const int lev,
         file_.Sync();
       }
 
-      //刷新所有的 buf
+      // 刷新所有的 buf
       if (!isRunning_) {
         for (auto& log_iter : logworkers_) {
           auto mlock = log_iter->getMutex();
@@ -225,7 +227,10 @@ void LogThread::Init(const std::string& logpath, const int lev,
 void LogThread::Stop() {
   isRunning_ = false;
   cond_->notify_one();
-  syncThread_.join();
+  // join 一个没有开启的线程是很危险的
+  if (syncThread_.joinable()) {
+    syncThread_.join();
+  }
 }
 
 LogThread::~LogThread() { Stop(); }

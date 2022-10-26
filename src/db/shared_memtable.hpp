@@ -23,6 +23,7 @@ static constexpr int kDefaultSharedMemtableSize = 16;
 class SharedMemtable : public NonCopyable {
  public:
   SharedMemtable(int N = kDefaultSharedMemtableSize);
+  void Set(std::shared_ptr<SetContext> set_context);
   void Put(std::shared_ptr<PutContext> put_context);
   void Get(std::shared_ptr<GetContext> get_context);
   void Delete(std::shared_ptr<DeleteContext> del_context);

@@ -17,7 +17,6 @@ http_archive(
     strip_prefix="benchmark-0baacde3618ca617da95375e0af13ce1baadea47",
     urls=["https://github.com/google/benchmark/archive/0baacde3618ca617da95375e0af13ce1baadea47.zip"],
 )
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 git_repository(
     name = "fmt",
@@ -39,6 +38,12 @@ git_repository(
         "Move-Item -Path support/bazel/BUILD.bazel -Destination BUILD.bazel",
         "Move-Item -Path support/bazel/WORKSPACE.bazel -Destination WORKSPACE.bazel",
     ],
+)
+
+git_repository(
+    name = "yaml_cpp",
+    branch = "master",
+    remote = "https://github.com/jbeder/yaml-cpp",
 )
 
 # generate compile_commands.json

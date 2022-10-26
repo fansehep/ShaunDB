@@ -1,0 +1,7 @@
+log_config:
+  log_path: ./
+  log_lev: Info
+  log_name: shaun_server
+  log_issync: true
+server_config:
+  listen_port: 9090

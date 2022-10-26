@@ -50,6 +50,19 @@ void SharedMemtable::Delete(std::shared_ptr<DeleteContext> del_context) {
   }
 }
 
+void SharedMemtable::Set(std::shared_ptr<SetContext> set_context) {
+  auto index =
+      XXHash64::hash(set_context->key.data(), set_context->key.size(), seed_) %
+      memtableN_;
+  vec_memtable_[index].Set(set_context);
+  if (set_context->code.getCode() == kOk) {
+    LOG_INFO("set memtable: {} key: {} ok", index, set_context->key);
+  } else {
+    LOG_WARN("set memtable: {} key: {} fail {}", index, set_context->key,
+             set_context->code.getCodeStr());
+  }
+}
+
 }  // namespace db
 
 }  // namespace fver

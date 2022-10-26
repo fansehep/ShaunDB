@@ -104,6 +104,7 @@ class Logger {
       if (lev == kExit) [[unlikely]] {
 
       }
+      return;
     } else {
       if (sumWrites_->load() >= kLogThreshold) {
 #ifdef FVER_LOG_DEBUG

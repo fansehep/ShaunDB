@@ -4,14 +4,13 @@ load("//:copts.bzl", "FVER_FLAGS")
 
 
 cc_library(
-  name="fver_util_lib",
+  name="fver_db_lib",
   hdrs=glob(["*.hpp"]),
   srcs=glob(["*.cpp"]),
   visibility=["//visibility:public"],
   copts=FVER_FLAGS,
-  linkopts=["-lpthread",],
-  deps = [
-    "//src/util/hash:util_hash_lib",
-    "//src/util/file:fver_util_file_lib",
+  deps=[
+    "//src/base/log:fver_log_lib",
+    "//src/util:fver_util_lib",
   ],
 )

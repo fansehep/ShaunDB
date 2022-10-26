@@ -1,0 +1,25 @@
+package(default_visibility=["//visibility:public"])
+
+load("//:copts.bzl", "FVER_FLAGS")
+
+cc_test(
+  name="redis_protocol_test",
+  srcs=glob(["redis_protocol_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/server:fver_server_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+)
+
+cc_test(
+  name="yaml_parse_test",
+  srcs=glob(["yaml_parse_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/server:fver_server_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+)

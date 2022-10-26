@@ -1,12 +1,20 @@
 #include "src/db/memtable.hpp"
+
 #include "src/db/request.hpp"
 #include "src/db/status.hpp"
-
 
 namespace fver {
 
 namespace db {
 
+void Memtable::Set(std::shared_ptr<SetContext> set_context) {
+  memMap_.insert(set_context->key, set_context->value);
+  bloomFilter_.Insert(set_context->key);
+  set_context->code.setCode(kOk);
+  return;
+}
+
+// should be append the value
 void Memtable::Put(std::shared_ptr<PutContext> put_context) {
   memMap_.insert(put_context->key, put_context->value);
   bloomFilter_.Insert(put_context->key);
@@ -39,7 +47,6 @@ void Memtable::Delete(std::shared_ptr<DeleteContext> del_context) {
   return;
 }
 
-}
+}  // namespace db
 
-
-}
+}  // namespace fver

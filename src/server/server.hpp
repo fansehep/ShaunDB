@@ -4,12 +4,18 @@
 #include "src/base/log/logging.hpp"
 #include "src/base/noncopyable.hpp"
 #include "src/db/exportdb.hpp"
+#include "src/net/connection.hpp"
 #include "src/net/net_server.hpp"
+#include "src/server/redis_protocol.hpp"
 
 using ::fver::base::NonCopyable;
+using ::fver::net::Connection;
 using ::fver::net::NetServer;
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
 
-namespace src {
+namespace fver {
 
 namespace server {
 
@@ -23,16 +29,16 @@ struct ServerConfig {
 
 class Server : public NonCopyable {
  public:
-  void Init(const ServerConfig& config);
+  bool Init(const ServerConfig& config);
   void Run();
   void Stop();
-  // 我们不能直接使用他,
-  // 我们应该选择写完之后触发他 
-  int writeHD();
-  int closeHD();
-  int timeoutHD();
+
+  int writeHD(Connection* conn);
+  int closeHD(Connection* conn);
+  int timeoutHD(Connection* conn);
   // 如果消息没有读完, 请返回 -1
-  int readHD();
+  int readHD(char* buf, size_t size, Connection* conn);
+
  private:
   std::thread net_server_thread_;
   fver::db::DB db_;
@@ -41,6 +47,6 @@ class Server : public NonCopyable {
 
 }  // namespace server
 
-}  // namespace src
+}  // namespace fver
 
 #endif

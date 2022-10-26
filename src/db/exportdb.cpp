@@ -18,6 +18,9 @@ void DB::Get(std::shared_ptr<GetContext> get_context) {
   return shared_memtable_.Get(get_context);
 }
 
+void DB::Set(std::shared_ptr<SetContext> set_context) {
+  return shared_memtable_.Set(set_context);
+}
 
 }
 

@@ -29,6 +29,7 @@ const std::string statuslev[] = {
 
 class Status {
  public:
+  Status();
   void setCode(StatusCode code);
   StatusCode getCode();
   std::string_view getCodeStr();
