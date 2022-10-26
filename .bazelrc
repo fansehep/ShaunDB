@@ -1,1 +1,2 @@
 build:gcc17-later --cxxopt
+build --repo_env=CC=clang
