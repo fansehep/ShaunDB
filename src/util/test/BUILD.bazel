@@ -10,11 +10,10 @@ cc_test(
   copts=FVER_FLAGS,
   deps=[
     "//src/util:fver_util_lib",
+    "@com_google_googletest//:gtest_main",
   ],
   linkopts=[
     "-lpthread",
-    "-lgtest",
     "-luuid",
-    "-lgtest_main",
   ],
 )

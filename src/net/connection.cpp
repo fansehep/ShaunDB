@@ -1,4 +1,4 @@
-#include "src/net/net_connection.hpp"
+#include "src/net/connection.hpp"
 
 #include <bits/types/struct_timeval.h>
 #include <event2/event.h>
@@ -29,15 +29,19 @@ void ConnectionReadCallback(struct bufferevent* buf, void* data) {
     }
     conn->readBuf_.offset_ += len;
   }
+#ifdef FVER_NET_DEBUG
   LOG_INFO("Begin to readhanle1");
+#endif
   if (conn->readHandle_) {
+#ifdef FVER_NET_DEBUG
     // 处理数据
     LOG_INFO("Begin to readhanle2");
+#endif
     auto simple_read_len =
         conn->readHandle_(conn->readBuf_.bufptr_, conn->readBuf_.offset_, conn);
     // 重置 readBuf_ 的偏移量
     // 如果 server 没读完, 则返回 -1, 然后保存本次数据, 下一次继续读完就行了.
-    if (simple_read_len > 0) {
+    if (simple_read_len < 0) {
       conn->readBuf_.offset_ = 0;
     }
   }
@@ -45,14 +49,18 @@ void ConnectionReadCallback(struct bufferevent* buf, void* data) {
 
 void ConnectionWriteCallback(struct bufferevent* buf, void* data) {
   auto conn = static_cast<Connection*>(data);
+#ifdef FVER_NET_DEBUG
   LOG_INFO("Begin to write handle1!");
+#endif
   auto output = bufferevent_get_output(buf);
   if (evbuffer_get_length(output) == 0) {
     return;
   }
   if (conn->writeHandle_) {
     conn->writeHandle_(conn);
+#ifdef FVER_NET_DEBUG
     LOG_INFO("Begin to write handle2!");
+#endif
   }
 }
 
@@ -108,7 +116,7 @@ bool Connection::Init() {
     LOG_INFO("conn ip: {} port: {} create connection", this->peerIP_,
              this->peerPort_);
   }
-  bufferevent_enable(buf_, EV_READ | EV_WRITE);
+  bufferevent_enable(buf_, EV_READ);
   return true;
 }
 
@@ -134,7 +142,11 @@ bool Connection::getPeerConnInfo() {
   return true;
 }
 
-Connection::~Connection() {}
+Connection::~Connection() {
+#ifdef FVER_NET_DEBUG
+  LOG_INFO("Connection has be disconstruct!");
+#endif
+}
 
 }  // namespace net
 

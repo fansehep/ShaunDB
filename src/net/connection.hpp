@@ -34,9 +34,9 @@ class Connection;
 //  }
 
 static constexpr uint32_t kConnectionBufferSize = 4096;
-static void ConnectionWriteCallback(struct bufferevent* buf, void* data);
-static void ConnectionReadCallback(struct bufferevent* buf, void* data);
-static void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
+void ConnectionWriteCallback(struct bufferevent* buf, void* data);
+void ConnectionReadCallback(struct bufferevent* buf, void* data);
+void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
                                     void* data);
 
 using writeHandle = std::function<int(Connection*)>;
@@ -44,17 +44,26 @@ using closeHandle = std::function<int(Connection*)>;
 using timeoutHandle = std::function<int(Connection*)>;
 using readHandle = std::function<int(char*, size_t, Connection*)>;
 
+// 使用智能指针管理所有连接
+using ConnPtr = std::shared_ptr<Connection>;
+
+
+class ConnImp;
+
+
+
 class Connection : public NonCopyable {
  public:
+  friend ConnImp;
   friend void ConnectionReadCallback(struct bufferevent* buf, void* data);
   friend void ConnectionWriteCallback(struct bufferevent* buf, void* data);
   friend void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
                                       void* data);
   Connection();
   ~Connection();
+  bool Init();
   Connection(evutil_socket_t socket, readHandle rh, writeHandle wh,
              closeHandle ch, timeoutHandle th, NetServer* server);
-  bool Init();
 
   const std::string& getPeerIP() const { return peerIP_; }
 
@@ -88,12 +97,7 @@ class Connection : public NonCopyable {
   uint32_t peerPort_;
 };
 
-struct ConnImp {
-  std::shared_ptr<Connection> conn_;
-  template <typename... Args>
-  ConnImp(Args&&... args)
-      : conn_(std::make_shared<Connection>(std::forward<Args>(args)...)) {}
-};
+
 
 }  // namespace net
 

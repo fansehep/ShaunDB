@@ -11,11 +11,12 @@ cc_library(
     ]),
     deps=[
         "//src/base:base_lib",
+        "@fmt",
     ],
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
-    linkopts=["-lfmt",
-              "-lpthread",],
+    linkopts=[
+        "-lpthread", ],
 )
 
 cc_library(
@@ -25,8 +26,8 @@ cc_library(
     copts=FVER_FLAGS,
     deps=[
         "//src/base:base_lib",
+        "@fmt",
     ],
-    linkopts=["-lfmt"],
 )
 
 cc_library(
@@ -37,7 +38,7 @@ cc_library(
     ]),
     deps=[
         "//src/base:base_lib",
+        "@fmt",
     ],
     copts=FVER_FLAGS,
-    linkopts=["-lfmt"],
 )

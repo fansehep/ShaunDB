@@ -22,10 +22,10 @@ cc_test(
     deps=[
         "//src/base/log:fver_log_out_std_lib",
         "//src/base:base_lib",
+        "@fmt",
     ],
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
-    linkopts=["-lfmt"],
 )
 
 cc_test(
@@ -36,10 +36,10 @@ cc_test(
     deps=[
         "//src/base/log:fver_log_lib",
         "//src/base:base_lib",
+        "@fmt",
     ],
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
-    linkopts=["-lfmt"],
 )
 
 cc_test(
@@ -49,8 +49,8 @@ cc_test(
     ]),
     deps=[
         "//src/base:base_lib",
+        "@fmt",
     ],
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
-    linkopts=["-lfmt"],
 )
