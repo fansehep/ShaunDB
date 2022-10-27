@@ -12,8 +12,8 @@
 #include <memory>
 #include <string>
 
-#include "src/base/timestamp.hpp"
 #include "src/base/log/logbuffer.hpp"
+#include "src/base/timestamp.hpp"
 
 using ::fver::base::TimeStamp;
 
@@ -33,7 +33,7 @@ struct LogImp;
 // the fmt::format_to need us to
 // auto vec_char_out = vector<char>();
 // then fmt::format_to(std::back_iterator(vec_char_out), "...");
-static const char kLogLevelNums[]  = {
+static const char kLogLevelNums[] = {
     'I', 'T', 'D', 'E', 'W', 'Q',
 };
 
@@ -64,79 +64,76 @@ class Logger {
   constexpr void LogMent(const char* filename, const int line,
                          const LogLevel lev, const std::string format_str,
                          Args&&... args) {
+    if (!isSync_) {
+      timeNow_ = TimeStamp::Now();
+      fmt::print(
+          "{}{} {}:{}] {}\n", kLogLevelNums[lev], timeNow_.ToFormatTodayNowUs(),
+          filename, line,
+          fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
+    }
     if (lev < curLogLevel_) {
       return;
     } else if (lev > kExit) {
 // DEBUG 模式, 预编译选择性打印日志
 #ifdef DEBUG
-  timeNow_ = TimeStamp::Now();
-    logstr_ = fmt::format(
-        "{}{} {}:{}: {}\n", kLogLevelNums[lev], timeNow_.ToFormatTodayNowMs(),
-        filename, line,
-        fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
-    if (!isSync_) {
-      fmt::print("{}", logstr_);
-    } else {
-      if (sumWrites_->load() >= kLogThreshold) {
+      timeNow_ = TimeStamp::Now();
+      logstr_ = fmt::format(
+          "{}{} {}:{}: {}\n", kLogLevelNums[lev], timeNow_.ToFormatTodayNowMs(),
+          filename, line,
+          fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
+      if (!isSync_) {
+        fmt::print("{}", logstr_);
+      } else {
+        if (sumWrites_->load() >= kLogThreshold) {
 #ifdef FVER_LOG_DEBUG
-        fmt::print("logger notify to the thread");
+          fmt::print("logger notify to the thread");
 #endif
-        cond_->notify_one();
-        sumWrites_ = 0;
+          cond_->notify_one();
+          sumWrites_ = 0;
+        }
+#ifdef FVER_LOG_DEBUG
+        fmt::print("sumwrites = {}", sumWrites_->load());
+#endif
+        // 忽略返回值
+        buf_.Push(logstr_);
       }
-#ifdef FVER_LOG_DEBUG
-      fmt::print("sumwrites = {}", sumWrites_->load());
-#endif
-      // 忽略返回值
-      buf_.Push(logstr_);
-    }
 #endif
       return;
     }
     timeNow_ = TimeStamp::Now();
-    logstr_ = fmt::format(
-        "{}{} {}:{}] {}\n", kLogLevelNums[lev], timeNow_.ToFormatTodayNowUs(),
-        filename, line,
+    auto mtx = buf_.getMutex();
+    mtx->lock();
+    fmt::format_to(
+        std::back_inserter((*buf_.curPtr_)), "{}{} {}:{}] {}\n",
+        kLogLevelNums[lev], timeNow_.ToFormatTodayNowUs(), filename, line,
         fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
-    if (!isSync_) {
-      fmt::print("{}", logstr_);
-      // 发生错误, 将堆栈信息打印出来
-      if (lev == kExit) [[unlikely]] {
-
-      }
+    mtx->unlock();
+    if (sumWrites_->load() >= kLogThreshold) {
+#ifdef FVER_LOG_DEBUG
+      fmt::print("logger notify to the thread");
+#endif
+      cond_->notify_one();
+      sumWrites_ = 0;
+    }
+#ifdef FVER_LOG_DEBUG
+    fmt::print("sumwrites = {}", sumWrites_->load());
+#endif
+    // 忽略返回值
+    // 将发生堆栈信息写入到日志文件中.
+    if (lev == kExit) [[unlikely]] {
       return;
-    } else {
-      if (sumWrites_->load() >= kLogThreshold) {
-#ifdef FVER_LOG_DEBUG
-        fmt::print("logger notify to the thread");
-#endif
-        cond_->notify_one();
-        sumWrites_ = 0;
-      }
-#ifdef FVER_LOG_DEBUG
-      fmt::print("sumwrites = {}", sumWrites_->load());
-#endif
-      // 忽略返回值
-      buf_.Push(logstr_);
-      // 将发生堆栈信息写入到日志文件中.
-      if (lev == kExit) [[unlikely]] {
-        return;
-      }
     }
   }
 
-  LogBuffer* getBufferPtr() { return &buf_; }
+  VecLogBuffer* getBufferPtr() { return &buf_; }
 
-  Buffer* SwapBuffer() { return buf_.SwapBuffer(); }
+  std::vector<char>* SwapBuffer() { return buf_.SwapBuffer(); }
 
   void setLogLev(int lev) { curLogLevel_ = static_cast<LogLevel>(lev); }
 
   void setLogToFile() {
-    fmt::print("{}", logstr_);
     isSync_ = true;
   }
-
-  void ClearOffset(Buffer* buf) { buf_.ClearOffset(buf); }
 
   void configInit(std::shared_ptr<std::condition_variable> cond,
                   std::shared_ptr<std::atomic<uint64_t>> sumWrite) {
@@ -151,10 +148,9 @@ class Logger {
   //
   std::shared_ptr<std::condition_variable> cond_;
   std::shared_ptr<std::atomic<uint64_t>> sumWrites_;
-  std::string logstr_;
   TimeStamp timeNow_;
   LogLevel curLogLevel_;
-  LogBuffer buf_;
+  VecLogBuffer buf_;
   // 当 thread_local 变量被析构时, std::shared_ptr<Logger> 的
   // 引用计数会 -1, 当前的Logger
   bool isHolderByThread_;

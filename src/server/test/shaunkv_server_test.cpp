@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
     config.isSync = false;
     config.listen_port = 9090;
     config.log_name = "test";
-    config.logLev = 0;
+    config.logLev = -1;
     config.logpath = "./";
   } else {
     fver::server::ConfigParse(&config, argv[1]);

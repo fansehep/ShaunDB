@@ -44,8 +44,21 @@ void LogBuffer::ClearOffset(Buffer* buf) {
   buf->offset_ = 0;
 }
 
-std::mutex* LogBuffer::getMutex() {
-  return &mtx_;
+std::mutex* LogBuffer::getMutex() { return &mtx_; }
+
+VecLogBuffer::VecLogBuffer() {}
+
+VecLogBuffer::VecLogBuffer(uint32_t buffer_size) {
+  head_.reserve(buffer_size);
+  head_.reserve(buffer_size);
+  curPtr_ = &head_;
+}
+
+std::mutex* VecLogBuffer::getMutex() { return &mtx_; }
+
+std::vector<char>* VecLogBuffer::SwapBuffer() {
+  curPtr_ = (curPtr_ == &head_ ? &tail_ : &head_);
+  return (curPtr_ == &head_ ? &tail_ : &head_);
 }
 
 }  // namespace log

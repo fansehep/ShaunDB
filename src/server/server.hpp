@@ -1,14 +1,11 @@
 #ifndef SRC_SERVER_SERVER_H_
 #define SRC_SERVER_SERVER_H_
 
-#include "src/base/log/logging.hpp"
 #include "src/base/noncopyable.hpp"
 #include "src/db/exportdb.hpp"
 #include "src/net/connection.hpp"
 #include "src/net/net_server.hpp"
-#include "src/server/redis_protocol.hpp"
 
-using ::fver::db::DB;
 using ::fver::base::NonCopyable;
 using ::fver::net::Connection;
 using ::fver::net::NetServer;
@@ -43,7 +40,7 @@ class Server : public NonCopyable {
 
  private:
   std::thread net_server_thread_;
-  DB db_;
+  fver::db::DB db_;
   NetServer server_;
 };
 

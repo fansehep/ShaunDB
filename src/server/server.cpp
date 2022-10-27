@@ -1,5 +1,6 @@
 #include "src/server/server.hpp"
 
+#include "src/base/log/logging.hpp"
 #include "src/db/request.hpp"
 #include "src/db/status.hpp"
 #include "src/net/connection.hpp"
@@ -10,7 +11,10 @@ namespace fver {
 namespace server {
 
 bool Server::Init(const struct ServerConfig& conf) {
-  fver::base::log::Init(conf.logpath, conf.logLev, conf.isSync, conf.log_name);
+  if (conf.logLev != -1) {
+    fver::base::log::Init(conf.logpath, conf.logLev, conf.isSync,
+                          conf.log_name);
+  }
   return server_.Init(conf.listen_port, std::bind(&Server::writeHD, this, _1),
                       std::bind(&Server::closeHD, this, _1),
                       std::bind(&Server::timeoutHD, this, _1),
@@ -20,18 +24,26 @@ bool Server::Init(const struct ServerConfig& conf) {
 void Server::Run() { server_.Run(); }
 
 int Server::readHD(char* buf, size_t size, Connection* conn) {
+  if (buf[size - 1] == '\n') {
+    size -= 1;
+  }
+  auto read_str_view = std::string_view(buf, size);
+  LOG_INFO("conn ip: {} port: {} send {}", conn->getPeerIP(),
+           conn->getPeerPort(), read_str_view);
   auto read_result = redis::parseRedisProtocol(buf, size);
   // 解析失败, 直接返回
   if (false == redis::check(&read_result)) {
+    LOG_INFO("conn ip: {} port: {} parse error!", conn->getPeerIP(),
+             conn->getPeerPort());
     if (read_result.size() >= 2) {
       auto error_reply =
-          fmt::format("(error) ERR unknow command '{}'", read_result[1]);
+          fmt::format("(error) ERR unknow command '{}'\n", read_result[1]);
       conn->Send(error_reply.c_str(), error_reply.size());
     } else {
       conn->Send(redis::kErrorUnknowCommand.c_str(),
                  redis::kErrorUnknowCommand.size());
     }
-    return 1;
+    return -1;
   }
   // PING
   if (*read_result.begin() == redis::kPingStr) {

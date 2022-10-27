@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <cstring>
 #include <memory>
+#include <vector>
 #include <mutex>
 #include <ostream>
 #include <string>
@@ -52,6 +53,26 @@ class LogBuffer {
   Buffer* curPtr_;
   Buffer head_;
   Buffer tail_;
+};
+
+class Logger;
+
+// for libfmt;
+class VecLogBuffer {
+ public:
+  friend Logger;
+  VecLogBuffer(uint32_t buffer_size);
+  VecLogBuffer();
+  ~VecLogBuffer() = default;
+  std::vector<char>* SwapBuffer();
+  std::mutex* getMutex();
+
+ private:
+  
+  std::mutex mtx_;
+  std::vector<char>* curPtr_;
+  std::vector<char> head_;
+  std::vector<char> tail_;
 };
 
 }  // namespace log

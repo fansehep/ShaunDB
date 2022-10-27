@@ -1,6 +1,7 @@
+# STD_OUT 将输出打向终端
 log_config:
   log_path: ./
-  log_lev: Info
+  log_lev: STD_OUT
   log_name: shaun_server
   log_issync: false
 server_config:

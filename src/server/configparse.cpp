@@ -10,6 +10,7 @@ namespace fver {
 
 namespace server {
 
+const std::string kLog_STD_OUT = "STD_OUT";
 const std::string kLog_Info = "Info";
 const std::string kLog_Trace = "Trace";
 const std::string kLog_Debug = "Debug";
@@ -27,7 +28,10 @@ bool ConfigParse(ServerConfig *config, const std::string &path) {
     config->logLev = Logger::LogLevel::kDebug;
   } else if (log_lev_str == kLog_Error) {
     config->logLev = Logger::LogLevel::kError;
-  } else {
+  } else if (log_lev_str == kLog_STD_OUT) {
+    config->logLev = -1;
+  } 
+  else {
     config->logLev = Logger::LogLevel::kInfo;
     return false;
   }

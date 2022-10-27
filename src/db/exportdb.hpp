@@ -17,7 +17,7 @@ namespace db {
 
 class DB : public NonCopyable {
  public:
-  DB();
+  DB() = default;
   ~DB() = default;
   void Init();
   void Set(std::shared_ptr<SetContext> set_context);

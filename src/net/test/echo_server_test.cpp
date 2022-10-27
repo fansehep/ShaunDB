@@ -1,8 +1,8 @@
 #include <functional>
 
+#include "src/base/log/logging.hpp"
 #include "src/net/connection.hpp"
 #include "src/net/net_server.hpp"
-#include "src/base/log/logging.hpp"
 
 using ::fver::net::Connection;
 using ::fver::net::NetServer;
@@ -16,7 +16,6 @@ namespace net {
 
 class EchoServer {
  public:
-  
   EchoServer() : buf_(1024) {}
 
   void Init(const uint32_t port) {
@@ -36,22 +35,25 @@ class EchoServer {
   }
 
   int closeHd(Connection* conn) {
-    LOG_INFO("conn ip: {} port: {} close connection", conn->getPeerIP(), conn->getPeerPort());
+    LOG_INFO("conn ip: {} port: {} close connection", conn->getPeerIP(),
+             conn->getPeerPort());
     return 1;
   }
 
   int timeoutHd(Connection* conn) {
-    LOG_INFO("conn ip: {} port: {} connection time out", conn->getPeerIP(), conn->getPeerPort());
+    LOG_INFO("conn ip: {} port: {} connection time out", conn->getPeerIP(),
+             conn->getPeerPort());
     return 1;
   }
 
-  //TODO, if the data has be read ok, should return -1;
+  // TODO, if the data has be read ok, should return -1;
   int readHd(char* buf, size_t size, Connection* conn) {
     assert(buf_.buflen_ >= 0);
     std::string_view message(buf, size);
     std::memcpy(buf_.bufptr_, buf, size);
     buf_.offset_ += size;
-    LOG_INFO("conn ip: {} port: {} send {}", conn->getPeerIP(), conn->getPeerPort(), message);
+    LOG_INFO("conn ip: {} port: {} send {}", conn->getPeerIP(),
+             conn->getPeerPort(), message);
     conn->Send(buf, size);
     return -1;
   }
@@ -61,10 +63,10 @@ class EchoServer {
   NetServer server;
 };
 
-}  // namespace src
+}  // namespace net
 }  // namespace fver
 
-int main() { 
+int main() {
   fver::net::EchoServer server;
   LOG_INFO("server start 9090");
   server.Init(9090);

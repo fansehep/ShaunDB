@@ -22,12 +22,12 @@ void SignalExecute(int signal) {
   switch (signal) {
     case SIGINT: {
       auto error_log = fver::base::stackTrace(true);
-      fmt::print("SIGINT:{}\n", error_log);
+      LOG_ERROR("SIGINT: {}", error_log);
       exit(-1);
     }
     case SIGQUIT: {
       auto error_log = fver::base::stackTrace(true);
-      LOG_ERROR("SIGQUIT:{}\n", error_log);
+      LOG_ERROR("SIGQUIT:{}", error_log);
       exit(-1);
     }
   }
@@ -78,7 +78,7 @@ void LogThread::Init(const std::string& logpath, const int lev,
         }
 
         std::unique_lock<std::mutex> lock(logMutex_);
-        cond_->wait_for(lock, std::chrono::milliseconds(750));
+        cond_->wait_for(lock, std::chrono::seconds(1));
         const int N = static_cast<int>(logworkers_.size());
 
         for (int i = 0; i < N; i++) {
@@ -87,7 +87,7 @@ void LogThread::Init(const std::string& logpath, const int lev,
           mlock->lock();
           auto buf_ptr = log_iter->SwapBuffer();
           mlock->unlock();
-          if (buf_ptr->offset_ == 0) {
+          if (buf_ptr->empty()) {
             // thread_local 变量被析构, 我们需要将被释放的 Logger 移除
             // 但释放前必须, 将他的两个buf 刷入到磁盘中
             if (false == log_iter->isHolderByThread_) {
@@ -95,21 +95,21 @@ void LogThread::Init(const std::string& logpath, const int lev,
               auto tbuf_ptr = log_iter->SwapBuffer();
               mlock->unlock();
 
-              if (0 == tbuf_ptr->offset_) {
+              if (0 == tbuf_ptr->size()) {
                 // 偏移量也为 0, 所以直接删除即可
                 // 让他与最后一个交换, 再删除
                 std::swap(logworkers_[i], logworkers_.back());
                 logworkers_.pop_back();
               } else {
-                file_.WriteStr(tbuf_ptr->bufptr_, tbuf_ptr->offset_);
+                file_.WriteStr(&((*tbuf_ptr)[0]), tbuf_ptr->size());
                 std::swap(logworkers_[i], logworkers_.back());
                 logworkers_.pop_back();
               }
             }
             continue;
           }
-          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
-          buf_ptr->offset_ = 0;
+          file_.WriteStr(&((*buf_ptr)[0]), buf_ptr->size());
+          buf_ptr->clear();
         }
       }
 
@@ -119,12 +119,12 @@ void LogThread::Init(const std::string& logpath, const int lev,
           auto mlock = log_iter->getMutex();
           mlock->lock();
           auto buf_ptr = log_iter->SwapBuffer();
-          if (buf_ptr->offset_ == 0) {
+          if (buf_ptr->empty()) {
             mlock->unlock();
             continue;
           }
-          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
-          buf_ptr->offset_ = 0;
+          file_.WriteStr(&((*buf_ptr)[0]), buf_ptr->size());
+          buf_ptr->clear();
           mlock->unlock();
         }
 
@@ -132,12 +132,12 @@ void LogThread::Init(const std::string& logpath, const int lev,
           auto mlock = log_iter->getMutex();
           mlock->lock();
           auto buf_ptr = log_iter->SwapBuffer();
-          if (buf_ptr->offset_ == 0) {
+          if (buf_ptr->empty()) {
             mlock->unlock();
             continue;
           }
-          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
-          buf_ptr->offset_ = 0;
+          file_.WriteStr(&((*buf_ptr)[0]), buf_ptr->size());
+          buf_ptr->clear();
           mlock->unlock();
         }
       }
@@ -165,7 +165,7 @@ void LogThread::Init(const std::string& logpath, const int lev,
           mlock->lock();
           auto buf_ptr = log_iter->SwapBuffer();
           mlock->unlock();
-          if (buf_ptr->offset_ == 0) {
+          if (buf_ptr->empty()) {
             // thread_local 变量被析构, 我们需要将被释放的 Logger 移除
             // 但释放前必须, 将他的两个buf 刷入到磁盘中
             if (false == log_iter->isHolderByThread_) {
@@ -173,21 +173,21 @@ void LogThread::Init(const std::string& logpath, const int lev,
               auto tbuf_ptr = log_iter->SwapBuffer();
               mlock->unlock();
 
-              if (0 == tbuf_ptr->offset_) {
+              if (tbuf_ptr->empty()) {
                 // 偏移量也为 0, 所以直接删除即可
                 // 让他与最后一个交换, 再删除
                 std::swap(logworkers_[i], logworkers_.back());
                 logworkers_.pop_back();
               } else {
-                file_.WriteStr(tbuf_ptr->bufptr_, tbuf_ptr->offset_);
+                file_.WriteStr(&((*buf_ptr)[0]), buf_ptr->size());
                 std::swap(logworkers_[i], logworkers_.back());
                 logworkers_.pop_back();
               }
             }
             continue;
           }
-          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
-          buf_ptr->offset_ = 0;
+          file_.WriteStr(&((*buf_ptr)[0]), buf_ptr->size());
+          buf_ptr->clear();
         }
         file_.Sync();
       }
@@ -198,12 +198,12 @@ void LogThread::Init(const std::string& logpath, const int lev,
           auto mlock = log_iter->getMutex();
           mlock->lock();
           auto buf_ptr = log_iter->SwapBuffer();
-          if (buf_ptr->offset_ == 0) {
+          if (buf_ptr->empty()) {
             mlock->unlock();
             continue;
           }
-          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
-          buf_ptr->offset_ = 0;
+          file_.WriteStr(&((*buf_ptr)[0]), buf_ptr->size());
+          buf_ptr->clear();
           mlock->unlock();
         }
 
@@ -211,12 +211,12 @@ void LogThread::Init(const std::string& logpath, const int lev,
           auto mlock = log_iter->getMutex();
           mlock->lock();
           auto buf_ptr = log_iter->SwapBuffer();
-          if (buf_ptr->offset_ == 0) {
+          if (buf_ptr->empty()) {
             mlock->unlock();
             continue;
           }
-          file_.WriteStr(buf_ptr->bufptr_, buf_ptr->offset_);
-          buf_ptr->offset_ = 0;
+          file_.WriteStr(&((*buf_ptr)[0]), buf_ptr->size());
+          buf_ptr->clear();
           mlock->unlock();
         }
       }

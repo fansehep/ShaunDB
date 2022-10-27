@@ -83,7 +83,7 @@ bool LogFile::SetLogPath(const std::string& path) {
 bool LogFile::SetLogPath(const std::string& path,
                          const std::string& logPrename) {
   nowTime_ = TimeStamp::Now();
-  assert(path.back() != '/');
+//  assert(path.back() != '/');
   curLogName_ =
       fmt::format("{}/{}-{}.log", path, logPrename, nowTime_.ToFormatLogName());
   fileptr_ = std::fopen(curLogName_.c_str(), "wbx");

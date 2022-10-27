@@ -31,7 +31,7 @@ const char RedisReplyLev[] = {
     '*',  // 多条批量回复
 };
 
-const std::string kErrorUnknowCommand = "(error) ERR unknow command";
+const std::string kErrorUnknowCommand = "(error) ERR unknow command\n";
 const std::string kPingStr = "PING";
 const std::string kPongStr = "+PONG";
 const std::string kOKStr = "+OK";
