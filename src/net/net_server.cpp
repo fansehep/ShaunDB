@@ -1,6 +1,8 @@
 #include "src/net/net_server.hpp"
 
 #include "src/net/connection.hpp"
+#include "src/net/repeated_timer.hpp"
+
 
 namespace fver {
 
@@ -77,6 +79,15 @@ void ListenerCallback(struct evconnlistener* ev, evutil_socket_t socket,
   server->ConnectionMap_.insert({socket, new_conn});
 }
 
+bool NetServer::Run() {
+  auto re = event_base_dispatch(eventBase_);
+  if (0 == re) {
+    LOG_INFO("NetServer start run listen port: {}", port_);
+    return true;
+  }
+  return false;
+}
+
 bool NetServer::removeConn(evutil_socket_t fd) {
   auto iter = ConnectionMap_.find(fd);
   if (iter == ConnectionMap_.end()) {
@@ -87,6 +98,10 @@ bool NetServer::removeConn(evutil_socket_t fd) {
   ConnectionMap_.erase(fd);
   LOG_INFO("Connection fd: {} has be removed", fd);
   return true;
+}
+
+void NetServer::AddRepeatedTimer(const RepeatedTimer& timer) {
+  
 }
 
 }  // namespace net

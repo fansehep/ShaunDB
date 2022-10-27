@@ -25,6 +25,9 @@ using ::fver::base::log::Buffer;
 namespace fver {
 namespace net {
 
+class RepeatedTimer;
+class SingleTimer;
+
 void FverLogInit(int serverity, const char* msg);
 void ListenerCallback(struct evconnlistener* ev, evutil_socket_t socket,
                              struct sockaddr* addr, int socklen, void* arg);
@@ -48,20 +51,18 @@ class NetServer : public base::NonCopyable {
             timeoutHandle th, readHandle rh,
             uint32_t maxCount = kMaxConnectionN);
 
-  bool Run() {
-    auto re = event_base_dispatch(eventBase_);
-    if (0 == re) {
-      LOG_INFO("NetServer start run listen port: {}", port_);
-      return true;
-    }
-    return false;
-  }
+  bool Run();
 
   Connection* getConn(evutil_socket_t fd) { return ConnectionMap_[fd]; }
 
   bool removeConn(evutil_socket_t fd);
 
-  void AddTimer(const struct timeval& tv, const Connection& conn);
+
+  // 添加重复的定时器
+  void AddRepeatedTimer(const RepeatedTimer& timer);
+
+  // 添加一次性定时器
+  void AddSingleTimer(const SingleTimer& timer);
 
  private:
   writeHandle write_handle_;
