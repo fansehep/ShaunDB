@@ -19,17 +19,19 @@ enum kLogLevel {
   kDEBUG_ERROR,
 };
 
+static constexpr uint32_t kDefaultMaxLogBufSize = 16 * 1024 * 1024;
+
 namespace fver {
 namespace base {
 namespace log {
 
 void Init(const std::string& logpath, const int lev, const bool isSync,
-          const std::string& logPrename);
+          const std::string& logPrename,
+          const uint32_t log_bug_size = kDefaultMaxLogBufSize);
 
 }  // namespace log
 }  // namespace base
 }  // namespace fver
-
 
 #define LOG_INFO(str, ...)                                           \
   logimp.log->LogMent(__FILE_NAME__, __LINE__,                       \

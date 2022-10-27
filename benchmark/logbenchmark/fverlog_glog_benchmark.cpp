@@ -22,10 +22,10 @@
 // 测试对比 10s 内谁写入的日志数量最多
 // 本机测试 一般fverlog 的相同时间写入量是 glog 的 1.8 倍
 static void TEST_FLOG_TO_FILE_NOSYNC(benchmark::State& state) {
-  fver::base::log::Init("/home/fan/GitHub/fver/benchmark/logbenchmark",
+  fver::base::log::Init("./benchmark/logbenchmark",
                         kLogLevel::kInfo, false, "test");
   for (auto _ : state) {
-    const int corrunyN = 4;
+    const int corrunyN = std::thread::hardware_concurrency();
     std::vector<std::thread> workers;
     bool isRunning = true;
     int i = 0;
@@ -48,13 +48,13 @@ static void TEST_FLOG_TO_FILE_NOSYNC(benchmark::State& state) {
 static void TEST_GLOG_TO_FILE_NOSYNC(benchmark::State& state) {
   fmt::print("test glog init!\n");
   google::SetLogDestination(google::GLOG_INFO,
-                            "/home/fan/GitHub/fver/benchmark/logbenchmark");
+                            "./benchmark/logbenchmark/");
   FLAGS_logtostderr = false;
-  fLS::FLAGS_log_dir = "/home/fan/GitHub/fver/benchmark/logbenchmark";
+  fLS::FLAGS_log_dir = "./benchmark/logbenchmark/";
   google::InitGoogleLogging("");
 
   for (auto _ : state) {
-    const int corrunyN = 4;
+    const int corrunyN = std::thread::hardware_concurrency();
     std::vector<std::thread> workers;
     bool isRunning = true;
     int i = 0;

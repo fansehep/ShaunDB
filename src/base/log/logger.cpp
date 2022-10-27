@@ -14,8 +14,9 @@ Logger::~Logger() {
 #endif
 }
 
+// 单个线程 2 个 buffer, 所以一个线程的占用 4 + 8 = 12 MB 左右.
 Logger::Logger()
-    : isSync_(false), buf_(4194304), sumWrites_(0), isHolderByThread_(true) {}
+    : isSync_(false), buf_(0), sumWrites_(0), isHolderByThread_(true) {}
 
 Logger::Logger(uint32_t bufsize)
     : isSync_(false), buf_(bufsize), sumWrites_(0), isHolderByThread_(true) {}

@@ -22,12 +22,13 @@ class LogThread {
   LogThread();
   void AddLogger(std::shared_ptr<Logger> log);
   void Init(const std::string& logpath, const int lev, const bool isSync,
-            const std::string& logPrename);
+            const std::string& logPrename, const uint32_t kMaxCountBufferSize);
   void Stop();
   ~LogThread();
 
  private:
   int loglev_;
+  uint32_t buf_size_;
   LogFile file_;
   std::mutex mtx_;
   std::vector<std::shared_ptr<Logger>> logVectmp_;

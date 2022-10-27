@@ -14,8 +14,8 @@ namespace base {
 namespace log {
 
 void Init(const std::string& logpath, const int lev, const bool isSync,
-          const std::string& logPrename) {
-  logthread.Init(logpath, lev, isSync, logPrename);
+          const std::string& logPrename, const uint32_t buf_size) {
+  logthread.Init(logpath, lev, isSync, logPrename, buf_size);
 }
 
 }  // namespace log

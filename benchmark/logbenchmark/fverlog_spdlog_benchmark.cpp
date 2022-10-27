@@ -25,7 +25,8 @@ static void TEST_FLOG_TO_FILE_NOSYNC(benchmark::State& state) {
   fver::base::log::Init("/home/fan/GitHub/fver/benchmark/logbenchmark",
                         kLogLevel::kInfo, false, "test");
   for (auto _ : state) {
-    const int corrunyN = 4;
+    // 使用最大并发量
+    const int corrunyN = std::thread::hardware_concurrency();
     std::vector<std::thread> workers;
     bool isRunning = true;
     int i = 0;
@@ -54,7 +55,8 @@ static void TEST_GLOG_TO_FILE_NOSYNC(benchmark::State& state) {
   google::InitGoogleLogging("");
 
   for (auto _ : state) {
-    const int corrunyN = 4;
+    // 使用最大并发
+    const int corrunyN = std::thread::hardware_concurrency();
     std::vector<std::thread> workers;
     bool isRunning = true;
     int i = 0;

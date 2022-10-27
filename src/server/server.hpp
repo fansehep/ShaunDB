@@ -23,6 +23,7 @@ struct ServerConfig {
   int logLev;
   bool isSync;
   std::string log_name;
+  uint32_t log_buf_size;
   uint32_t listen_port;
 };
 

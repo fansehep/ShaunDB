@@ -16,8 +16,12 @@ FVER_FLAGS = [
     "-DNOMINMAX",
     "-std=c++20",
     # "-g0",
-    "-O2",
     "-fno-exceptions",
+]
+
+FVER_BENCHMARK_FLAGS = [
+    "-O2",
+    "-DNDEBUG",
 ]
 
 FVER_TEST_FLAGS = [

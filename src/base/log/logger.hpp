@@ -103,6 +103,13 @@ class Logger {
     timeNow_ = TimeStamp::Now();
     auto mtx = buf_.getMutex();
     mtx->lock();
+    // TODO: should judge the log_vec size
+    //  if log.size() >
+    //  日志到达水平线直接丢弃, 就不会引发过度扩容
+    if ((buf_.curPtr_->capacity() - buf_.curPtr_->size()) < 128) {
+      mtx->unlock();
+      return;
+    }
     fmt::format_to(
         std::back_inserter((*buf_.curPtr_)), "{}{} {}:{}] {}\n",
         kLogLevelNums[lev], timeNow_.ToFormatTodayNowUs(), filename, line,
@@ -131,9 +138,7 @@ class Logger {
 
   void setLogLev(int lev) { curLogLevel_ = static_cast<LogLevel>(lev); }
 
-  void setLogToFile() {
-    isSync_ = true;
-  }
+  void setLogToFile() { isSync_ = true; }
 
   void configInit(std::shared_ptr<std::condition_variable> cond,
                   std::shared_ptr<std::atomic<uint64_t>> sumWrite) {
@@ -143,7 +148,18 @@ class Logger {
 
   std::mutex* getMutex() { return buf_.getMutex(); }
 
+  void setBufSize(uint32_t buf_size) {
+    auto mtx = buf_.getMutex();
+    mtx->lock();
+    buf_.head_.reserve(buf_size);
+    buf_.tail_.reserve(buf_size);
+    mtx->unlock();
+    maxBufSize_ = buf_size;
+  }
+
  private:
+  // buffer 的水平线
+  uint32_t maxBufSize_;
   bool isSync_;
   //
   std::shared_ptr<std::condition_variable> cond_;

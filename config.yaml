@@ -1,8 +1,15 @@
-# STD_OUT 将输出打向终端
+# 日志的设置
+# @log_path:     日志输出的路径
+# @log_lev:      日志输出的等级
+# @log_name:     日志输出的名称
+# @log_issync:   日志是否同步写(同步写入会损失性能, 但可以减少日志损失)
+# @log_buf_size: 每个线程的日志buf容量限制. 当你的服务比较大时建议, 开启大容量
+# @listen_port:  服务器默认监听的端口
 log_config:
   log_path: ./
   log_lev: STD_OUT
   log_name: shaun_server
   log_issync: false
+  log_buf_size: 16mb
 server_config:
   listen_port: 9090

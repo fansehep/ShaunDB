@@ -34,7 +34,7 @@ void SignalExecute(int signal) {
 }
 
 LogThread::LogThread()
-    : loglev_(Logger::kInfo), isSync_(false), isRunning_(false) {
+    : loglev_(Logger::kInfo), isSync_(false), buf_size_(0), isRunning_(false) {
   cond_ = std::make_shared<std::condition_variable>();
   sumWrites_ = std::make_shared<std::atomic<uint64_t>>(0);
 
@@ -48,6 +48,7 @@ void LogThread::AddLogger(std::shared_ptr<Logger> log) {
   log->setLogLev(loglev_);
   if (true == isRunning_) {
     log->setLogToFile();
+    log->setBufSize(buf_size_);
   }
   log->configInit(cond_, sumWrites_);
   logVectmp_.push_back(log);
@@ -58,9 +59,11 @@ void LogThread::AddLogger(std::shared_ptr<Logger> log) {
 }
 
 void LogThread::Init(const std::string& logpath, const int lev,
-                     const bool isSync, const std::string& logPrename) {
+                     const bool isSync, const std::string& logPrename,
+                     const uint32_t buf_size) {
   file_.SetLogPath(logpath, logPrename);
   loglev_ = lev;
+  buf_size_ = buf_size;
   isSync_ = isSync;
   isRunning_ = true;
   // 如果不启用sync
@@ -79,6 +82,10 @@ void LogThread::Init(const std::string& logpath, const int lev,
 
         std::unique_lock<std::mutex> lock(logMutex_);
         cond_->wait_for(lock, std::chrono::seconds(1));
+        // 1s 到期, 但是是空写入, 继续阻塞等待即可.
+        if (sumWrites_->load() == 0) {
+          continue;
+        }
         const int N = static_cast<int>(logworkers_.size());
 
         for (int i = 0; i < N; i++) {
@@ -157,6 +164,9 @@ void LogThread::Init(const std::string& logpath, const int lev,
 
         std::unique_lock<std::mutex> lock(logMutex_);
         cond_->wait_for(lock, std::chrono::milliseconds(750));
+        if (sumWrites_->load() == 0) {
+          continue;
+        }
         const int N = static_cast<int>(logworkers_.size());
 
         for (int i = 0; i < N; i++) {

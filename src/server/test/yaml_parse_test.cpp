@@ -29,6 +29,7 @@ TEST_F(YamlParseTest, simple_config_test) {
   ASSERT_EQ(conf.logpath, "./");
   ASSERT_EQ(conf.logLev, Logger::LogLevel::kInfo);
   ASSERT_EQ(conf.listen_port, 9090);
+  ASSERT_EQ(conf.log_buf_size, 8 * 1024 * 1024);
 }
 
 }  // namespace server

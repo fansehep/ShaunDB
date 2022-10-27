@@ -3,6 +3,6 @@ log_config:
   log_lev: Info
   log_name: yaml_test
   log_issync: false
-
+  log_buf_size: 8MB
 server_config:
   listen_port: 9090

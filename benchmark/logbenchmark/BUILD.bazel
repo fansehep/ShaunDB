@@ -1,5 +1,6 @@
-load("//:copts.bzl", "FVER_FLAGS")
+load("//:copts.bzl", "FVER_FLAGS", "FVER_BENCHMARK_FLAGS")
 package(default_visibility=["//visibility:public"])
+
 
 
 cc_test(
@@ -14,7 +15,7 @@ cc_test(
         "@com_google_benchmark//:benchmark_main",
     ],
     visibility=["//visibility:public"],
-    copts=FVER_FLAGS,
+    copts=FVER_FLAGS + FVER_BENCHMARK_FLAGS,
     linkopts=[
         "-lglog",
         "-lpthread", ],
