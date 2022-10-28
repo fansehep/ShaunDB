@@ -51,24 +51,24 @@ bool Connection::Init() {
 }
 
 bool Connection::getPeerConnInfo() {
-  char ipAddr[16] = {0};
+  char ipAddr[32] = {0};
   struct sockaddr_in clientaddrinfo;
   socklen_t addr_len = sizeof(clientaddrinfo);
   std::memset(&clientaddrinfo, 0, sizeof(clientaddrinfo));
 
-  if (getpeername(socketFd_,
+  if (::getpeername(socketFd_,
                   reinterpret_cast<struct sockaddr*>(&clientaddrinfo),
                   &addr_len)) {
     LOG_WARN("connection: fd: {}, getpeername error", socketFd_);
     return false;
   }
 
-  if (inet_ntop(AF_INET, &clientaddrinfo, ipAddr, sizeof(ipAddr)) == nullptr) {
+  if (::inet_ntop(AF_INET, &clientaddrinfo, ipAddr, sizeof(ipAddr)) == nullptr) {
     LOG_WARN("connection: fd: {} inet_ntop error", socketFd_);
     return false;
   }
   peerPort_ = ntohs(clientaddrinfo.sin_port);
-  peerIP_ = ipAddr;
+  peerIP_ = ::inet_ntoa(clientaddrinfo.sin_addr);
   return true;
 }
 

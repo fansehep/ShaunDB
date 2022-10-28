@@ -33,7 +33,7 @@ bool Connectioner::Run() {
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
   addr.sin_port = htons(peer_port_);
-  if (::inet_pton(AF_INET, peer_ip_.c_str(), &addr.sin_addr)) {
+  if (::inet_pton(AF_INET, peer_ip_.c_str(), &addr.sin_addr) <= 0) {
     LOG_ERROR("connect {} {} inet_pton error", peer_ip_, peer_port_);
   }
   conn_.socketFd_ = ::socket(

@@ -69,13 +69,6 @@ class ActiveConnServer {
 
   // TODO, if the data has be read ok, should return -1;
   int readHd(char* buf, size_t size, Connection* conn) {
-    assert(buf_.buflen_ >= 0);
-    std::string_view message(buf, size);
-    std::memcpy(buf_.bufptr_, buf, size);
-    buf_.offset_ += size;
-    LOG_INFO("conn ip: {} port: {} send {}", conn->getPeerIP(),
-             conn->getPeerPort(), message);
-    conn->Send(buf, size);
     return -1;
   }
 
