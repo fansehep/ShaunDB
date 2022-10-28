@@ -1,3 +1,76 @@
 syntax = "proto3";
 
-message 
+package RaftMes;
+
+message RaftNode {
+  string IP = 1;
+  uint32 Port = 2;
+  uint64 Term = 3;
+  uint32 self_role = 4;
+}
+
+message LogEntry {
+  string Command = 1;
+  uint64 Term = 2;
+  uint64 Index = 3;
+}
+
+message Log {
+  repeated LogEntry Entries = 1;
+  uint64 LastIncludedIndex = 2;
+  uint64 LastIncludedTerm = 3;
+}
+
+
+message RequestVoteArgs {
+  RaftNode node = 1;
+  uint64 LastLogIndex = 2;
+  uint64 LastLogTerm = 3;
+}
+
+message RequestVoteReply {
+  RaftNode node = 2;
+  bool voteGranted = 3;
+}
+
+message AppendEntriesArgs {
+  RaftNode node = 1;
+  uint64 PrevLogIndex = 2;
+  uint64 PrevLogTerm = 3;
+  uint64 LeaderCommitIndex = 4;
+  repeated LogEntry Entries = 5;
+}
+
+message AppendEntriesReply {
+  RaftNode node = 1;
+  bool ok = 2;
+  uint64 UnmatchIndex = 3;
+  uint64 UnmatchTerm = 4; 
+}
+
+message InstallSnapshotArgs {
+  RaftNode node = 1;
+  uint64 LastIncludedIndex = 2;
+  uint64 LastIncludedTerm = 3;
+  string Data = 4;
+}
+
+message InstallSnapshotReply {
+  RaftNode node = 1;
+}
+
+message SnapshotMessage {
+  bool   SnapshotValid = 1;
+  string Snapshot = 2;
+  uint64 SnapshotTerm = 3;
+  uint64 SnapshotIndex = 4;
+}
+
+message ApplyMessage {
+  bool   CommandVaild = 1;
+  string Command = 2;
+  uint64 CommandIndex = 3;
+  uint64 CommandTerm = 4;
+  optional SnapshotMessage snapshot = 5;
+}
+
