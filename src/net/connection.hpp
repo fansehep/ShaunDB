@@ -17,6 +17,7 @@ extern "C" {
 
 #include "src/base/log/logbuffer.hpp"
 #include "src/base/noncopyable.hpp"
+#include "src/net/conn_callback.hpp"
 
 using ::fver::base::NonCopyable;
 using ::fver::base::log::Buffer;
@@ -33,30 +34,25 @@ class Connection;
 //   std::shared_ptr<Connection> conn_;
 //  }
 
-static constexpr uint32_t kConnectionBufferSize = 4096;
-extern void ConnectionWriteCallback(struct bufferevent* buf, void* data);
-extern void ConnectionReadCallback(struct bufferevent* buf, void* data);
-extern void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
-                                    void* data);
-
-using writeHandle = std::function<int(Connection*)>;
-using closeHandle = std::function<int(Connection*)>;
-using timeoutHandle = std::function<int(Connection*)>;
-using readHandle = std::function<int(char*, size_t, Connection*)>;
-
-// 使用智能指针管理所有连接
-using ConnPtr = std::shared_ptr<Connection>;
-
-
-class ConnImp;
+class Connectioner;
 
 class Connection : public NonCopyable {
  public:
-  friend ConnImp;
-  friend void ConnectionReadCallback(struct bufferevent* buf, void* data);
-  friend void ConnectionWriteCallback(struct bufferevent* buf, void* data);
-  friend void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
-                                      void* data);
+  static constexpr uint32_t kConnectionBufferSize = 4096;
+  // 连接状态的封装
+  enum ConnStat {
+    kConnting,  // 正在连接连接
+    kConnted,   // 已经建立连接
+    kDisConn,   // 连接断开
+  };
+
+  friend Connectioner;
+  friend void callback::ConnectionReadCallback(struct bufferevent* buf,
+                                               void* data);
+  friend void callback::ConnectionWriteCallback(struct bufferevent* buf,
+                                                void* data);
+  friend void callback::ConnectionEventCallback(struct bufferevent* buf,
+                                                short eventWhat, void* data);
   Connection();
   ~Connection();
   bool Init();
@@ -93,9 +89,9 @@ class Connection : public NonCopyable {
   std::string peerIP_;
   // 连接对等方的 port
   uint32_t peerPort_;
+  // 连接的状态
+  ConnStat state_;
 };
-
-
 
 }  // namespace net
 

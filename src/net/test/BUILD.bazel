@@ -35,3 +35,14 @@ cc_test(
         "//src/base/log:fver_log_lib",
     ],
 )
+
+cc_test(
+    name="active_server_test",
+    srcs=glob(["active_conn_test.cpp"]),
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+    deps=[
+        "//src/net:fver_net_lib",
+        "//src/base/log:fver_log_lib",
+    ],
+)

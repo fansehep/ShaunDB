@@ -113,6 +113,11 @@ std::map<evutil_socket_t, Connection*>& NetServer::getConnMap() {
 
 std::mutex* NetServer::getMutex() { return &mtx_; }
 
+
+uint32_t NetServer::getConnCount() {
+  return ConnectionMap_.size();
+}
+
 }  // namespace net
 
 }  // namespace fver

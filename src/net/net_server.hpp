@@ -13,8 +13,8 @@ extern "C" {
 
 #include <map>
 #include <memory>
-
-#include "src/net/connection.hpp"
+#include "src/base/noncopyable.hpp"
+#include "src/net/conn_callback.hpp"
 
 using ::fver::base::NonCopyable;
 
@@ -23,6 +23,8 @@ namespace net {
 
 class RepeatedTimer;
 class SingleTimer;
+class Connection;
+class Connectioner;
 
 void FverLogInit(int serverity, const char* msg);
 void ListenerCallback(struct evconnlistener* ev, evutil_socket_t socket,
@@ -33,8 +35,8 @@ static constexpr uint32_t kMaxConnectionN = 1000;
 
 class NetServer : public base::NonCopyable {
  public:
+  friend Connectioner;
   friend Connection;
-  friend ConnImp;
   friend RepeatedTimer;
   friend SingleTimer;
   friend void FverLogInit(int serverity, const char* msg);
@@ -60,6 +62,9 @@ class NetServer : public base::NonCopyable {
   bool removeConn(evutil_socket_t fd);
 
   std::mutex* getMutex();
+
+  // 获取当前服务器的连接数量
+  uint32_t getConnCount();
 
  private:
   writeHandle write_handle_;

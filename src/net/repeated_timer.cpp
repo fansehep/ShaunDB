@@ -26,6 +26,7 @@ void RepeatedTimer::Reset(const struct timeval& time_val,
   evtimer_del(&tick_evt_);
   this->time_val_ = time_val;
   this->callback_ = callback;
+  this->timerName_ = name;
   Run();
 }
 
