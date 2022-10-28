@@ -1,6 +1,7 @@
 #ifndef SRC_BASE_LOG_LOGGER_H_
 #define SRC_BASE_LOG_LOGGER_H_
 
+#include <fmt/color.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <string.h>
@@ -33,9 +34,6 @@ struct LogImp;
 // the fmt::format_to need us to
 // auto vec_char_out = vector<char>();
 // then fmt::format_to(std::back_iterator(vec_char_out), "...");
-static const char kLogLevelNums[] = {
-    'I', 'T', 'D', 'E', 'W', 'Q',
-};
 
 // 10486 = 2097152 / 200;
 constexpr static uint64_t kLogThreshold = 10486;
@@ -44,6 +42,13 @@ class Logger {
  public:
   friend LogImp;
   friend LogThread;
+  static constexpr char kLogLevelNums[] = {
+      'I', 'T', 'D', 'E', 'W', 'Q',
+  };
+  static constexpr fmt::color kLogFmtColorNums[] = {
+      fmt::color::spring_green, fmt::color::aqua,   fmt::color::khaki,
+      fmt::color::red,          fmt::color::orange, fmt::color::salmon,
+  };
   enum LogLevel {
     kInfo,
     kTrace,
@@ -64,11 +69,18 @@ class Logger {
   constexpr void LogMent(const char* filename, const int line,
                          const LogLevel lev, const std::string format_str,
                          Args&&... args) {
+    // 由于用户必须在调用前就使用 Init() 初始化,
+    // 所以一般认为将输出打到终端都处于调试模式
+    // 可以给到彩色模式.
     if (!isSync_) {
       timeNow_ = TimeStamp::Now();
       fmt::print(
-          "{}{} {}:{}] {}\n", kLogLevelNums[lev], timeNow_.ToFormatTodayNowUs(),
-          filename, line,
+          "{}{} {}:{}] {}\n",
+          fmt::styled(kLogLevelNums[lev], fmt::fg(kLogFmtColorNums[lev])),
+          fmt::styled(timeNow_.ToFormatTodayNowUs(),
+                      fmt::fg(fmt::color::light_steel_blue)),
+          fmt::styled(filename, fmt::fg(fmt::color::wheat)),
+          fmt::styled(line, fmt::fg(fmt::color::powder_blue)),
           fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
     }
     if (lev < curLogLevel_) {

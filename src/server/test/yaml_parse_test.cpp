@@ -2,6 +2,7 @@
 
 #include "src/server/configparse.hpp"
 #include "src/server/server.hpp"
+#include "src/base/log/logging.hpp"
 
 namespace fver {
 

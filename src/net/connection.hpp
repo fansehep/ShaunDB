@@ -34,9 +34,9 @@ class Connection;
 //  }
 
 static constexpr uint32_t kConnectionBufferSize = 4096;
-void ConnectionWriteCallback(struct bufferevent* buf, void* data);
-void ConnectionReadCallback(struct bufferevent* buf, void* data);
-void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
+extern void ConnectionWriteCallback(struct bufferevent* buf, void* data);
+extern void ConnectionReadCallback(struct bufferevent* buf, void* data);
+extern void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
                                     void* data);
 
 using writeHandle = std::function<int(Connection*)>;
@@ -49,8 +49,6 @@ using ConnPtr = std::shared_ptr<Connection>;
 
 
 class ConnImp;
-
-
 
 class Connection : public NonCopyable {
  public:
@@ -89,7 +87,7 @@ class Connection : public NonCopyable {
   struct bufferevent* buf_;
   // 单个 Connection 持有Server的引用
   NetServer* server_;
-  // 时间戳
+  // 时间戳, 当连接超时时 断开
   struct timeval timeVal_;
   // 连接对等方的 IP
   std::string peerIP_;

@@ -28,9 +28,9 @@ class Thread : public NonCopyable {
   bool IsStarted() { return started_; }
 
  private:
-  bool started_;
   std::unique_ptr<std::jthread> thread_;
   std::function<void()> func_;
+  bool started_;
 };
 
 }  // namespace base

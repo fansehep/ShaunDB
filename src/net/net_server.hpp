@@ -8,19 +8,15 @@ extern "C" {
 #include <event2/listener.h>
 #include <event2/util.h>
 #include <sys/socket.h>
+#include "event2/event_struct.h"
 }
 
 #include <map>
 #include <memory>
 
-#include "src/base/log/logging.hpp"
-#include "src/base/noncopyable.hpp"
-#include "src/base/threadsafequeue.hpp"
 #include "src/net/connection.hpp"
 
 using ::fver::base::NonCopyable;
-using ::fver::base::ThreadSafeQueue;
-using ::fver::base::log::Buffer;
 
 namespace fver {
 namespace net {
@@ -39,7 +35,8 @@ class NetServer : public base::NonCopyable {
  public:
   friend Connection;
   friend ConnImp;
-
+  friend RepeatedTimer;
+  friend SingleTimer;
   friend void FverLogInit(int serverity, const char* msg);
   friend void ListenerCallback(struct evconnlistener* ev,
                                evutil_socket_t socket, struct sockaddr* addr,
@@ -51,18 +48,18 @@ class NetServer : public base::NonCopyable {
             timeoutHandle th, readHandle rh,
             uint32_t maxCount = kMaxConnectionN);
 
-  bool Run();
+  // default call event_base_dispatch
+  // will block here
+  // can let a thread run it, then a queue to save the info.
+  void Run();
 
-  Connection* getConn(evutil_socket_t fd) { return ConnectionMap_[fd]; }
+  Connection* getConn(evutil_socket_t fd);
+
+  std::map<evutil_socket_t, Connection*>& getConnMap();
 
   bool removeConn(evutil_socket_t fd);
 
-
-  // 添加重复的定时器
-  void AddRepeatedTimer(const RepeatedTimer& timer);
-
-  // 添加一次性定时器
-  void AddSingleTimer(const SingleTimer& timer);
+  std::mutex* getMutex();
 
  private:
   writeHandle write_handle_;
@@ -75,6 +72,8 @@ class NetServer : public base::NonCopyable {
   struct sockaddr_in sin_;
   struct event_base* eventBase_;
   struct evconnlistener* listener_;
+  // 保护map
+  std::mutex mtx_;
   std::map<evutil_socket_t, Connection*> ConnectionMap_;
 };
 

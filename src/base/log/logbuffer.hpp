@@ -50,9 +50,9 @@ class LogBuffer {
 
  private:
   std::mutex mtx_;
-  Buffer* curPtr_;
   Buffer head_;
   Buffer tail_;
+  Buffer* curPtr_;
 };
 
 class Logger;

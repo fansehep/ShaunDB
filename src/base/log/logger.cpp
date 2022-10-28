@@ -16,10 +16,10 @@ Logger::~Logger() {
 
 // 单个线程 2 个 buffer, 所以一个线程的占用 4 + 8 = 12 MB 左右.
 Logger::Logger()
-    : isSync_(false), buf_(0), sumWrites_(0), isHolderByThread_(true) {}
+    : isSync_(false), sumWrites_(0), buf_(0), isHolderByThread_(true) {}
 
 Logger::Logger(uint32_t bufsize)
-    : isSync_(false), buf_(bufsize), sumWrites_(0), isHolderByThread_(true) {}
+    : isSync_(false), sumWrites_(0), buf_(bufsize), isHolderByThread_(true) {}
 
 LogImp::LogImp(LogThread* thread) {
   log = std::make_shared<Logger>();

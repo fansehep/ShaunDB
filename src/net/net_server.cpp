@@ -1,8 +1,8 @@
 #include "src/net/net_server.hpp"
 
+#include "src/base/log/logging.hpp"
 #include "src/net/connection.hpp"
 #include "src/net/repeated_timer.hpp"
-
 
 namespace fver {
 
@@ -74,35 +74,44 @@ void ListenerCallback(struct evconnlistener* ev, evutil_socket_t socket,
   if (new_conn == nullptr) {
     LOG_ERROR("create connection error");
   }
-  assert(true == new_conn->Init());
+  auto ue = new_conn->Init();
+  if (ue == false) {
+    LOG_WARN("conn init fail");
+  }
   // 使用 map 管理所有连接
+  server->mtx_.lock();
   server->ConnectionMap_.insert({socket, new_conn});
+  server->mtx_.unlock();
 }
 
-bool NetServer::Run() {
-  auto re = event_base_dispatch(eventBase_);
-  if (0 == re) {
-    LOG_INFO("NetServer start run listen port: {}", port_);
-    return true;
-  }
-  return false;
-}
+void NetServer::Run() { event_base_dispatch(eventBase_); }
 
 bool NetServer::removeConn(evutil_socket_t fd) {
+  mtx_.lock();
   auto iter = ConnectionMap_.find(fd);
+  mtx_.unlock();
   if (iter == ConnectionMap_.end()) {
     LOG_WARN("No connection in map fd: {}", fd);
     return false;
   }
+  LOG_TRACE("Conn ip: {} port: {} has be removed", iter->second->getPeerIP(),
+            iter->second->getPeerPort());
   delete iter->second;
+  mtx_.lock();
   ConnectionMap_.erase(fd);
-  LOG_INFO("Connection fd: {} has be removed", fd);
+  mtx_.unlock();
   return true;
 }
 
-void NetServer::AddRepeatedTimer(const RepeatedTimer& timer) {
-  
+Connection* NetServer::getConn(evutil_socket_t fd) {
+  return ConnectionMap_[fd];
 }
+
+std::map<evutil_socket_t, Connection*>& NetServer::getConnMap() {
+  return ConnectionMap_;
+}
+
+std::mutex* NetServer::getMutex() { return &mtx_; }
 
 }  // namespace net
 

@@ -22,19 +22,39 @@ void SignalExecute(int signal) {
   switch (signal) {
     case SIGINT: {
       auto error_log = fver::base::stackTrace(true);
-      LOG_ERROR("SIGINT: {}", error_log);
+      LOG_ERROR("SIGINT:\n{}", error_log);
       exit(-1);
     }
     case SIGQUIT: {
       auto error_log = fver::base::stackTrace(true);
-      LOG_ERROR("SIGQUIT:{}", error_log);
+      LOG_ERROR("SIGQUIT:\n{}", error_log);
+      exit(-1);
+    }
+    case SIGBUS: {
+      auto error_log = fver::base::stackTrace(true);
+      LOG_ERROR("SIGBUS:\n{}", error_log);
+      exit(-1);
+    }
+    case SIGSEGV: {
+      auto error_log = fver::base::stackTrace(true);
+      LOG_ERROR("SIGSEGV:\n{}", error_log);
+      exit(-1);
+    }
+    case SIGILL: {
+      auto error_log = fver::base::stackTrace(true);
+      LOG_ERROR("SIGILL:\n{}", error_log);
+      exit(-1);
+    }
+    case SIGABRT: {
+      auto error_log = fver::base::stackTrace(true);
+      LOG_ERROR("SIGABRT:\n{}", error_log);
       exit(-1);
     }
   }
 }
 
 LogThread::LogThread()
-    : loglev_(Logger::kInfo), isSync_(false), buf_size_(0), isRunning_(false) {
+    : loglev_(Logger::kInfo), buf_size_(0), isSync_(false), isRunning_(false) {
   cond_ = std::make_shared<std::condition_variable>();
   sumWrites_ = std::make_shared<std::atomic<uint64_t>>(0);
 

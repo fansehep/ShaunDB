@@ -30,7 +30,7 @@ bool LogBuffer::Push(const std::string& logment) {
   }
   std::memcpy(curPtr_->bufptr_ + curPtr_->offset_, logment.data(),
               logment.size());
-  curPtr_->offset_ += static_cast<const uint32_t>(logment.size());
+  curPtr_->offset_ += static_cast<uint32_t>(logment.size());
   return true;
 }
 

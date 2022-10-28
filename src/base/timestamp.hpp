@@ -12,12 +12,13 @@ namespace fver {
 namespace base {
 class TimeStamp {
  public:
-  constexpr TimeStamp() : sinceepoch_(0) {}
+  constexpr TimeStamp() = default;
   ~TimeStamp() = default;
   TimeStamp(const uint64_t time_sec, const uint64_t time_usec)
       : time_sec_(time_sec), time_usec_(time_usec) {}
   TimeStamp(std::time_t newtime) : sinceepoch_(newtime) {}
   TimeStamp(const TimeStamp& lef) : sinceepoch_(lef.sinceepoch_) {}
+  TimeStamp& operator=(const TimeStamp& stamp);
   // return 2022-08-26
   std::string ToFormatToday();
   // return 2022-08-26 17:10 45.505045

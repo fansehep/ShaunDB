@@ -1,14 +1,11 @@
 #include "src/net/connection.hpp"
 
-#include <bits/types/struct_timeval.h>
-#include <event2/event.h>
-#include <netinet/in.h>
-
 extern "C" {
 #include <arpa/inet.h>
 #include <event2/bufferevent.h>
 #include <event2/listener.h>
 #include <event2/util.h>
+#include <netinet/in.h>
 }
 
 #include "src/base/log/logging.hpp"
@@ -21,9 +18,9 @@ void ConnectionReadCallback(struct bufferevent* buf, void* data) {
   auto conn = static_cast<Connection*>(data);
   struct evbuffer* bev = bufferevent_get_input(buf);
   int len = 0;
-  for (;;) {
+  while (true) {
     len = evbuffer_remove(bev, conn->readBuf_.bufptr_ + conn->readBuf_.offset_,
-                           conn->readBuf_.buflen_);
+                          conn->readBuf_.buflen_);
     if (len <= 0) {
       break;
     }
@@ -89,10 +86,9 @@ Connection::Connection(evutil_socket_t socket, readHandle rh, writeHandle wh,
       writeHandle_(wh),
       closeHandle_(ch),
       timeoutHandle_(th),
+      readBuf_(kConnectionBufferSize),
       socketFd_(socket),
       server_(server),
-      buf_(nullptr),
-      readBuf_(kConnectionBufferSize),
       timeVal_({0, 0}) {}
 
 bool Connection::Init() {

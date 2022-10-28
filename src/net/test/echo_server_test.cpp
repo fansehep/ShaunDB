@@ -41,7 +41,7 @@ class EchoServer {
   }
 
   int timeoutHd(Connection* conn) {
-    LOG_INFO("conn ip: {} port: {} connection time out", conn->getPeerIP(),
+    LOG_WARN("conn ip: {} port: {} connection time out", conn->getPeerIP(),
              conn->getPeerPort());
     return 1;
   }

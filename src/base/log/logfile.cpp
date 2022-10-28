@@ -83,7 +83,7 @@ bool LogFile::SetLogPath(const std::string& path) {
 bool LogFile::SetLogPath(const std::string& path,
                          const std::string& logPrename) {
   nowTime_ = TimeStamp::Now();
-//  assert(path.back() != '/');
+  //  assert(path.back() != '/');
   curLogName_ =
       fmt::format("{}/{}-{}.log", path, logPrename, nowTime_.ToFormatLogName());
   fileptr_ = std::fopen(curLogName_.c_str(), "wbx");
@@ -104,16 +104,23 @@ bool LogFile::SetLogPath(const std::string& path,
 }
 
 void LogFile::Write(const std::string& logment) {
+#ifdef DEBUG
   assert(fileptr_ != nullptr);
   auto write_size =
       std::fwrite(logment.data(), sizeof(char), logment.size(), fileptr_);
   assert(write_size == logment.size());
+#else
+  std::fwrite(logment.c_str(), sizeof(char), logment.size(), fileptr_);
+#endif
 }
 
 void LogFile::WriteStr(const char* str, const int size) {
+#ifdef DEBUG
   assert(fileptr_ != nullptr);
-  auto write_size = std::fwrite(str, sizeof(char), size, fileptr_);
-  assert(write_size == size);
+  assert(std::fwrite(str, sizeof(char), size, fileptr_), size);
+#else
+  std::fwrite(str, sizeof(char), size, fileptr_);
+#endif
 }
 
 void LogFile::Sync() { std::fflush(fileptr_); }
