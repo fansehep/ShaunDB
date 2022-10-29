@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
+
 extern "C" {
 #include <event2/bufferevent.h>
 #include <event2/event.h>
@@ -21,10 +23,11 @@ void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
 
 }  // namespace callback
 
-using writeHandle = std::function<int(Connection*)>;
-using closeHandle = std::function<int(Connection*)>;
-using timeoutHandle = std::function<int(Connection*)>;
-using readHandle = std::function<int(char*, size_t, Connection*)>;
+using writeHandle = std::function<int(const std::shared_ptr<Connection>&)>;
+using closeHandle = std::function<int(const std::shared_ptr<Connection>&)>;
+using timeoutHandle = std::function<int(const std::shared_ptr<Connection>&)>;
+using readHandle =
+    std::function<int(char*, size_t, const std::shared_ptr<Connection>&)>;
 
 }  // namespace net
 

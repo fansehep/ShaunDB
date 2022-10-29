@@ -1,5 +1,6 @@
 #include "src/net/conn_callback.hpp"
 
+#include "src/base/log/logging.hpp"
 #include "src/net/connection.hpp"
 #include "src/net/net_server.hpp"
 
@@ -21,9 +22,9 @@ namespace net {
 
 namespace callback {
 
-
 void ConnectionReadCallback(struct bufferevent* buf, void* data) {
-  auto conn = static_cast<Connection*>(data);
+  auto conn_pair = reinterpret_cast<std::pair<NetServer*, int>*>(data);
+  auto conn = conn_pair->first->getConn(conn_pair->second);
   struct evbuffer* bev = ::bufferevent_get_input(buf);
   int len = 0;
   while (true) {
@@ -53,7 +54,8 @@ void ConnectionReadCallback(struct bufferevent* buf, void* data) {
 }
 
 void ConnectionWriteCallback(struct ::bufferevent* buf, void* data) {
-  auto conn = static_cast<Connection*>(data);
+  auto conn_pair = reinterpret_cast<std::pair<NetServer*, int>*>(data);
+  auto conn = conn_pair->first->getConn(conn_pair->second);
 #ifdef FVER_NET_DEBUG
   LOG_INFO("Begin to write handle1!");
 #endif
@@ -71,24 +73,25 @@ void ConnectionWriteCallback(struct ::bufferevent* buf, void* data) {
 
 void ConnectionEventCallback(struct ::bufferevent* buf, short eventWhat,
                              void* data) {
-  auto conn = static_cast<Connection*>(data);
+  auto conn_pair = reinterpret_cast<std::pair<NetServer*, int>*>(data);
+  auto conn = conn_pair->first->getConn(conn_pair->second);
   if (eventWhat & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
     if (conn->closeHandle_) {
       conn->closeHandle_(conn);
     }
-    ::bufferevent_free(buf);
     conn->server_->removeConn(conn->socketFd_);
+    return;
   } else if (eventWhat & (BEV_EVENT_TIMEOUT)) {
     if (conn->timeoutHandle_) {
       conn->timeoutHandle_(conn);
     }
-    ::bufferevent_free(buf);
     // 移除自己在 server 中的连接
     conn->server_->removeConn(conn->socketFd_);
+    return;
   }
 }
 
-}
+}  // namespace callback
 
 }  // namespace net
 

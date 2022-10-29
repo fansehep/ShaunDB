@@ -23,7 +23,7 @@ bool Server::Init(const struct ServerConfig& conf) {
 
 void Server::Run() { server_.Run(); }
 
-int Server::readHD(char* buf, size_t size, Connection* conn) {
+int Server::readHD(char* buf, size_t size, const std::shared_ptr<Connection>& conn) {
   if (buf[size - 1] == '\n') {
     size -= 1;
   }
@@ -80,15 +80,15 @@ int Server::readHD(char* buf, size_t size, Connection* conn) {
   return -1;
 }
 
-int Server::writeHD(Connection* conn) { return 1; }
+int Server::writeHD(const std::shared_ptr<Connection>& conn) { return 1; }
 
-int Server::closeHD(Connection* conn) {
+int Server::closeHD(const std::shared_ptr<Connection>& conn) {
   LOG_INFO("conn ip: {} port: {} close", conn->getPeerIP(),
            conn->getPeerPort());
   return 1;
 }
 
-int Server::timeoutHD(Connection* conn) {
+int Server::timeoutHD(const std::shared_ptr<Connection>& conn) {
   LOG_INFO("conn ip: {} port: {} timeout", conn->getPeerIP(),
            conn->getPeerPort());
   return 1;

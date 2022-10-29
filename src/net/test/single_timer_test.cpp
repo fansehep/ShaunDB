@@ -39,7 +39,7 @@ class SingleServer {
     timer_.Run();
   }
 
-  int writeHd(Connection* conn) {
+  int writeHd(const std::shared_ptr<Connection>& conn) {
     std::string_view message(buf_.bufptr_, buf_.offset_);
     LOG_INFO("server send {}", message);
     conn->Send(buf_.bufptr_, buf_.offset_);
@@ -47,20 +47,20 @@ class SingleServer {
     return 1;
   }
 
-  int closeHd(Connection* conn) {
+  int closeHd(const std::shared_ptr<Connection>& conn) {
     LOG_INFO("conn ip: {} port: {} close connection", conn->getPeerIP(),
              conn->getPeerPort());
     return 1;
   }
 
-  int timeoutHd(Connection* conn) {
+  int timeoutHd(const std::shared_ptr<Connection>& conn) {
     LOG_WARN("conn ip: {} port: {} connection time out", conn->getPeerIP(),
              conn->getPeerPort());
     return 1;
   }
 
   // TODO, if the data has be read ok, should return -1;
-  int readHd(char* buf, size_t size, Connection* conn) {
+  int readHd(char* buf, size_t size, const std::shared_ptr<Connection>& conn) {
     assert(buf_.buflen_ >= 0);
     std::string_view message(buf, size);
     std::memcpy(buf_.bufptr_, buf, size);

@@ -8,11 +8,13 @@ extern "C" {
 #include <event2/listener.h>
 #include <event2/util.h>
 #include <sys/socket.h>
+
 #include "event2/event_struct.h"
 }
 
 #include <map>
 #include <memory>
+
 #include "src/base/noncopyable.hpp"
 #include "src/net/conn_callback.hpp"
 
@@ -28,7 +30,7 @@ class Connectioner;
 
 void FverLogInit(int serverity, const char* msg);
 void ListenerCallback(struct evconnlistener* ev, evutil_socket_t socket,
-                             struct sockaddr* addr, int socklen, void* arg);
+                      struct sockaddr* addr, int socklen, void* arg);
 
 // 默认支持最大连接是 1000 个连接
 static constexpr uint32_t kMaxConnectionN = 1000;
@@ -55,9 +57,9 @@ class NetServer : public base::NonCopyable {
   // can let a thread run it, then a queue to save the info.
   void Run();
 
-  Connection* getConn(evutil_socket_t fd);
+  std::shared_ptr<Connection> getConn(evutil_socket_t fd);
 
-  std::map<evutil_socket_t, Connection*>& getConnMap();
+  std::map<evutil_socket_t, std::shared_ptr<Connection>>& getConnMap();
 
   bool removeConn(evutil_socket_t fd);
 
@@ -79,7 +81,7 @@ class NetServer : public base::NonCopyable {
   struct evconnlistener* listener_;
   // 保护map
   std::mutex mtx_;
-  std::map<evutil_socket_t, Connection*> ConnectionMap_;
+  std::map<evutil_socket_t, std::shared_ptr<Connection>> ConnectionMap_;
 };
 
 }  // namespace net

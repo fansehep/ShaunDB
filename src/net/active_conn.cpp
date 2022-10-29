@@ -17,29 +17,31 @@ namespace net {
 void Connectioner::Init(const std::string& ip, const uint32_t port,
                         const std::shared_ptr<NetServer>& server, readHandle rh,
                         writeHandle wh, closeHandle ch, timeoutHandle th) {
+  this->conn_ = std::make_shared<Connection>();
   this->server_ = server;
   this->peer_ip_ = ip;
   this->peer_port_ = port;
-  this->conn_.server_ = server.get();
-  this->conn_.readHandle_ = rh;
-  this->conn_.writeHandle_ = wh;
-  this->conn_.closeHandle_ = ch;
-  this->conn_.timeoutHandle_ = th;
+  this->conn_->server_ = server.get();
+  this->conn_->readHandle_ = rh;
+  this->conn_->writeHandle_ = wh;
+  this->conn_->closeHandle_ = ch;
+  this->conn_->timeoutHandle_ = th;
+  this->conn_->conn_pair_.first = server_.get();
   this->isRunning_ = false;
 }
 
 bool Connectioner::Run() {
-  assert(nullptr != conn_.server_);
+  assert(nullptr != conn_->server_);
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
   addr.sin_port = htons(peer_port_);
   if (::inet_pton(AF_INET, peer_ip_.c_str(), &addr.sin_addr) <= 0) {
     LOG_ERROR("connect {} {} inet_pton error", peer_ip_, peer_port_);
   }
-  conn_.socketFd_ = ::socket(
+  conn_->socketFd_ = ::socket(
       addr.sin_family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
   auto ue =
-      ::connect(conn_.socketFd_, reinterpret_cast<struct sockaddr*>(&addr),
+      ::connect(conn_->socketFd_, reinterpret_cast<struct sockaddr*>(&addr),
                 static_cast<socklen_t>(sizeof(struct sockaddr_in6)));
   int saved_error = (ue == 0) ? 0 : errno;
   switch (saved_error) {
@@ -47,11 +49,12 @@ bool Connectioner::Run() {
     case EINPROGRESS:
     case EINTR:
     case EISCONN: {
-      this->conn_.Init();
+      this->conn_->conn_pair_.second = conn_->socketFd_;
       auto mtx = server_->getMutex();
       mtx->lock();
-      server_->ConnectionMap_.insert({conn_.socketFd_, &conn_});
+      server_->ConnectionMap_.insert({conn_->socketFd_, conn_});
       mtx->unlock();
+      this->conn_->Init();
       isRunning_ = true;
       break;
     }
@@ -69,7 +72,7 @@ bool Connectioner::Run() {
     case EFAULT:
     case ENOTSOCK: {
       LOG_WARN("connect {} {} error", peer_ip_, peer_port_);
-      ::close(conn_.socketFd_);
+      ::close(conn_->socketFd_);
       return false;
     } break;
 
@@ -81,7 +84,7 @@ bool Connectioner::Run() {
 
 void Connectioner::CloseConn() {
   if (true == isRunning_) {
-    ::close(conn_.socketFd_);
+    ::close(conn_->socketFd_);
   }
 }
 
@@ -89,7 +92,7 @@ Connectioner::~Connectioner() {
   CloseConn();
 }
 
-int Connectioner::getFd() { return conn_.socketFd_; }
+int Connectioner::getFd() { return conn_->socketFd_; }
 
 const std::string& Connectioner::getPeerIP() { return peer_ip_; }
 

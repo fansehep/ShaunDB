@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+
+package frpc;
+
+
+enum MessageType {
+  kUnknow = 0;
+  kRequest = 1;
+  kResponse = 2;
+  kError = 3;
+}
+
+enum ErrorCode {
+  kOk = 0;
+  kParseError = 1;
+  kNoService = 2;
+  kNoMethod = 3;
+}
+
+message RPCMessage {
+  optional MessageType type = 1;
+  optional fixed64 id = 2;
+  optional string service = 3;
+  optional string method = 4;
+  optional bytes request = 5;
+  optional bytes response = 6;
+  optional ErrorCode error_code = 7;
+}

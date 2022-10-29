@@ -43,7 +43,7 @@ class Connectioner : public NonCopyable {
   // 需要连接的 port
   uint32_t peer_port_;
   // 包含一个 Connection;
-  Connection conn_;
+  std::shared_ptr<Connection> conn_;
   //
   bool isRunning_;
 };

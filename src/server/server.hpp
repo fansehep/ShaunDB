@@ -33,11 +33,11 @@ class Server : public NonCopyable {
   void Run();
   void Stop();
 
-  int writeHD(Connection* conn);
-  int closeHD(Connection* conn);
-  int timeoutHD(Connection* conn);
+  int writeHD(const std::shared_ptr<Connection>& conn);
+  int closeHD(const std::shared_ptr<Connection>& conn);
+  int timeoutHD(const std::shared_ptr<Connection>& conn);
   // 如果消息没有读完, 请返回 -1
-  int readHD(char* buf, size_t size, Connection* conn);
+  int readHD(char* buf, size_t size, const std::shared_ptr<Connection>& conn);
 
  private:
   std::thread net_server_thread_;

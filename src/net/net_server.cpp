@@ -68,20 +68,20 @@ void ListenerCallback(struct evconnlistener* ev, evutil_socket_t socket,
   if (server == nullptr) {
     LOG_ERROR("listen args server is nullptr!");
   }
-  auto new_conn =
-      new Connection(socket, server->read_handle_, server->write_handle_,
-                     server->close_handle_, server->timeout_handle_, server);
+  auto new_conn = std::make_shared<Connection>(
+      socket, server->read_handle_, server->write_handle_,
+      server->close_handle_, server->timeout_handle_, server);
   if (new_conn == nullptr) {
     LOG_ERROR("create connection error");
   }
+  server->mtx_.lock();
+  server->ConnectionMap_.insert({socket, new_conn});
+  server->mtx_.unlock();
   auto ue = new_conn->Init();
   if (ue == false) {
     LOG_WARN("conn init fail");
   }
   // 使用 map 管理所有连接
-  server->mtx_.lock();
-  server->ConnectionMap_.insert({socket, new_conn});
-  server->mtx_.unlock();
 }
 
 void NetServer::Run() { event_base_dispatch(eventBase_); }
@@ -96,27 +96,24 @@ bool NetServer::removeConn(evutil_socket_t fd) {
   }
   LOG_TRACE("Conn ip: {} port: {} has be removed", iter->second->getPeerIP(),
             iter->second->getPeerPort());
-  delete iter->second;
   mtx_.lock();
   ConnectionMap_.erase(fd);
   mtx_.unlock();
   return true;
 }
 
-Connection* NetServer::getConn(evutil_socket_t fd) {
+std::shared_ptr<Connection> NetServer::getConn(evutil_socket_t fd) {
   return ConnectionMap_[fd];
 }
 
-std::map<evutil_socket_t, Connection*>& NetServer::getConnMap() {
+std::map<evutil_socket_t, std::shared_ptr<Connection>>&
+NetServer::getConnMap() {
   return ConnectionMap_;
 }
 
 std::mutex* NetServer::getMutex() { return &mtx_; }
 
-
-uint32_t NetServer::getConnCount() {
-  return ConnectionMap_.size();
-}
+uint32_t NetServer::getConnCount() { return ConnectionMap_.size(); }
 
 }  // namespace net
 

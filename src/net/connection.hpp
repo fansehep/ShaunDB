@@ -26,6 +26,7 @@ namespace fver {
 namespace net {
 class NetServer;
 class Connection;
+struct ConnImp;
 
 // TODO: please use std::shared_ptr<Connection> to instead of Connection.
 //  a easy way is create TCPConnectionImp
@@ -36,16 +37,19 @@ class Connection;
 
 class Connectioner;
 
+using ConnPtr = std::shared_ptr<Connection>;
+
 class Connection : public NonCopyable {
  public:
+  // 每个 connection 默认拥有的 buf
   static constexpr uint32_t kConnectionBufferSize = 4096;
-  // 连接状态的封装
+  // 连接状态
   enum ConnStat {
     kConnting,  // 正在连接连接
     kConnted,   // 已经建立连接
     kDisConn,   // 连接断开
   };
-
+  friend struct ConnImp;
   friend Connectioner;
   friend void callback::ConnectionReadCallback(struct bufferevent* buf,
                                                void* data);
@@ -57,7 +61,8 @@ class Connection : public NonCopyable {
   ~Connection();
   bool Init();
   Connection(evutil_socket_t socket, readHandle rh, writeHandle wh,
-             closeHandle ch, timeoutHandle th, NetServer* server);
+             closeHandle ch, timeoutHandle th,
+             NetServer* server);
 
   const std::string& getPeerIP() const { return peerIP_; }
 
@@ -68,7 +73,10 @@ class Connection : public NonCopyable {
     return bufferevent_write(buf_, msg, msg_size);
   }
 
+  int AddbufToWriteBuf(evbuffer* buf);
+
  private:
+
   bool getPeerConnInfo();
 
   readHandle readHandle_;
@@ -91,6 +99,8 @@ class Connection : public NonCopyable {
   uint32_t peerPort_;
   // 连接的状态
   ConnStat state_;
+  //
+  std::pair<NetServer*, int> conn_pair_;
 };
 
 }  // namespace net

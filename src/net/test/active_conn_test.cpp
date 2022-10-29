@@ -35,8 +35,8 @@ class ActiveConnServer {
     struct timeval time_val;
     time_val.tv_sec = 2;
     time_val.tv_usec = 0;
-    timer_.Init(time_val, std::bind(&ActiveConnServer::timerHD, this, _1), server,
-                "for test");
+    timer_.Init(time_val, std::bind(&ActiveConnServer::timerHD, this, _1),
+                server, "for test");
     thread_ = std::thread([&]() { server->Run(); });
     timer_.Run();
     conn_.Init("127.0.0.1", 9090, server,
@@ -47,7 +47,7 @@ class ActiveConnServer {
     conn_.Run();
   }
 
-  int writeHd(Connection* conn) {
+  int writeHd(const std::shared_ptr<Connection>& conn) {
     std::string_view message(buf_.bufptr_, buf_.offset_);
     LOG_INFO("server send {}", message);
     conn->Send(buf_.bufptr_, buf_.offset_);
@@ -55,20 +55,20 @@ class ActiveConnServer {
     return 1;
   }
 
-  int closeHd(Connection* conn) {
+  int closeHd(const std::shared_ptr<Connection>& conn) {
     LOG_INFO("conn ip: {} port: {} close connection", conn->getPeerIP(),
              conn->getPeerPort());
     return 1;
   }
 
-  int timeoutHd(Connection* conn) {
+  int timeoutHd(const std::shared_ptr<Connection>& conn) {
     LOG_INFO("conn ip: {} port: {} connection time out", conn->getPeerIP(),
              conn->getPeerPort());
     return 1;
   }
 
   // TODO, if the data has be read ok, should return -1;
-  int readHd(char* buf, size_t size, Connection* conn) {
+  int readHd(char* buf, size_t size, const std::shared_ptr<Connection>& conn) {
     return -1;
   }
 
@@ -99,7 +99,7 @@ class ActiveConnServer {
 }  // namespace net
 }  // namespace fver
 
-int main() { 
+int main() {
   fver::net::ActiveConnServer server;
   LOG_INFO("activeconnserver start 9999 port");
   server.Init(9999);
