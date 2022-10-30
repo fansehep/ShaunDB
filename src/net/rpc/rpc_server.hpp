@@ -9,6 +9,7 @@ extern "C" {
 
 #include "src/base/noncopyable.hpp"
 #include "src/net/net_server.hpp"
+#include "src/net/connection.hpp"
 
 using ::fver::base::NonCopyable;
 
@@ -30,10 +31,11 @@ class RPCServer : public NonCopyable {
  public:
   RPCServer() = default;
   void Init(uint32_t port);
-
+  void Run();
   void RegisterService(::google::protobuf::Service*);
 
  private:
+  int onConnection(net::ConnPtr conn);
   net::NetServer tcp_server_;
   std::map<std::string, ::google::protobuf::Service*> rpc_service_;
 };

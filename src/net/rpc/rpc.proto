@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 
 
 package frpc;
@@ -16,6 +16,9 @@ enum ErrorCode {
   kParseError = 1;
   kNoService = 2;
   kNoMethod = 3;
+  kInvalid_request = 4;
+  kInvalid_response = 5;
+  kTime_out = 6;
 }
 
 message RPCMessage {

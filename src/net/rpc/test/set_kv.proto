@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package kvtest;
+
+option cc_generic_services = true;
+
+message SetRequest {
+  string key = 1;
+  string value = 2;
+}
+
+message SetReply {
+  string status = 1;
+}
+
+message GetRequest {
+  string key = 1;
+}
+
+message GetReply {
+  string value = 1;
+  string status = 2;
+}
+
+service kvService {
+  rpc Set (SetRequest) returns (SetReply);
+  rpc Get (GetRequest) returns (GetReply);
+}

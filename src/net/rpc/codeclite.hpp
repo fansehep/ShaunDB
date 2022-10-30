@@ -36,6 +36,8 @@ namespace rpc {
 
 using MessagePtr = std::shared_ptr<google::protobuf::Message>;
 
+// net::ConnPtr = std::shared_ptr<Connection>;
+
 class ProtobufCodeLite : public NonCopyable {
  public:
   constexpr static int kHeaderLength = sizeof(int32_t);
@@ -82,17 +84,17 @@ class ProtobufCodeLite : public NonCopyable {
                        google::protobuf::Message* message);
 
   int serializeToBuffer(const google::protobuf::Message& message,
-                        struct evbuffer* buf);
+                        struct ::evbuffer* buf);
 
   static const std::string& errorcode_tostring(ErrorCode error_code);
 
-  ErrorCode parse(net::ConnPtr conn, size_t len,
+  ErrorCode parse(net::ConnPtr conn, const size_t len,
                   ::google::protobuf::Message* message);
 
-  int fillEmptyBuffer(struct evbuffer* buf,
+  int fillEmptyBuffer(struct ::evbuffer* buf,
                       const google::protobuf::Message& message);
 
-  static int32_t checkSum(struct evbuffer* buf, int len);
+  static int32_t checkSum(struct ::evbuffer* buf, int len);
 
   static bool validateCheckSum(const Bytef* buf, int len);
 
@@ -126,19 +128,19 @@ class ProtobufCodeLiteT {
       const RawMessageCallback& raw_cb = {},
       const ErrorCallback& error_cb = ProtobufCodeLite::defaultErrorCallback)
       : message_cb_(mes_cb),
-        codec_(&msg::default_instance, tag,
+        codec_(&msg::default_instance(), tag,
                std::bind(&ProtobufCodeLiteT::onRPCMessage, this, _1, _2),
                raw_cb, error_cb) {}
 
   const std::string& getTag() const { return codec_.tag(); }
 
-  void Send(net::ConnPtr conn, const msg& mes) { codec_.send(conn, mes); }
+  void Send(net::ConnPtr conn, const msg& mes) { codec_.Send(conn, mes); }
 
   void onMessage(net::ConnPtr conn) { codec_.onMessage(conn); }
 
   void onRPCMessage(net::ConnPtr conn, const MessagePtr& mes);
 
-  void fillEmptyBuffer(struct evbuffer* buf,
+  void fillEmptyBuffer(struct ::evbuffer* buf,
                        const google::protobuf::Message& mes) {
     codec_.fillEmptyBuffer(buf, mes);
   }
