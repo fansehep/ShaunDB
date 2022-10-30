@@ -31,7 +31,7 @@ class ActiveConnServer {
     server->Init(port, std::bind(&ActiveConnServer::writeHd, this, _1),
                  std::bind(&ActiveConnServer::closeHd, this, _1),
                  std::bind(&ActiveConnServer::timeoutHd, this, _1),
-                 std::bind(&ActiveConnServer::readHd, this, _1, _2, _3));
+                 std::bind(&ActiveConnServer::readHd, this, _1));
     struct timeval time_val;
     time_val.tv_sec = 2;
     time_val.tv_usec = 0;
@@ -40,7 +40,7 @@ class ActiveConnServer {
     thread_ = std::thread([&]() { server->Run(); });
     timer_.Run();
     conn_.Init("127.0.0.1", 9090, server,
-               std::bind(&ActiveConnServer::readHd, this, _1, _2, _3),
+               std::bind(&ActiveConnServer::readHd, this, _1),
                std::bind(&ActiveConnServer::writeHd, this, _1),
                std::bind(&ActiveConnServer::closeHd, this, _1),
                std::bind(&ActiveConnServer::timeoutHd, this, _1));
@@ -68,7 +68,7 @@ class ActiveConnServer {
   }
 
   // TODO, if the data has be read ok, should return -1;
-  int readHd(char* buf, size_t size, const std::shared_ptr<Connection>& conn) {
+  int readHd(const std::shared_ptr<Connection>& conn) {
     return -1;
   }
 
@@ -90,7 +90,7 @@ class ActiveConnServer {
 
  private:
   std::thread thread_;
-  Buffer buf_;
+  base::log::Buffer buf_;
   std::shared_ptr<NetServer> server;
   RepeatedTimer timer_;
   Connectioner conn_;

@@ -15,7 +15,6 @@ namespace net {
 class Connection;
 
 namespace callback {
-
 void ConnectionWriteCallback(struct bufferevent* buf, void* data);
 void ConnectionReadCallback(struct bufferevent* buf, void* data);
 void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
@@ -23,11 +22,11 @@ void ConnectionEventCallback(struct bufferevent* buf, short eventWhat,
 
 }  // namespace callback
 
-using writeHandle = std::function<int(const std::shared_ptr<Connection>&)>;
-using closeHandle = std::function<int(const std::shared_ptr<Connection>&)>;
-using timeoutHandle = std::function<int(const std::shared_ptr<Connection>&)>;
-using readHandle =
-    std::function<int(char*, size_t, const std::shared_ptr<Connection>&)>;
+using connInitHandle = std::function<int(std::shared_ptr<Connection>)>;
+using writeHandle = std::function<int(std::shared_ptr<Connection>)>;
+using closeHandle = std::function<int(std::shared_ptr<Connection>)>;
+using timeoutHandle = std::function<int(std::shared_ptr<Connection>)>;
+using readHandle = std::function<int(std::shared_ptr<Connection>)>;
 
 }  // namespace net
 

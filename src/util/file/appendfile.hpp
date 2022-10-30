@@ -30,7 +30,7 @@ class AppendFile : public NonCopyable {
  private:
   void FlushBuffer();
   void WriteDirect(const char* data, const size_t data_size);
-  Buffer buf_;
+  base::log::Buffer buf_;
   std::string fullFilename_;
   std::string_view path_;
   std::string_view filename_;

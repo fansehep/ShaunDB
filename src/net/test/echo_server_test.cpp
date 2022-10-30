@@ -22,7 +22,7 @@ class EchoServer {
     server.Init(port, std::bind(&EchoServer::writeHd, this, _1),
                 std::bind(&EchoServer::closeHd, this, _1),
                 std::bind(&EchoServer::timeoutHd, this, _1),
-                std::bind(&EchoServer::readHd, this, _1, _2, _3));
+                std::bind(&EchoServer::readHd, this, _1));
     server.Run();
   }
 
@@ -47,19 +47,21 @@ class EchoServer {
   }
 
   // TODO, if the data has be read ok, should return -1;
-  int readHd(char* buf, size_t size, const std::shared_ptr<Connection>& conn) {
+  int readHd(const std::shared_ptr<Connection>& conn) {
     assert(buf_.buflen_ >= 0);
-    std::string_view message(buf, size);
-    std::memcpy(buf_.bufptr_, buf, size);
+    auto size =
+        conn->moveEvReadBuffer(buf_.bufptr_ + buf_.offset_, buf_.buflen_);
     buf_.offset_ += size;
+    std::string_view message(buf_.bufptr_, buf_.offset_);
     LOG_INFO("conn ip: {} port: {} send {}", conn->getPeerIP(),
              conn->getPeerPort(), message);
-    conn->Send(buf, size);
+    conn->Send(buf_.bufptr_, buf_.offset_);
+    buf_.offset_ = 0;
     return -1;
   }
 
  private:
-  Buffer buf_;
+  base::log::Buffer buf_;
   NetServer server;
 };
 

@@ -4,6 +4,8 @@
 #include "src/base/noncopyable.hpp"
 #include "src/db/exportdb.hpp"
 #include "src/net/connection.hpp"
+#include "src/base/log/logbuffer.hpp"
+#include <thread>
 #include "src/net/net_server.hpp"
 
 using ::fver::base::NonCopyable;
@@ -37,9 +39,10 @@ class Server : public NonCopyable {
   int closeHD(const std::shared_ptr<Connection>& conn);
   int timeoutHD(const std::shared_ptr<Connection>& conn);
   // 如果消息没有读完, 请返回 -1
-  int readHD(char* buf, size_t size, const std::shared_ptr<Connection>& conn);
+  int readHD(const std::shared_ptr<Connection>& conn);
 
  private:
+  fver::base::log::Buffer buf_;
   std::thread net_server_thread_;
   fver::db::DB db_;
   NetServer server_;

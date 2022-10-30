@@ -2,7 +2,6 @@ workspace(name="fver")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-
 http_archive(
     name="com_google_googletest",
     sha256="a1d3123179024258f9c399d45da3e0b09c4aaf8d2c041466ce5b4793a8929f23",
@@ -44,6 +43,26 @@ git_repository(
     branch = "master",
     remote = "https://github.com/jbeder/yaml-cpp",
 )
+
+
+http_archive(
+    name = "rules_cc",
+    urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.4/rules_cc-0.0.4.tar.gz"],
+    sha256 = "af6cc82d87db94585bceeda2561cb8a9d55ad435318ccb4ddfee18a43580fb5d",
+    strip_prefix = "rules_cc-0.0.4",
+)
+
+http_archive(
+    name = "rules_proto",
+    sha256 = "80d3a4ec17354cccc898bfe32118edd934f851b03029d63ef3fc7c8663a7415c",
+    strip_prefix = "rules_proto-5.3.0-21.5",
+    urls = [
+        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/5.3.0-21.5.tar.gz",
+    ],
+)
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
+rules_proto_dependencies()
+rules_proto_toolchains()
 
 # generate compile_commands.json
 http_archive(

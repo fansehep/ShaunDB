@@ -15,12 +15,10 @@ extern "C" {
 #include <map>
 #include <memory>
 
-#include "src/base/log/logbuffer.hpp"
 #include "src/base/noncopyable.hpp"
 #include "src/net/conn_callback.hpp"
 
 using ::fver::base::NonCopyable;
-using ::fver::base::log::Buffer;
 
 namespace fver {
 namespace net {
@@ -61,30 +59,72 @@ class Connection : public NonCopyable {
   ~Connection();
   bool Init();
   Connection(evutil_socket_t socket, readHandle rh, writeHandle wh,
-             closeHandle ch, timeoutHandle th,
-             NetServer* server);
+             closeHandle ch, timeoutHandle th, NetServer* server);
 
   const std::string& getPeerIP() const { return peerIP_; }
 
   uint32_t getPeerPort() const { return peerPort_; }
 
-  int Send(const char* msg, const size_t msg_size) {
-    assert(nullptr != buf_);
-    return bufferevent_write(buf_, msg, msg_size);
+  int Send(const char* msg, const size_t msg_size);
+
+  struct ::bufferevent* getBufferEvent() { return buf_; }
+
+  int getEvReadBufferLen() { return evbuffer_get_length(ev_read_buf_); }
+
+  struct ::evbuffer* getReadBuf() { return ev_read_buf_; }
+
+  int moveEvReadBuffer(char* data, const size_t data_len) {
+    return evbuffer_remove(ev_read_buf_, data, data_len);
   }
 
-  int AddbufToWriteBuf(evbuffer* buf);
+  int moveEvWriteBuffer(char* data, const size_t data_len) {
+    return evbuffer_remove(ev_write_buf_, data, data_len);
+  }
+  int copyEvReadBuffer(char* data, const size_t data_len) {
+    return evbuffer_copyout(ev_read_buf_, data, data_len);
+  }
+  uint32_t getEvWriteBufferSize() { return evbuffer_get_length(ev_write_buf_); }
+  int addToWriteBuffer(char* data, const size_t data_len) {
+    return evbuffer_add(ev_write_buf_, data, data_len);
+  }
+
+  int addbufToWriteBuffer(struct ::evbuffer* buf) {
+    return evbuffer_add_buffer(ev_write_buf_, buf);
+  }
+
+  void move_buf_read_to_write() {
+    evbuffer_add_buffer(ev_write_buf_, ev_read_buf_);
+  }
+
+  int SendEvWriteBuffer();
+
+  const auto& getConnText() {
+    return conn_pair_;
+  }
+
+  void SetConnInithandle(connInitHandle conn_init_handle);
 
  private:
-
   bool getPeerConnInfo();
 
+  // 可读事件触发的回调函数
   readHandle readHandle_;
+
+  // 可写事件完成之后触发的回调函数
   writeHandle writeHandle_;
+
+  // 连接关闭时触发的回调函数
   closeHandle closeHandle_;
+
+  // 超时回调的函数
   timeoutHandle timeoutHandle_;
-  // 将每次读取到的数据存储在 Buffer 中,
-  Buffer readBuf_;
+
+  // 连接建立的回调函数
+  connInitHandle conninitHandle_;
+
+  struct ::evbuffer* ev_read_buf_;
+  struct ::evbuffer* ev_write_buf_;
+
   // 在 NetServer 中的fd
   evutil_socket_t socketFd_;
   // 单个 client 写入的buf
@@ -99,7 +139,8 @@ class Connection : public NonCopyable {
   uint32_t peerPort_;
   // 连接的状态
   ConnStat state_;
-  //
+
+  // 用于参数传递
   std::pair<NetServer*, int> conn_pair_;
 };
 

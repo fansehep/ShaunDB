@@ -1,11 +1,11 @@
 #ifndef SRC_BASE_LOG_LOGBUFFER_H_
 #define SRC_BASE_LOG_LOGBUFFER_H_
 
-#include <string.h>
-
+#include <cstring>
 #include <condition_variable>
 #include <cstring>
 #include <memory>
+#include <new>
 #include <vector>
 #include <mutex>
 #include <ostream>
@@ -26,7 +26,7 @@ struct Buffer {
   uint32_t buflen_;
   Buffer() : bufptr_(nullptr), offset_(0), buflen_(0) {}
   Buffer(uint32_t len)
-      : bufptr_(new (std::nothrow) char[len]), offset_(0), buflen_(len) {
+      : bufptr_(new(std::nothrow) char[len]), offset_(0), buflen_(len) {
     std::memset(bufptr_, 0, len);
   }
   ~Buffer() {
@@ -38,22 +38,6 @@ struct Buffer {
   }
 };
 
-class LogBuffer {
- public:
-  LogBuffer(uint32_t bufferSize);
-  LogBuffer();
-  ~LogBuffer() = default;
-  bool Push(const std::string& logment);
-  Buffer* SwapBuffer();
-  std::mutex* getMutex();
-  void ClearOffset(Buffer* buf);
-
- private:
-  std::mutex mtx_;
-  Buffer head_;
-  Buffer tail_;
-  Buffer* curPtr_;
-};
 
 class Logger;
 

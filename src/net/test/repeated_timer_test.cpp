@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 
+#include "src/base/log/logbuffer.hpp"
 #include "src/base/log/logging.hpp"
 #include "src/net/connection.hpp"
 #include "src/net/net_server.hpp"
@@ -29,7 +30,7 @@ class RepeatedServer {
     server->Init(port, std::bind(&RepeatedServer::writeHd, this, _1),
                  std::bind(&RepeatedServer::closeHd, this, _1),
                  std::bind(&RepeatedServer::timeoutHd, this, _1),
-                 std::bind(&RepeatedServer::readHd, this, _1, _2, _3));
+                 std::bind(&RepeatedServer::readHd, this, _1));
     struct timeval time_val;
     time_val.tv_sec = 2;
     time_val.tv_usec = 0;
@@ -40,10 +41,6 @@ class RepeatedServer {
   }
 
   int writeHd(const std::shared_ptr<Connection>& conn) {
-    std::string_view message(buf_.bufptr_, buf_.offset_);
-    LOG_INFO("server send {}", message);
-    conn->Send(buf_.bufptr_, buf_.offset_);
-    buf_.offset_ = 0;
     return 1;
   }
 
@@ -60,14 +57,16 @@ class RepeatedServer {
   }
 
   // TODO, if the data has be read ok, should return -1;
-  int readHd(char* buf, size_t size, const std::shared_ptr<Connection>& conn) {
+  int readHd(const std::shared_ptr<Connection>& conn) {
     assert(buf_.buflen_ >= 0);
-    std::string_view message(buf, size);
-    std::memcpy(buf_.bufptr_, buf, size);
+    auto size =
+        conn->moveEvReadBuffer(buf_.bufptr_ + buf_.offset_, buf_.buflen_);
     buf_.offset_ += size;
+    std::string_view message(buf_.bufptr_, buf_.offset_);
     LOG_INFO("conn ip: {} port: {} send {}", conn->getPeerIP(),
              conn->getPeerPort(), message);
-    conn->Send(buf, size);
+    conn->Send(buf_.bufptr_, buf_.offset_);
+    buf_.offset_ = 0;
     return -1;
   }
 
@@ -89,7 +88,7 @@ class RepeatedServer {
 
  private:
   std::thread thread_;
-  Buffer buf_;
+  base::log::Buffer buf_;
   std::shared_ptr<NetServer> server;
   RepeatedTimer timer_;
 };

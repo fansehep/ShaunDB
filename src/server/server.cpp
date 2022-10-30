@@ -18,12 +18,15 @@ bool Server::Init(const struct ServerConfig& conf) {
   return server_.Init(conf.listen_port, std::bind(&Server::writeHD, this, _1),
                       std::bind(&Server::closeHD, this, _1),
                       std::bind(&Server::timeoutHD, this, _1),
-                      std::bind(&Server::readHD, this, _1, _2, _3));
+                      std::bind(&Server::readHD, this, _1));
 }
 
 void Server::Run() { server_.Run(); }
 
-int Server::readHD(char* buf, size_t size, const std::shared_ptr<Connection>& conn) {
+int Server::readHD(const std::shared_ptr<Connection>& conn) {
+  auto size = conn->moveEvReadBuffer(buf_.bufptr_ + buf_.offset_, buf_.buflen_);
+  buf_.offset_ += size;
+  auto buf = buf_.bufptr_;
   if (buf[size - 1] == '\n') {
     size -= 1;
   }
@@ -77,6 +80,7 @@ int Server::readHD(char* buf, size_t size, const std::shared_ptr<Connection>& co
       return -1;
     }
   }
+  buf_.offset_ = 0;
   return -1;
 }
 

@@ -68,11 +68,20 @@ class NetServer : public base::NonCopyable {
   // 获取当前服务器的连接数量
   uint32_t getConnCount();
 
+  void SetConnInitCallback(connInitHandle conn_init_handle) {
+    conninit_handle_ = conn_init_handle;
+  }
+
+  void SetConnReadCallback(readHandle rh) {
+    read_handle_ = rh;
+  }
+
  private:
   writeHandle write_handle_;
   closeHandle close_handle_;
   timeoutHandle timeout_handle_;
   readHandle read_handle_;
+  connInitHandle conninit_handle_;
 
   uint32_t port_;
   uint32_t maxConnCount_;

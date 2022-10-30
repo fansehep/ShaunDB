@@ -1,5 +1,7 @@
 #include "src/net/conn_callback.hpp"
 
+#include <new>
+
 #include "src/base/log/logging.hpp"
 #include "src/net/connection.hpp"
 #include "src/net/net_server.hpp"
@@ -25,31 +27,19 @@ namespace callback {
 void ConnectionReadCallback(struct bufferevent* buf, void* data) {
   auto conn_pair = reinterpret_cast<std::pair<NetServer*, int>*>(data);
   auto conn = conn_pair->first->getConn(conn_pair->second);
-  struct evbuffer* bev = ::bufferevent_get_input(buf);
-  int len = 0;
-  while (true) {
-    len = evbuffer_remove(bev, conn->readBuf_.bufptr_ + conn->readBuf_.offset_,
-                          conn->readBuf_.buflen_);
-    if (len <= 0) {
-      break;
-    }
-    conn->readBuf_.offset_ += len;
-  }
 #ifdef FVER_NET_DEBUG
   LOG_INFO("Begin to readhanle1");
 #endif
+  conn->ev_read_buf_ = bufferevent_get_input(buf);
+  conn->ev_write_buf_ = bufferevent_get_output(buf);
   if (conn->readHandle_) {
 #ifdef FVER_NET_DEBUG
     // 处理数据
     LOG_INFO("Begin to readhanle2");
 #endif
-    auto simple_read_len =
-        conn->readHandle_(conn->readBuf_.bufptr_, conn->readBuf_.offset_, conn);
+    auto simple_read_len = conn->readHandle_(conn);
     // 重置 readBuf_ 的偏移量
     // 如果 server 没读完, 则返回 -1, 然后保存本次数据, 下一次继续读完就行了.
-    if (simple_read_len < 0) {
-      conn->readBuf_.offset_ = 0;
-    }
   }
 }
 
@@ -59,10 +49,8 @@ void ConnectionWriteCallback(struct ::bufferevent* buf, void* data) {
 #ifdef FVER_NET_DEBUG
   LOG_INFO("Begin to write handle1!");
 #endif
-  auto output = ::bufferevent_get_output(buf);
-  if (evbuffer_get_length(output) == 0) {
-    return;
-  }
+  conn->ev_read_buf_ = bufferevent_get_input(buf);
+  conn->ev_write_buf_ = bufferevent_get_output(buf);
   if (conn->writeHandle_) {
     conn->writeHandle_(conn);
 #ifdef FVER_NET_DEBUG

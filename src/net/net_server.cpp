@@ -78,6 +78,9 @@ void ListenerCallback(struct evconnlistener* ev, evutil_socket_t socket,
   server->ConnectionMap_.insert({socket, new_conn});
   server->mtx_.unlock();
   auto ue = new_conn->Init();
+  if (server->conninit_handle_) {
+    server->conninit_handle_(new_conn);
+  }
   if (ue == false) {
     LOG_WARN("conn init fail");
   }
