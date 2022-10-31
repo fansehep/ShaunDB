@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package testkv;
+
+message SetKeyRequest {
+  string key = 1;
+  string value = 2;
+}
+
+message SetKeyReply {
+  string status = 1;
+}

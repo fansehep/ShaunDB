@@ -16,6 +16,10 @@ std::string_view Status::getCodeStr() {
   return code_ptr_;
 }
 
+void Status::SetErrorLog(const std::string &error_log) {
+  error_log_ = error_log;
+}
+
 }  // namespace db
 
 }  // namespace fver

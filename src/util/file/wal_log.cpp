@@ -1,6 +1,11 @@
 #include "src/util/file/wal_log.hpp"
 
+#include <fcntl.h>
 #include <fmt/format.h>
+
+extern "C" {
+#include <sys/stat.h>
+}
 
 #include <cstdio>
 
@@ -13,9 +18,10 @@ namespace util {
 namespace file {
 
 bool WalLog::Init(const std::string &path, const std::string &filename) {
-  fullFilename_ = fmt::format("{}/{}", path, filename);
-  fileptr_ = std::fopen(fullFilename_.c_str(), "w+");
-  if (nullptr == fileptr_) {
+  fd_ = -1;
+  fullFilename_ = fmt::format("{}{}", path, filename);
+  fd_ = ::open(fullFilename_.c_str(), O_RDWR | O_CREAT | O_SYNC);
+  if (fd_ < 0) {
     LOG_WARN("wallog open {} error!", fullFilename_);
     return false;
   }
@@ -26,20 +32,37 @@ bool WalLog::Init(const std::string &path, const std::string &filename) {
 }
 
 void WalLog::AddRecord(const char *data, const size_t data_size) {
-  assert(fileptr_ != nullptr);
-  auto write_size = std::fwrite(data, sizeof(char), data_size, fileptr_);
-  assert(write_size == data_size);
-  std::fflush(fileptr_);
+  assert(fd_ > 0);
+  auto simple_write_size = write(fd_, data, data_size);
+  LOG_TRACE("simple_write_size: {}", simple_write_size);
+  assert(simple_write_size == data_size);
+
+  // sync 操作, 保证数据落盘
+  // but 根据 posix 文件系统语义, 当此操作发生断电 / 宕机行为
+  // 是一个 ub 行为. >_<
+  ::fsync(fd_);
 }
 
 void WalLog::Close() {
-  if (nullptr != fileptr_) {
-    std::fclose(fileptr_);
+  if (fd_ > 0) {
+    ::close(fd_);
+    fd_ = -1;
   }
 }
 
-WalLog::~WalLog() {
-  Close();
+WalLog::~WalLog() { Close(); }
+
+uint32_t WalLog::getFileSize() {
+  struct ::stat stat_buf;
+  ::fstat(fd_, &stat_buf);
+  return stat_buf.st_size;
+}
+
+void WalLog::SeekBegin() { ::lseek(fd_, 0, SEEK_SET); }
+
+int WalLog::Read(char *buf_ptr, const size_t size) {
+  SeekBegin();
+  return ::read(fd_, buf_ptr, size);
 }
 
 }  // namespace file

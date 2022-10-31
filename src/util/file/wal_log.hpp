@@ -27,8 +27,13 @@ class WalLog : public NonCopyable {
   bool Init(const std::string& path, const std::string& filename);
   void AddRecord(const char* data, const size_t data_size);
   void Close();
+  uint32_t getFileSize();
+  // 回溯到文件开头
+  void SeekBegin();
+// for test
+  int Read(char* buf, const size_t size);
  private:
-  std::FILE* fileptr_;
+  int fd_;
   std::string fullFilename_;
   std::string_view fileName_;
   std::string_view path_;

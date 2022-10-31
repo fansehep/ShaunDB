@@ -1,0 +1,35 @@
+package(default_visibility=["//visibility:public"])
+
+load("//:copts.bzl", "FVER_FLAGS")
+
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+
+
+cc_proto_library(
+    name="testkv_proto_cc_pb",
+    visibility=["//visibility:public"],
+    deps=[
+        ":testkv_proto_lib",
+    ],
+)
+
+proto_library(
+    name="testkv_proto_lib",
+    srcs=["testkv.proto"],
+    visibility=["//visibility:public"],
+)
+
+
+cc_test(
+  name="protobuf_test",
+  srcs=["protobuf_test.cpp"],
+  visibility=["//visibility:public"],
+  deps=[
+    ":testkv_proto_cc_pb",
+    "@com_google_googletest//:gtest_main",
+    "//src/base/log:fver_log_lib",
+  ],
+  copts=FVER_FLAGS,
+)

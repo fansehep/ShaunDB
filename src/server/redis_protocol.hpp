@@ -40,6 +40,12 @@ const std::string kGetStr = "GET";
 const std::string kDelStr = "DEL";
 const std::string kErrorStr = "Error";
 
+const std::string kCommandDocs = "*2\r\n$7\r\nCOMMAND\r\n$4\r\nDOCS\r\n";
+const std::string kCommandDocs_2 = "*1\r\n$7\r\nCOMMAND\r\n";
+const std::string kCommandDocsReply = "-NOAUTH Authentication required.\r\n";
+
+
+
 const std::string kOKReply = "+OK\r\n";
 
 // Ping 命令直接回复即可

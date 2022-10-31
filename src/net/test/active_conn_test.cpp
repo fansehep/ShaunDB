@@ -48,10 +48,6 @@ class ActiveConnServer {
   }
 
   int writeHd(const std::shared_ptr<Connection>& conn) {
-    std::string_view message(buf_.bufptr_, buf_.offset_);
-    LOG_INFO("server send {}", message);
-    conn->Send(buf_.bufptr_, buf_.offset_);
-    buf_.offset_ = 0;
     return 1;
   }
 

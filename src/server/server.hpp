@@ -31,6 +31,7 @@ struct ServerConfig {
 
 class Server : public NonCopyable {
  public:
+  Server() : buf_(1024) {}
   bool Init(const struct ServerConfig& conf);
   void Run();
   void Stop();

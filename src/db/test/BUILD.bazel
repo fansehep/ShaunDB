@@ -1,0 +1,20 @@
+package(default_visibility=["//visibility:public"])
+
+load("//:copts.bzl", "FVER_FLAGS")
+
+cc_test(
+  name="wal_log_test",
+  srcs=glob(["wal_log_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/base/log:fver_log_lib",
+    "//src/util:fver_util_lib",
+    "//src/db:fver_db_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+  linkopts=[
+    "-luuid",
+    "-lpthread",
+  ],
+)

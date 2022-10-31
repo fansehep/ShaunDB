@@ -33,8 +33,13 @@ class Status {
   void setCode(StatusCode code);
   StatusCode getCode();
   std::string_view getCodeStr();
+  void SetErrorLog(const std::string& error_log);
  private:
+  // 携带上错误的详细信息
+  std::string error_log_;
+  // 错误码
   StatusCode code_;
+  // 为了日志的打印, 携带上当前状态码所对应的 std::string_view 详细信息
   std::string_view code_ptr_;
 };
 

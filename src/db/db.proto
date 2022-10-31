@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package storage;
+
+
+message WalLog {
+  // key
+  string key = 1;
+  // key_size
+  int32 key_size = 2;
+  // value 的值
+  string value = 3;
+  // value_size
+  int32 value_size = 4;
+  // 操作类型
+  int32 oper_type = 5;
+  // 该操作的序列号
+  uint64 sequence_number = 6;
+}

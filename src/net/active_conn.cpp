@@ -55,6 +55,9 @@ bool Connectioner::Run() {
       server_->ConnectionMap_.insert({conn_->socketFd_, conn_});
       mtx->unlock();
       this->conn_->Init();
+      if (conn_init_handle_) {
+        conn_init_handle_(conn_);
+      }
       isRunning_ = true;
       break;
     }
@@ -88,9 +91,7 @@ void Connectioner::CloseConn() {
   }
 }
 
-Connectioner::~Connectioner() {
-  CloseConn();
-}
+Connectioner::~Connectioner() { CloseConn(); }
 
 int Connectioner::getFd() { return conn_->socketFd_; }
 

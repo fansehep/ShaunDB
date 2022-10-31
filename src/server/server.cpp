@@ -26,11 +26,21 @@ void Server::Run() { server_.Run(); }
 int Server::readHD(const std::shared_ptr<Connection>& conn) {
   auto size = conn->moveEvReadBuffer(buf_.bufptr_ + buf_.offset_, buf_.buflen_);
   buf_.offset_ += size;
+  auto read_str_view = std::string_view(buf_.bufptr_, buf_.offset_);
+  LOG_TRACE("buf.offset = {} buf.context = {}", buf_.offset_, read_str_view);
   auto buf = buf_.bufptr_;
+
   if (buf[size - 1] == '\n') {
     size -= 1;
   }
-  auto read_str_view = std::string_view(buf, size);
+
+  if (read_str_view == redis::kCommandDocs ||
+      read_str_view == redis::kCommandDocs_2) {
+    conn->Send(redis::kOKStr.c_str(), redis::kOKStr.length());
+    buf_.offset_ = 0;
+    return -1;
+  }
+
   LOG_INFO("conn ip: {} port: {} send {}", conn->getPeerIP(),
            conn->getPeerPort(), read_str_view);
   auto read_result = redis::parseRedisProtocol(buf, size);
@@ -46,6 +56,7 @@ int Server::readHD(const std::shared_ptr<Connection>& conn) {
       conn->Send(redis::kErrorUnknowCommand.c_str(),
                  redis::kErrorUnknowCommand.size());
     }
+    buf_.offset_ = 0;
     return -1;
   }
   // PING
@@ -53,6 +64,7 @@ int Server::readHD(const std::shared_ptr<Connection>& conn) {
     LOG_INFO("conn ip: {} port: {} ping server", conn->getPeerIP(),
              conn->getPeerIP());
     conn->Send(redis::kPongStr.c_str(), redis::kPongStr.size());
+    buf_.offset_ = 0;
     return -1;
     // set 请求
   } else if (*read_result.begin() == redis::kSetStr) {
@@ -64,6 +76,7 @@ int Server::readHD(const std::shared_ptr<Connection>& conn) {
     if (set_context->code.getCode() == db::StatusCode::kOk) {
       conn->Send(redis::kOKReply.c_str(), redis::kOKReply.size());
     }
+    buf_.offset_ = 0;
     return -1;
     // get 请求
   } else if (*read_result.begin() == redis::kGetStr) {
@@ -75,10 +88,19 @@ int Server::readHD(const std::shared_ptr<Connection>& conn) {
       auto get_reply = fmt::format("${}\r\n{}\r\n", get_context->key.size(),
                                    get_context->key);
       conn->Send(get_reply.c_str(), get_reply.size());
+      buf_.offset_ = 0;
       return -1;
     } else {
+      buf_.offset_ = 0;
       return -1;
     }
+  } else {
+    std::string result;
+    for(auto& str : read_result) {
+      result += " ";
+      result += str;
+    }
+    LOG_DEBUG("Parse error! {}", result);
   }
   buf_.offset_ = 0;
   return -1;

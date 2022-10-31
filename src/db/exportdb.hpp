@@ -15,6 +15,14 @@ using ::fver::util::file::WalLog;
 namespace fver {
 namespace db {
 
+
+struct DBConfig {
+  // 预写日志的容量大小
+  uint32_t wal_log_size;
+};
+
+
+
 class DB : public NonCopyable {
  public:
   DB() = default;

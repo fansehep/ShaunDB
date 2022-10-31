@@ -35,6 +35,10 @@ class Connectioner : public NonCopyable {
   const std::string& getPeerIP();
   uint32_t getPort();
 
+  void SetConnInitCallback(connInitHandle conn_init_handle) {
+    conn_init_handle_ = conn_init_handle;
+  }
+
  private:
   // 主动连接者共享 NetServer 的所有权
   std::shared_ptr<NetServer> server_;
@@ -44,7 +48,9 @@ class Connectioner : public NonCopyable {
   uint32_t peer_port_;
   // 包含一个 Connection;
   std::shared_ptr<Connection> conn_;
-  //
+  // 主动连接的回调函数
+  connInitHandle conn_init_handle_;
+  // 是否正在运行
   bool isRunning_;
 };
 
