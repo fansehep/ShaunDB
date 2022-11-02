@@ -15,6 +15,7 @@ namespace fver {
 
 namespace db {
 
+
 static constexpr int kDefaultSharedMemtableSize = 16;
 
 

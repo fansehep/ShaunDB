@@ -1,9 +1,11 @@
 #ifndef SRC_DB_WAL_WRITER_H_
 #define SRC_DB_WAL_WRITER_H_
 
+#include <memory>
 #include <thread>
 
 #include "src/base/noncopyable.hpp"
+#include "src/db/request.hpp"
 #include "src/db/status.hpp"
 #include "src/util/file/wal_log.hpp"
 
@@ -35,6 +37,18 @@ namespace db {
 const std::string kFlagLogEnd = "\r\n\r\n";
 // 回复使利用 std::string::find
 // 来进行快速回复
+
+// 将 set 请求 WalLog 格式化
+extern void SetContextWalLogFormat(
+    const std::shared_ptr<SetContext>& set_context, std::string* log);
+
+// 将 put 请求 WalLog 格式化
+extern void PutContextWalLogFormat(
+    const std::shared_ptr<SetContext>& set_context, std::string* log);
+
+// 将 delete 请求 WalLog 格式化
+extern void DeleteContextWalLogFormat(
+    const std::shared_ptr<SetContext>& set_context, std::string* log);
 
 static constexpr uint32_t kDefaultWalLogSize = 32 * 1024 * 1024;
 

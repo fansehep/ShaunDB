@@ -10,9 +10,11 @@ namespace fver {
 
 namespace db {
 
+
+// 这里采取string 复制的方式, 有些许性能开销
 struct SetContext {
-  std::string_view key;
-  std::string_view value;
+  std::string key;
+  std::string value;
   Status code;
   SetContext(const std::string_view& key_view,
              const std::string_view value_view)
@@ -20,22 +22,29 @@ struct SetContext {
 };
 
 struct PutContext {
-  std::string_view key;
-  std::string_view value;
+  std::string key;
+  std::string value;
   Status code;
 };
 
 struct GetContext {
-  std::string_view key;
-  std::string_view value;
+  std::string key;
+  std::string value;
   Status code;
   GetContext(const std::string_view& key_view) : key(key_view) {}
 };
 
 struct DeleteContext {
-  std::string_view key;
+  std::string key;
   Status code;
 };
+
+struct ExistContext {
+  std::string key;
+  bool is_exist;
+  Status code;
+};
+
 
 }  // namespace db
 

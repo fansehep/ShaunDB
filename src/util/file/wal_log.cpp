@@ -1,10 +1,13 @@
 #include "src/util/file/wal_log.hpp"
 
-#include <fcntl.h>
 #include <fmt/format.h>
 
 extern "C" {
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/fcntl.h>
 }
 
 #include <cstdio>
@@ -20,7 +23,12 @@ namespace file {
 bool WalLog::Init(const std::string &path, const std::string &filename) {
   fd_ = -1;
   fullFilename_ = fmt::format("{}{}", path, filename);
-  fd_ = ::open(fullFilename_.c_str(), O_RDWR | O_CREAT | O_SYNC);
+  // O_RDWR 以可读可写权限打开文件
+  // O_CREAT 如果文件不存在, 那么就创建
+  // S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP : 打开文件权限位
+  // S_IRUSR: 所有者拥有读权限
+  // S_IWUSR: 所有者拥有写权限
+  fd_ = ::open(fullFilename_.c_str(), O_RDWR | O_CREAT | O_SYNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
   if (fd_ < 0) {
     LOG_WARN("wallog open {} error!", fullFilename_);
     return false;

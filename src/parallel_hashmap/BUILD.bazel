@@ -1,0 +1,12 @@
+package(default_visibility=["//visibility:public"])
+
+load("//:copts.bzl", "FVER_FLAGS")
+
+
+cc_library(
+  name="fver_parallel_hashmap_lib",
+  hdrs=glob(["*.h"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  linkopts=["-lpthread",],
+)

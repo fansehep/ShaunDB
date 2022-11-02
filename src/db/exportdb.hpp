@@ -21,6 +21,16 @@ struct DBConfig {
   uint32_t wal_log_size;
 };
 
+//
+//TODO: 我们应该考虑 const std::shared_ptr<>&
+// 与 std::shared_ptr<> 的生命周期问题
+// const std::shared_ptr<>& 并不会增加引用计数
+// 此处做参数传递可以尽量使用 const std::shared_ptr<>&
+//
+
+struct SequenceNumber {
+  uint64_t number_;
+};
 
 
 class DB : public NonCopyable {
