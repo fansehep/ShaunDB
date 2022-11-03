@@ -29,5 +29,6 @@ cc_library(
   deps=[
     "//src/base/log:fver_log_lib",
     "//src/util:fver_util_lib",
+    "//src/parallel_hashmap:fver_parallel_hashmap_lib",
   ],
 )

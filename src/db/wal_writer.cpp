@@ -1,7 +1,11 @@
 #include "src/db/wal_writer.hpp"
 
+#include <cstdint>
+
 #include "src/base/log/logging.hpp"
+#include "src/db/request.hpp"
 #include "src/db/status.hpp"
+#include "src/util/crc32.hpp"
 
 extern "C" {
 #include <assert.h>
@@ -10,6 +14,8 @@ extern "C" {
 namespace fver {
 
 namespace db {
+
+
 
 WalWriter::WalWriter()
     : current_log_size_(0), wal_log_size_(kDefaultWalLogSize) {}

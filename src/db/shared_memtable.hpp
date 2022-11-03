@@ -23,15 +23,9 @@ static constexpr int kDefaultSharedMemtableSize = 16;
 // 默认使用 XXhash64()
 class SharedMemtable : public NonCopyable {
  public:
-  SharedMemtable(int N = kDefaultSharedMemtableSize);
-  void Set(std::shared_ptr<SetContext> set_context);
-  void Put(std::shared_ptr<PutContext> put_context);
-  void Get(std::shared_ptr<GetContext> get_context);
-  void Delete(std::shared_ptr<DeleteContext> del_context);
+
  private:
-  uint64_t seed_;
-  int memtableN_;
-  std::vector<Memtable> vec_memtable_;
+
 };
 
 }  // namespace db

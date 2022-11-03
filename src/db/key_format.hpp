@@ -1,21 +1,19 @@
 #ifndef SRC_DB_KEY_FORMAT_H_
 #define SRC_DB_KEY_FORMAT_H_
 
-
-
 // key_design:
 //
 //
 //
 //
 
+#include <memory>
+#include <string>
 #include <string_view>
 
-namespace fver {
+#include "src/db/request.hpp"
 
-
-namespace db {
-
+// clang-format off
 
 /*
  leveldb 预写日志的格式:
@@ -55,15 +53,8 @@ user_key:
                         |----------|
 */
 
-/*
-leveldb 使用 skiplist 来实现位于内存中的 Memtable
-leveldb 将 user_key 和 user_value 打包成一个更大的 key
 
-memtable_entry:
-          | key_size | user_key | sequence_number | key_type | value_size | value  |
-          |  4 byte  |   ? byte |       8 byte    |   1 byte |   4 byte   | ? byte |
 
-*/
 
 /*
 batch 的设计:
@@ -124,6 +115,36 @@ leveldb boom_filter storage optmize:
   
 */
 
+// clang-format on
+
+namespace fver {
+
+namespace db {
+
+// 将 set 请求 WalLog 格式化
+void SetContextWalLogFormat(const std::shared_ptr<SetContext>& set_context,
+                            const uint64_t number, std::string* log);
+
+// 将 put 请求 WalLog 格式化
+void PutContextWalLogFormat(const std::shared_ptr<PutContext>& set_context,
+                            const uint64_t number, std::string* log);
+
+// 将 delete 请求 WalLog 格式化
+void DeleteContextWalLogFormat(
+    const std::shared_ptr<DeleteContext>& set_context, const uint64_t number,
+    std::string* log);
+
+uint32_t formatDecodeFixed32(char* data);
+
+uint64_t formatDecodeFixed64(char* data);
+
+void formatEncodeFixed32(const uint32_t value, char* data);
+
+void formatEncodeFixed64(const uint64_t value, char* data);
+
+void formatEncodeFixed8(const uint8_t value, char* data);
+
+uint8_t formatDecodeFixed8(char* data);
 
 // 1 bit
 enum ValueType {
@@ -132,7 +153,6 @@ enum ValueType {
   kTypeValue = 0x1,
 };
 
-
 struct ParsedInternalKey {
   std::string_view user_key;
   uint64_t sequence_number;
@@ -140,12 +160,20 @@ struct ParsedInternalKey {
 };
 
 
+/*
+leveldb 使用 skiplist 来实现位于内存中的 Memtable
+leveldb 将 user_key 和 user_value 打包成一个更大的 key
 
-}
+memtable_entry:
+          | key_size | user_key | sequence_number | key_type | value_size | value  |
+          |  4 byte  |   ? byte |       8 byte    |   1 byte |   4 byte   | ? byte |
+
+*/
 
 
 
-}
+}  // namespace db
 
+}  // namespace fver
 
 #endif

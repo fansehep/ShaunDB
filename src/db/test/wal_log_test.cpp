@@ -1,12 +1,16 @@
 #include <gtest/gtest.h>
+
+#include "src/db/request.hpp"
 extern "C" {
 #include <uuid/uuid.h>
 }
 #include <charconv>
+#include <string>
 
 #include "src/base/log/logging.hpp"
 #include "src/db/status.hpp"
 #include "src/db/wal_writer.hpp"
+#include "src/db/key_format.hpp"
 
 namespace fver {
 
@@ -17,114 +21,60 @@ class WalLogTest : public ::testing::Test {
   WalLogTest() = default;
   ~WalLogTest() = default;
   void SetUp() override {}
-  void TearDown() override {
-    ::system("rm ./wal_log_test.log");
-    ::system("rm ./wal_log_test_restart.log");
-  }
+  void TearDown() override {}
 };
 
-const std::string kLog_Simple = "key_size:8key:12312312value_size:4value:1234";
-
-// 测试日志写入之后是否会seek 到开始并且继续写入
+// 不超过 预写日志的最大容量进行写入
 TEST_F(WalLogTest, log_write_test) {
+  uint64_t number = 0;
   WalWriter writer;
-  writer.SetWalLogDefultSize(128);
-  Status status;
-  writer.Init("./", "wal_log_test.log", &status);
-  if (status.getCode() != StatusCode::kOk) {
-    LOG_ERROR("can not open the file");
-    ::exit(-1);
+  Status sts;
+  writer.Init("./", "ShaunDB_WAL_LOG.log", &sts);
+  if (sts.getCode() != kOk) {
+    LOG_ERROR("can not init wal_log!");
   }
-  char buf[168] = {0};
-  for (int i = 1; i < 18; i++) {
-    writer.AddRecord(kLog_Simple);
-    std::memset(buf, 0, sizeof(buf));
-    auto log_size = writer.ReadLog(buf, sizeof(buf));
-    LOG_TRACE("wal_log size: {} context: {}", log_size, buf);
-  }
-}
-
-// 测试恢复日志, 没有写满的情况下进行恢复
-// 假设日志格式是 | sequence_number 8bit | operator_type 1bit | key_size 4bit |
-// value_size 4bit | key | value | kflagend |
-// TODO 请想好预写日志的格式
-TEST_F(WalLogTest, log_restart_test) {
-  uint64_t index = 0;
-  WalWriter writer;
-  writer.SetWalLogDefultSize(1024 * 20);
-  Status status;
-  writer.Init("./", "wal_log_test_restart.log", &status);
-
-  if (status.getCode() != StatusCode::kOk) {
-    LOG_ERROR("can not open the file");
-    ::exit(-1);
-  }
-
-  const int N = 10;
-  char key[64];
-  char value[64];
+  const int curreny_N = 1000;
+  int i = 0;
+  char key[64] = {0};
+  char value[64] = {0};
   uuid_t uuid_key;
   uuid_t uuid_value;
-  int i = 0;
-  std::vector<std::pair<std::string, std::string>> origin_storgae_;
-  std::string pre_simple_log;
-  for (; i < N; i++) {
+  std::unordered_map<std::string, std::string> origin_test_map;
+  auto set_context = std::make_shared<SetContext>();
+  std::string wal_simple_log;
+  for (; i < curreny_N; i++) {
     uuid_generate(uuid_key);
-    uuid_unparse(uuid_key, key);
     uuid_generate(uuid_value);
+    uuid_unparse(uuid_key, key);
     uuid_unparse(uuid_value, value);
-    uint32_t key_rand = (rand() % 64);
-    uint32_t value_rand = (rand() % 64);
-    std::string_view key_view(key, key_rand);
-    std::string_view value_view(value, value_rand);
-    origin_storgae_.push_back({key_view.data(), value_view.data()});
-    char oper_temp = 1;
-    auto simple_log =
-        fmt::format("{:0>8}{:0>1}{:0>4}{:0>4}{}{}{}", index++, oper_temp,
-                    key_rand, value_rand, key_view, value_view, kFlagLogEnd);
-    if (i == 0) {
-      pre_simple_log = std::string(simple_log.data(), simple_log.size() - 4);
-      LOG_TRACE("simple_log: {}", pre_simple_log);
-    }
-    writer.AddRecord(simple_log);
-  }
-  char oper_temp = 1;
-  char buf[20480] = {0};
-  const auto buf_size = sizeof(buf);
-  auto read_size = writer.ReadLog(buf, buf_size);
-  LOG_INFO("read_size: {} buf_size: {}", read_size, buf_size);
-  std::string_view buf_view(buf, 2048);
-  i = 0;
-  for (; i < buf_size; i++) {
-    auto t_index = buf_view.find(kFlagLogEnd, i);
-    if (std::string_view::npos == t_index) {
-      LOG_ERROR("can not find the std::string::npos");
-      break;
-    }
-    if (i == 0) {
-      LOG_TRACE("t_index = {}", t_index);
-    }
-    std::string_view value(buf + i, t_index);
-    uint64_t number;
-    std::from_chars(value.begin(), value.begin() + 8, number);
-    ASSERT_EQ(i, number);
-    ASSERT_EQ(value[8], oper_temp);
-    int key_size;
-    std::from_chars(value.begin() + 9, value.begin() + 9 + 4, key_size);
-    int value_size;
-    std::from_chars(value.begin() + 9 + 4, value.begin() + 9 + 8, value_size);
-    LOG_INFO("key_size = {} value_size = {}", key_size, value_size);
+    set_context->key = key;
+    set_context->value = value;
 
-    std::string_view key_view(value.begin() + 17,
-                              value.begin() + 17 + key_size + 1);
-    std::string_view value_view(value.begin() + 17 + key_size,
-                                value.begin() + 17 + key_size + value_size);
-
-    ASSERT_EQ(key_view.size(), origin_storgae_[i].first.size());
-    ASSERT_EQ(value_view.size(), origin_storgae_[i].second.size());
-    ASSERT_EQ(key_view, origin_storgae_[i].first);
-    ASSERT_EQ(value_view, origin_storgae_[i].second);
-    i = t_index;
+    SetContextWalLogFormat(set_context, number++, &wal_simple_log);
+    // 解析出 crc32 校验和
+    uint32_t crc32_check_sum = formatDecodeFixed32(wal_simple_log.data());
+    // 解析出 序列号
+    uint64_t check_number = formatDecodeFixed64(wal_simple_log.data() + 4);
+    // 解析出 单条记录的
+    uint8_t type = formatDecodeFixed8(wal_simple_log.data() + 12);
+    uint32_t key_length = formatDecodeFixed32(wal_simple_log.data() + 13);
+    uint32_t value_length = formatDecodeFixed32(wal_simple_log.data() + 17);
+    std::string key_view(wal_simple_log.data() + 21, key_length);
+    std::string value_view(wal_simple_log.data() + 21 + key_length,
+                           value_length);
+    std::string ksimple_log_end(
+        wal_simple_log.data() + 21 + key_length + value_length,
+        kFlagLogEnd.size());
+    ASSERT_EQ(ksimple_log_end, kFlagLogEnd);
+    LOG_INFO(
+        "\n\t crc32_check_sum = {}\n\t check_number = {}\n\t type = {} \n\t "
+        "key_length = {}\n\t value_length = {}\n\t key = {}\n\t value = {}",
+        crc32_check_sum, check_number, type, key_length, value_length, key_view,
+        value_view);
+    ASSERT_EQ(key_view, set_context->key);
+    ASSERT_EQ(value_view, set_context->value);
+    ASSERT_EQ(check_number, number - 1);
+    writer.AddRecord(wal_simple_log);
   }
 }
 

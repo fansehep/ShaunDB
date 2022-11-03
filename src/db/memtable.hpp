@@ -4,22 +4,34 @@
 #include <memory>
 #include <cstdio>
 #include <map>
+#include <mutex>
 #include "src/db/request.hpp"
 #include "src/util/bloomfilter.hpp"
+#include "src/parallel_hashmap/btree.h"
 
 namespace fver {
 namespace db {
 
 class Memtable {
 public:
-  Memtable() = default;
+  Memtable();
   ~Memtable() = default;
-  void Set(std::shared_ptr<SetContext> set_context);
-  void Put(std::shared_ptr<PutContext> put_context);
-  void Get(std::shared_ptr<GetContext> get_context);
-  void Delete(std::shared_ptr<DeleteContext> del_context);
+
 private:
-  std::map<std::string, std::string> memMap_;
+  // 是否只是可读
+  // 当一个 Memtable 写到一定容量之时, 便应该成为一个
+  // ImmuTable, 等待后台线程做 Minor_Compaction.
+  // false 当前还没有写满
+  // true 即可变成
+  bool isReadonly_;
+
+  // 使用读写锁, 来保证单个 btree 的线程安全
+  std::shared_mutex shd_mtx_;
+
+  // 
+
+  // 存储数据的内存表, 使用 phmap::btree_set 来使用
+  std::unique_ptr<phmap::btree_set<std::string>> memMap_;
   util::BloomFilter<> bloomFilter_;
 };
 

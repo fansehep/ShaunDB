@@ -10,8 +10,11 @@
 
 namespace fver {
 namespace base {
+
+
 class TimeStamp {
  public:
+
   constexpr TimeStamp() = default;
   ~TimeStamp() = default;
   TimeStamp(const uint64_t time_sec, const uint64_t time_usec)
