@@ -39,14 +39,12 @@ const std::string kFlagLogEnd = "\r\n\r\n\x00\x00\x00\x00";
 // 来进行快速回复
 
 // 将 set 请求 WalLog 格式化
-void SetContextWalLogFormat(
-    const std::shared_ptr<SetContext>& set_context, const uint64_t number,
-    std::string* log);
+void SetContextWalLogFormat(const std::shared_ptr<SetContext>& set_context,
+                            const uint64_t number, std::string* log);
 
 // 将 put 请求 WalLog 格式化
-void PutContextWalLogFormat(
-    const std::shared_ptr<PutContext>& set_context, const uint64_t number,
-    std::string* log);
+void PutContextWalLogFormat(const std::shared_ptr<PutContext>& set_context,
+                            const uint64_t number, std::string* log);
 
 // 将 delete 请求 WalLog 格式化
 void DeleteContextWalLogFormat(
@@ -67,6 +65,9 @@ uint8_t formatDecodeFixed8(char* data);
 
 // 默认环形预写日志的容量, 默认为 64MB 当超出 64MB 时 seek 到开头继续写入
 static constexpr uint32_t kDefaultWalLogSize = 64 * 1024 * 1024;
+
+// 为了格式化, 1 个空格
+const std::string kEmpty1Space = " ";
 
 // 为了格式化, 4 个空格
 const std::string kEmpty4Space = "    ";

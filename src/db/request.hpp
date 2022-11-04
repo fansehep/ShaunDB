@@ -24,30 +24,38 @@ struct SetContext {
   std::string key;
   std::string value;
   Status code;
+  uint64_t number;
   SetContext(const std::string_view& key_view,
              const std::string_view& value_view)
       : key(key_view), value(value_view) {}
 };
 
 struct PutContext {
+  PutContext() = default;
   std::string key;
   std::string value;
   Status code;
+  uint64_t number;
 };
 
 struct GetContext {
+  GetContext() = default;
   std::string key;
   std::string value;
   Status code;
+  uint64_t number;
   GetContext(const std::string_view& key_view) : key(key_view) {}
 };
 
 struct DeleteContext {
+  DeleteContext() = default;
   std::string key;
   Status code;
+  uint64_t number;
 };
 
 struct ExistContext {
+  ExistContext() = default;
   std::string key;
   bool is_exist;
   Status code;

@@ -31,13 +31,6 @@ void DB::NewDBimp() {
 
 }
 
-void DB::Put(const std::shared_ptr<PutContext>& put_context) {
-  // 任何关于对于数据库有所修改的操作都应该先刷入到 预写日志中去
-  static thread_local std::string simple_log;
-  PutContextWalLogFormat(put_context, global_number_.getValue(), &simple_log);
-  ++global_number_;
-  walLog_->AddRecord(simple_log);
-}
 
 void DB::Delete(const std::shared_ptr<DeleteContext>& del_context) {
   static thread_local std::string simple_log;
@@ -45,6 +38,7 @@ void DB::Delete(const std::shared_ptr<DeleteContext>& del_context) {
                             &simple_log);
   ++global_number_;
   walLog_->AddRecord(simple_log);
+  
 }
 
 void DB::Get(const std::shared_ptr<GetContext>& get_context) {}

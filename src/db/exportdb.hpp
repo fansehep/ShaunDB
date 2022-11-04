@@ -65,7 +65,6 @@ class DB : public NonCopyable {
   ~DB() = default;
   bool Init(const DBConfig& config);
   void Set(const std::shared_ptr<SetContext>& set_context);
-  void Put(const std::shared_ptr<PutContext>& put_context);
   void Get(const std::shared_ptr<GetContext>& get_context);
   void Delete(const std::shared_ptr<DeleteContext>& del_context);
 
@@ -77,6 +76,9 @@ class DB : public NonCopyable {
   // 预写日志的ID
   // TODO: 事实上, 应该可以不需要使用 global_number 一个可以直接写入
   WALSequenceNumber global_number_;
+
+  // 简单的序列号
+  std::atomic<uint64_t> request_number_;
 
   // 当传入的目录是一个空目录时, 可以重新创建一个新的 path.
   void NewDBimp();

@@ -1,4 +1,4 @@
-#include "src/db/key_format.hpp"'
+#include "src/db/key_format.hpp"
 
 #include "src/util/crc32.hpp"
 #include <fmt/format.h>
