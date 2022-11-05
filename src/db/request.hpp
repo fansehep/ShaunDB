@@ -38,6 +38,8 @@ struct PutContext {
   uint64_t number;
 };
 
+//TODO: get request need a condition_variable to notify the wait thread
+// to tell the 
 struct GetContext {
   GetContext() = default;
   std::string key;

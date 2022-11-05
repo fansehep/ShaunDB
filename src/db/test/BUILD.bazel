@@ -35,3 +35,20 @@ cc_test(
     "-lpthread",
   ],
 )
+
+cc_test(
+  name="shared_memtable_test",
+  srcs=glob(["shared_memtable_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/base/log:fver_log_lib",
+    "//src/util:fver_util_lib",
+    "//src/db:fver_db_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+  linkopts=[
+    "-luuid",
+    "-lpthread",
+  ],
+)

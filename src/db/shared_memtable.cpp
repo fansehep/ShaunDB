@@ -13,8 +13,8 @@ namespace db {
 void SharedMemtable::Init(uint32_t memtable_N) {
   assert(memtable_N != 0);
   memtable_N_ = memtable_N;
-  memtableVec_.reserve(memtable_N);
-  taskworkers_.reserve(memtable_N);
+  memtableVec_.resize(memtable_N);
+  taskworkers_.resize(memtable_N);
   for (auto& iter : memtableVec_) {
     iter = std::make_shared<Memtable>();
   }
@@ -59,6 +59,14 @@ void SharedMemtable::Delete(const std::shared_ptr<DeleteContext>& del_context) {
   // should notify.
   taskworkers_[idx]->Notify();
 }
+
+SharedMemtable::~SharedMemtable() {
+  for (auto& iter : taskworkers_) {
+    iter->Notify();
+    iter->Stop();
+  }
+}
+
 
 }  // namespace db
 

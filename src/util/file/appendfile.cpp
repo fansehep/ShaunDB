@@ -67,18 +67,13 @@ void AppendFile::FlushBuffer() {
 // 直接向 fd 写入
 void AppendFile::WriteDirect(const char* data, const size_t data_size) {
   assert(nullptr != data && nullptr != fileptr_);
-  auto write_size = std::fwrite(data, sizeof(char),data_size, fileptr_);
+  auto write_size = std::fwrite(data, sizeof(char), data_size, fileptr_);
   assert(write_size == data_size);
 }
 
-std::string AppendFile::getPath() {
-  return std::string(path_);
-}
+const std::string_view& AppendFile::getPath() { return path_; }
 
-std::string AppendFile::getFileName() {
-  return std::string(filename_);
-}
-
+const std::string_view& AppendFile::getFileName() { return filename_; }
 
 }  // namespace file
 

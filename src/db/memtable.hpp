@@ -8,13 +8,18 @@
 #include <set>
 #include <shared_mutex>
 
-#include "src/db/comparator.hpp"
+#include "src/db/comp.hpp"
 #include "src/db/request.hpp"
 #include <absl/container/btree_set.h>
 #include "src/util/bloomfilter.hpp"
 
 namespace fver {
 namespace db {
+
+// 默认一个 Memtable 的最大容量是 128 MB
+// 超过该容量即可变成 一个 read_only_memtable
+static constexpr uint32_t kDefaultMemtableSize = 128 * 1024 * 1024;
+
 
 class Memtable {
  public:
@@ -36,7 +41,6 @@ class Memtable {
   void SetReadOnly();
 
  private:
-
   
   // 是否只是可读
   // 当一个 Memtable 写到一定容量之时, 便应该成为一个
@@ -44,7 +48,6 @@ class Memtable {
   // false 当前还没有写满
   // true 即可变成
   bool isReadonly_;
-
 
   // 最大容量
   // 当超过该容量时, 即变成 不可写入状态, 等待被 compaction

@@ -13,6 +13,10 @@ using ::fver::base::NonCopyable;
 using ::fver::db::SharedMemtable;
 using ::fver::util::file::WalLog;
 
+
+
+// NightSheep engine
+// 夜羊db engine
 namespace fver {
 namespace db {
 
@@ -42,13 +46,27 @@ struct DBConfig {
   uint32_t wal_log_size;
   // kv 引擎文件所放置的目录
   std::string db_path;
-  // 触发 compaction 的阈值 / byte
-  uint32_t compaction_trigger;
+  
+  // NightSheep DB 拥有多个内存表
+  // 此配置表示 NightSheepDB 的内存表的数量
+  uint32_t memtable_N;
+  // 单个内存表的最大容量
+  // 注意, 一个内存表被写满之后, 并不能立即被刷入
+  // 他将会等待 Compactor 被刷入到  SStable 中去
+  // 所以峰值内存占用的计算公式是:
+  // (2 * memtable_N * memtable_trigger_size) + (2 * memtable_N * 8MB)
+  // 注意峰值内存占用, 不然直接 oom
+  uint32_t memtable_trigger_size;
+  // compactor 的线程个数
+  // 当内存表过多时, 映射的 Compactor 如果线程数量太少, Compaction 操作明显变慢
+  // BEST: 使用 memtable_trigger_size / 4 个线程 来进行 Compaction
+  // 当然, 这里我们还应该考虑单个 memtable 的大小.
+  uint32_t compactor_thread_size;
 };
 
 //
 // TODO: 我们应该考虑 const std::shared_ptr<>&
-// 与 std::shared_ptr<> 的生命周期问题
+// 与 std::shared_ptr<> 的引用计数问题
 // const std::shared_ptr<>& 并不会增加引用计数
 // 此处做参数传递可以尽量使用 const std::shared_ptr<>&
 //
@@ -75,6 +93,7 @@ class DB : public NonCopyable {
 
   // 预写日志的ID
   // TODO: 事实上, 应该可以不需要使用 global_number 一个可以直接写入
+  // 但这里我们使用环形日志, 如果使用 global_number 可以快速判断一个环形日志的头尾
   WALSequenceNumber global_number_;
 
   // 简单的序列号
