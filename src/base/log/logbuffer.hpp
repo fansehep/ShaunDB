@@ -26,7 +26,7 @@ struct Buffer {
   uint32_t buflen_;
   Buffer() : bufptr_(nullptr), offset_(0), buflen_(0) {}
   Buffer(uint32_t len)
-      : bufptr_(new(std::nothrow) char[len]), offset_(0), buflen_(len) {
+      : bufptr_(new (std::nothrow) char[len]), offset_(0), buflen_(len) {
     std::memset(bufptr_, 0, len);
   }
   ~Buffer() {

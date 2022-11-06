@@ -141,6 +141,10 @@ uint32_t Memtable::getMemSize() { return memMap_.size(); }
 
 void Memtable::SetReadOnly() { isReadonly_ = true; }
 
+void Memtable::SetNumber(const uint32_t number) {
+  memtable_number_ = number;
+}
+
 }  // namespace db
 
 }  // namespace fver

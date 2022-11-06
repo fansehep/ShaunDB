@@ -20,3 +20,23 @@ cc_test(
         "-lglog",
         "-lpthread", ],
 )
+
+
+cc_test(
+    name="fver_vs_spdlog_benchmark",
+    srcs=glob([
+        "fverlog_spdlog_benchmark.cpp",
+    ]),
+    deps=[
+        "//src/base:base_lib",
+        "//src/base/log:fver_log_lib",
+        "@com_google_googletest//:gtest_main",
+        "@com_google_benchmark//:benchmark_main",
+    ],
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS + FVER_BENCHMARK_FLAGS,
+    linkopts=[
+        "-lpthread",
+        "-lspdlog",
+    ],
+)

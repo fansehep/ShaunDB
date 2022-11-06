@@ -115,6 +115,7 @@ class WalWriter : public NonCopyable {
   util::file::WalLog wal_file_;
 };
 
+
 }  // namespace db
 
 }  // namespace fver

@@ -40,6 +40,8 @@ class Memtable {
   // 让当前 Memtable 只读
   void SetReadOnly();
 
+  // 设置 Memtable 的编号
+  void SetNumber(const uint32_t number);
  private:
   
   // 是否只是可读
@@ -48,6 +50,9 @@ class Memtable {
   // false 当前还没有写满
   // true 即可变成
   bool isReadonly_;
+  
+  // 当前 memtable 的编号
+  uint64_t memtable_number_;
 
   // 最大容量
   // 当超过该容量时, 即变成 不可写入状态, 等待被 compaction

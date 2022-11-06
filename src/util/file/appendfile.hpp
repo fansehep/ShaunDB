@@ -20,26 +20,29 @@ static constexpr int kAppendFileBufferSize = 65536;
 // 带有缓存的文件类实现.
 class AppendFile {
  public:
-  AppendFile() : buf_(kAppendFileBufferSize), fileptr_(nullptr) {}
+  AppendFile() : buf_(kAppendFileBufferSize), fd_(-1) {}
   ~AppendFile();
 
   /*
     // 初始化
   */
   void Init(const std::string& path, const std::string& filename);
+  void Close();
 
-  /*
-    写入
-  */
   void Append(char* data, const size_t data_size);
 
+  // 从当前 sstabel 中的文件中读取数据
+  void Read(std::string* data);
+
+  // 清空当前文件内容
+  void Clear();
+
   /*
-    
+     将文件数据中的所有数据全部刷入到磁盘中,
+     但并不会将buf 的数据刷入到磁盘中.
   */
   void Sync();
-  /*
 
-  */
   const std::string_view& getPath();
   /*
 
@@ -47,6 +50,9 @@ class AppendFile {
   const std::string_view& getFileName();
   //
   void FlushBuffer();
+
+  // 获取当前文件的容量
+  uint32_t getFileSize();
 
  private:
   //
@@ -58,8 +64,9 @@ class AppendFile {
   std::string fullFilename_;
   //
   std::string_view path_;
+  //
   std::string_view filename_;
-  std::FILE* fileptr_;
+  int fd_;
 };
 
 }  // namespace file

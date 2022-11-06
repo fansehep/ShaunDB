@@ -11,6 +11,7 @@
 
 #include "src/base/log/logging.hpp"
 #include "src/base/noncopyable.hpp"
+#include "src/db/comp.hpp"
 #include "src/db/memtable.hpp"
 #include "src/db/request.hpp"
 
@@ -26,12 +27,15 @@ namespace db {
 //   std::optional<std::shared_ptr<DeleteContext>> del_context;
 // };
 
+class Compactor;
+
 using Memtask =
     std::variant<std::shared_ptr<SetContext>, std::shared_ptr<GetContext>,
                  std::shared_ptr<DeleteContext>>;
 
 class TaskWorker {
  public:
+
   // TaskWorker 共享 std::shared_ptr<Memtable> 的所有权
   std::shared_ptr<Memtable> memtable_;
 
@@ -57,62 +61,22 @@ class TaskWorker {
   // 是否正在执行
   bool isRunning_;
 
+  // 单个 memtable 的最大容量
+  uint32_t maxMemTableSize_;
+
+  // 等待 Compactor 的刷入
+  std::shared_ptr<Compactor> compactor_;
+
   TaskWorker() : isRunning_(false) {}
 
   // 向任务队列里增加任务
-  void addTask(Memtask hand) {
-    vec_mtx_.lock();
-    bg_handle_vec_.push_back(hand);
-    vec_mtx_.unlock();
-  }
+  void addTask(Memtask hand);
 
   // 让 Memtable worker 继续运行
-  void Notify() { cond_.notify_one(); }
+  void Notify();
 
   // 启动后台执行任务者.
-  void Run() {
-    isRunning_ = true;
-    worker_ = std::thread([&]() {
-      while (isRunning_) {
-        // SharedMemtable 已经通知了,
-        // 但可能此时还没有运行在这里
-        // 需要判断一下
-        if (bg_handle_vec_.empty()) {
-          std::unique_lock<std::mutex> lgk(mtx_);
-          cond_.wait(lgk);
-        }
-        // 快速交换, 以免引起阻塞.
-
-        {
-          vec_mtx_.lock();
-          std::swap(bg_handle_vec_, handle_vec_);
-          vec_mtx_.unlock();
-        }
-        LOG_INFO("memtable start execute");
-        // TODO: 优化, 将 handle.index() 做成 宏
-        for (auto& handle : handle_vec_) {
-          // 糟糕的设计 ...
-          // Set 请求
-          if (handle.index() == 0) {
-
-            auto set_context = std::get<std::shared_ptr<SetContext>>(handle);
-            assert(set_context != nullptr);
-            memtable_->Set(set_context);
-            // Get 请求
-          } else if (handle.index() == 1) {
-            auto get_context = std::get<std::shared_ptr<GetContext>>(handle);
-            assert(get_context != nullptr);
-            memtable_->Get(get_context);
-            // Delete 请求
-          } else if (handle.index() == 2) {
-            auto del_context = std::get<std::shared_ptr<DeleteContext>>(handle);
-            memtable_->Delete(del_context);
-          }
-        }
-        handle_vec_.clear();
-      }
-    });
-  }
+  void Run();
 
   // 停止线程运行
   void Stop() {
@@ -143,22 +107,32 @@ class SharedMemtable : public NonCopyable {
 
   void Run();
 
-  void Init(uint32_t memtable_N = kDefaultSharedMemtableSize);
+  // memtable 的数量, 每个 memtable 的峰值容量
+  void Init(const uint32_t memtable_N, const uint32_t singleMemTableSize);
   void Set(const std::shared_ptr<SetContext>& set_context);
   void Get(const std::shared_ptr<GetContext>& get_context);
   void Delete(const std::shared_ptr<DeleteContext>& del_context);
 
+
+  //!!! 必须在 Init 之前调用, 2.
+  void SetCompactorRef(const std::shared_ptr<Compactor>& compactor);
+
  private:
+  // 每个 memTable 的最大容量
+  uint32_t singleMemTableSize_;
   // memtableVec 的容量
   uint32_t memtable_N_;
-  // 一组 memtable, 本质上是 一组 B Tree
-  std::vector<std::shared_ptr<Memtable>> memtableVec_;
+
   // 当请求来之后,
   std::vector<std::shared_ptr<TaskWorker>> taskworkers_;
   // 哈希算法
   // 将请求散列到不同的 memtable 中去
   std::hash<std::string_view> stdHash_;
+  //
+  std::shared_ptr<Compactor> comp_actor_;
 };
+
+
 
 }  // namespace db
 

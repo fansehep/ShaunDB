@@ -5,29 +5,93 @@
 #include "src/db/request.hpp"
 #include "src/db/status.hpp"
 #include "src/util/hash/xxhash64.hpp"
+#include "src/db/compactor.hpp"
 
 namespace fver {
 
 namespace db {
 
-void SharedMemtable::Init(uint32_t memtable_N) {
+void TaskWorker::addTask(Memtask hand) {
+  vec_mtx_.lock();
+  bg_handle_vec_.push_back(hand);
+  vec_mtx_.unlock();
+}
+
+void TaskWorker::Notify() { cond_.notify_one(); }
+
+void TaskWorker::Run() {
+  isRunning_ = true;
+  worker_ = std::thread([&]() {
+    while (isRunning_) {
+      // SharedMemtable 已经通知了,
+      // 但可能此时还没有运行在这里
+      // 需要判断一下
+      if (bg_handle_vec_.empty()) {
+        std::unique_lock<std::mutex> lgk(mtx_);
+        cond_.wait(lgk);
+      }
+      // 快速交换, 以免引起阻塞.
+
+      {
+        vec_mtx_.lock();
+        std::swap(bg_handle_vec_, handle_vec_);
+        vec_mtx_.unlock();
+      }
+
+      LOG_INFO("memtable start execute");
+      // TODO: 优化, 将 handle.index() 做成 宏
+      for (auto& handle : handle_vec_) {
+        // 糟糕的设计 ...
+        // Set 请求
+        if (handle.index() == 0) {
+          auto set_context = std::get<std::shared_ptr<SetContext>>(handle);
+          assert(set_context != nullptr);
+          memtable_->Set(set_context);
+          // Get 请求
+        } else if (handle.index() == 1) {
+          auto get_context = std::get<std::shared_ptr<GetContext>>(handle);
+          assert(get_context != nullptr);
+          memtable_->Get(get_context);
+          // Delete 请求
+        } else if (handle.index() == 2) {
+          auto del_context = std::get<std::shared_ptr<DeleteContext>>(handle);
+          memtable_->Delete(del_context);
+        }
+      }
+
+      handle_vec_.clear();
+      // 当当前的写入超过 预期时, 将当前正在写入的表换下
+      // 等待 compactor 刷入成为 sstable
+
+      if (memtable_->getMemSize() >= maxMemTableSize_) {
+        memtable_->SetReadOnly();
+        compactor_->AddReadOnlyTable(memtable_);
+        // make_shared, 创建一个新的 memtable
+        memtable_ = std::make_shared<Memtable>();
+      }
+    }
+  });
+}
+
+void SharedMemtable::Init(const uint32_t memtable_N, const uint32_t singletableSize) {
   assert(memtable_N != 0);
   memtable_N_ = memtable_N;
-  memtableVec_.resize(memtable_N);
   taskworkers_.resize(memtable_N);
-  for (auto& iter : memtableVec_) {
-    iter = std::make_shared<Memtable>();
-  }
   int i = 0;
+  // 每个 memtable 的容量
+  singleMemTableSize_ = singletableSize;
   for (; i < memtable_N; i++) {
     taskworkers_[i] = std::make_shared<TaskWorker>();
-    taskworkers_[i]->memtable_ = memtableVec_[i];
+    taskworkers_[i]->memtable_ = std::make_shared<Memtable>();
+    // 编号
+    taskworkers_[i]->memtable_->SetNumber(i);
+    taskworkers_[i]->maxMemTableSize_ = this->singleMemTableSize_;
+    taskworkers_[i]->compactor_ = this->comp_actor_;
   }
 }
 
 void SharedMemtable::Run() {
   assert(memtable_N_ > 0);
-  assert(memtableVec_.size() > 0);
   assert(taskworkers_.size() > 0);
   LOG_TRACE("shared_memtable start! memtable_n: {}", memtable_N_);
   for (auto iter : taskworkers_) {
@@ -67,6 +131,11 @@ SharedMemtable::~SharedMemtable() {
   }
 }
 
+
+void SharedMemtable::SetCompactorRef(
+    const std::shared_ptr<Compactor>& compactor) {
+  this->comp_actor_ = compactor;
+}
 
 }  // namespace db
 

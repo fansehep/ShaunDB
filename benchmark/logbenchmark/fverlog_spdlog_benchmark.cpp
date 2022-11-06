@@ -1,6 +1,7 @@
 #include <benchmark/benchmark.h>
-#include <glog/logging.h>
-
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 #include <chrono>
 #include <thread>
 #include <vector>
@@ -22,10 +23,9 @@
 // 测试对比 15s 内谁写入的日志数量最多
 // 10285
 static void TEST_FLOG_TO_FILE_NOSYNC(benchmark::State& state) {
-  fver::base::log::Init("/home/fan/GitHub/fver/benchmark/logbenchmark",
+  fver::base::log::Init("./benchmark/logbenchmark",
                         kLogLevel::kInfo, false, "test");
   for (auto _ : state) {
-    // 使用最大并发量
     const int corrunyN = std::thread::hardware_concurrency();
     std::vector<std::thread> workers;
     bool isRunning = true;
@@ -46,14 +46,9 @@ static void TEST_FLOG_TO_FILE_NOSYNC(benchmark::State& state) {
   }
 }
 
-static void TEST_GLOG_TO_FILE_NOSYNC(benchmark::State& state) {
-  fmt::print("test glog init!\n");
-  google::SetLogDestination(google::GLOG_INFO,
-                            "/home/fan/GitHub/fver/benchmark/logbenchmark");
-  FLAGS_logtostderr = false;
-  fLS::FLAGS_log_dir = "/home/fan/GitHub/fver/benchmark/logbenchmark";
-  google::InitGoogleLogging("");
-
+static void TEST_SPD_LOG_TO_FILE_NOSYNC(benchmark::State& state) {
+  spdlog::set_level(spdlog::level::info);
+  auto log_file = spdlog::basic_logger_mt("spdlog_benchmark_test.log", "./");
   for (auto _ : state) {
     // 使用最大并发
     const int corrunyN = std::thread::hardware_concurrency();
@@ -63,8 +58,7 @@ static void TEST_GLOG_TO_FILE_NOSYNC(benchmark::State& state) {
     for (; i < corrunyN; i++) {
       workers.emplace_back([&]() {
         while (isRunning) {
-          LOG(INFO) << "I want to fly in the sky, " << rand() << ", " << rand()
-                    << ", " << rand() << ", " << std::to_string(rand());
+
         }
       });
     }
@@ -76,7 +70,7 @@ static void TEST_GLOG_TO_FILE_NOSYNC(benchmark::State& state) {
   }
 }
 
-BENCHMARK(TEST_GLOG_TO_FILE_NOSYNC);
+BENCHMARK(TEST_SPD_LOG_TO_FILE_NOSYNC);
 BENCHMARK(TEST_FLOG_TO_FILE_NOSYNC);
 
 BENCHMARK_MAIN();

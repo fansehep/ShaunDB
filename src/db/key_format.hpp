@@ -84,13 +84,13 @@ SSTable 设计:
   |         .                   | Restart[1]|
   |         .
   |         .
-  |--->  |  Data_Block_2 |
-  |   |->|  Meta_Block_1 |  --> 用于存储 bloom_filter 的元数据, 但 leveldb 在这里做了优化,
-  |   |->|  Meta_Block_3 |
-  |   |  |  ------------ |
-  |   -- |Metaindex Block|  --> 记录下 Filter_Block 的起始地址和大小即可, 
-  -----  | IndexBlock    |
-         |  Footer       | -----> |  Metaindex Handle |  Metaindex block 的索引 (uint64_t)
+  |--->  |    Data_Block_2 |
+  |   |->|    Meta_Block_1 |  --> 用于存储 bloom_filter 的元数据, 但 leveldb 在这里做了优化,
+  |   |->|    Meta_Block_3 |
+  |   |  |  -------------- |
+  |   -- |  Metaindex Block|  --> 记录下 Filter_Block 的起始地址和大小即可, 
+  -----  |   IndexBlock    |
+         |    Footer       | -----> |  Metaindex Handle |  Metaindex block 的索引 (uint64_t)
                                   |  Index Handle     |  Index block 的索引
                                   |  Padding          |
                                   |  Magic Number     |
