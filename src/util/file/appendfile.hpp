@@ -54,6 +54,10 @@ class AppendFile {
   // 获取当前文件的容量
   uint32_t getFileSize();
 
+  int getFd() const {
+    return fd_;
+  }
+
  private:
   //
   void WriteDirect(const char* data, const size_t data_size);

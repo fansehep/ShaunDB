@@ -17,3 +17,18 @@ cc_test(
     "-luuid",
   ],
 )
+
+cc_test(
+  name="io_uring_test",
+  srcs=glob(["iouring_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/util:fver_util_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+  linkopts=[
+    "-lpthread",
+    "-luring",
+  ],
+)

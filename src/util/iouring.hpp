@@ -11,25 +11,106 @@ namespace fver {
 
 namespace util {
 
-struct IOUringReadRequest {
+namespace iouring {
+
+// io_uring wirte: no_block
+/*
+ * @ struct io_uring_sqe : 提交队列
+ * @ int fd : 需要操作的 fd
+ * @ const void* buf : 需要写入的数据
+ * @ unsigned int nbytes : 数据总量
+ * @ __u64 offset : 文件偏移量, if -1 == offset, 那么写操作将会从文件偏移量开始
+ * @ return : 失败时同步 return -1, liburing 会将 errno 设置为错误值
+ */
+// int io_uring_prep_write(struct io_uring_sqe *sqe, int fd, const void *buf,
+// unsigned int nbytes, __u64 offset)
+
+// io_uring read: no_block
+/*
+ * @ struct io_uring_sqe : 提交队列
+ * @ int fd : 需要读取的 fd
+ * @ const void* buf : 需要读取的数据的指针
+ * @ unsigned nbytes : 传入 buf size
+ * @ __u64 offset : 文件偏移量, if -1 == offset, 那么
+ * 读取操作将会从文件偏移量开始
+ * @ return : 失败时同步return -1, liburing 将会将 errno 设置为错误值
+ */
+// int io_uring_prep_read(struct io_uring_sqe* sqe, int fd, void* buf, unsigned
+// nbytes, __u64 offset);
+
+// io_uring submit no_block
+/*
+ * @ struct io_uring* ring : 提交队列
+ * @ return : 成功返回当前提交的队列条目数量,
+ *            如果失败, 就返回 -errno.
+ */
+
+// io_uring peek_cqe no_block
+/*
+ * @ struct io_uring* ring : io_uring 句柄
+ * @ struct io_uring_cqe** cqe_ptr : 输出参数, 是指 cqe 的地址
+ * @ return : io_uring_peek_cqe 函数从属于 ring_param 的队列中返回一个
+ *            IO 完成,
+ *          @ success : 返回 0, 并且 io_uring_cqe 被填充, != nullptr
+ *          @ fail : 返回 -EAGAIN.
+ */
+// int io_uring_peek_cqe(struct io_uring* ring, struct io_uring_cqe** cqe_ptr);
+
+// io_uring wait_cqe
+/*
+ * @ struct io_uring wait_cqe
+ * @ return : 阻塞等待事件完成.
+ *
+ *
+ */
+// int io_uring_wait_cqe(struct io_uring* ring, struct io_uring_cqe** cqe_ptr);
+
+// io_uring cqe_seen
+/*
+ * @ struct io_uring* ring : io_uring 句柄
+ * @ struct io_uring_cqe* cqe : 输出参数
+ * @ 标记某个事件已经被清除.
+ */
+//
+
+//
+
+struct ReadRequest {
   // 需要读取数据的 fd
   int fd_;
-  // 读数据请求
-  struct ::iovec* iovec_data_;
-  // iovec_data_ 的容量
-  uint32_t iovec_data_size_;
-  // 读取操作的 偏移量
-  uint32_t iovec_offset_;
-  /*
-    @file_fd: 需要读取数据的 fd
-    @data_size: 需要读取数据的 容量
-  */
-  void Init(const int file_fd, const uint32_t data_size);
+  char* data_;
+  uint32_t data_size_;
+  // 文件偏移量, -1 使用文件默认偏移量
+  int _file_offset_ = -1;
+  ReadRequest(const int file_fd, char* data, const uint32_t data_size)
+      : fd_(file_fd), data_(data), data_size_(data_size) {}
+};
+
+struct WriteRequest {
+  // 需要写入的 fd
+  int fd_;
+  // 需要写入的数据
+  const char* data_;
+  uint32_t data_size_;
+  // 文件偏移量, -1 使用文件默认偏移量
+  int _file_offset = -1;
+  WriteRequest(const int file_fd, char* data, const uint32_t data_size)
+      : fd_(file_fd), data_(data), data_size_(data_size) {}
+};
+
+
+
+
+
+// 就绪事件组
+struct ConSumptionQueue {
+  struct ::io_uring_cqe* _con_queue_ = nullptr;
 };
 
 class IOUring : public NonCopyable {
  public:
-  IOUring() = default;
+  IOUring() : isInit_(false) {}
+  ~IOUring();
   /*
     @ring_depth: io_uring 的队列长度
   */
@@ -37,25 +118,50 @@ class IOUring : public NonCopyable {
   /*
     停止一个 io_uring 实例
   */
-  bool Stop();
+  void Stop();
   /*
     @request: 准备读取请求
   */
-  uint32_t PrepReadv(IOUringReadRequest* request);
+  void PrepRead(ReadRequest* read_request);
+
+  /*
+    写请求
+  */
+  void PrepWrite(WriteRequest* write_request);
 
   /*
     提交请求
   */
   uint32_t Submit();
 
-  uint32_t WaitRequest();
+  /*
+   * no_block
+   * 返回一组就绪事件
+   * 不能忽略返回值
+   */
+  [[nodiscard]] struct ConSumptionQueue PeekFinishQueue();
+
+  /*
+   * block 等待就绪事件完成
+   * 返回一组就绪事件
+   * 不能忽略返回值
+   */
+  [[nodiscard]] struct ConSumptionQueue WaitFinishQueue();
+
+  // 将已完成事件标记为 完成
+  // 不然他重复通知
+  void DeleteEvent(struct ConSumptionQueue* que);
 
  private:
   // io_uring 的队列长度
   uint32_t ring_depth_;
   // io_uring 句柄
   struct ::io_uring ring_;
+  // 是否 init
+  bool isInit_;
 };
+
+}  // namespace iouring
 
 }  // namespace util
 
