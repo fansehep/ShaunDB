@@ -10,6 +10,7 @@
 
 extern "C" {
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
@@ -22,8 +23,6 @@ namespace fver {
 namespace util {
 
 namespace file {
-
-
 
 AppendFile::~AppendFile() { Close(); }
 
@@ -60,7 +59,9 @@ void AppendFile::Init(const std::string& path, const std::string& filename) {
   // 所有人可读
   fd_ = ::open(fullFilename_.c_str(), O_RDWR | O_CREAT, 0644);
   if (fd_ < 0) {
-    LOG_ERROR("can not open path: {} filename: {}", path, filename);
+    // 打印全局错误
+    LOG_ERROR("can not open path: {} filename: {} error_reason: {}", path,
+              filename, ::strerror(errno));
     return;
   }
   // 路径 path
@@ -105,7 +106,7 @@ void AppendFile::Read(std::string* data) {
     if (read_size <= 0) {
       return;
     }
-  //  LOG_INFO("read_size = {}", read_size);
+    //  LOG_INFO("read_size = {}", read_size);
     *data += std::string_view(tread_buf, read_size);
   }
 }

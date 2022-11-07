@@ -64,10 +64,15 @@ void TaskWorker::Run() {
       // 等待 compactor 刷入成为 sstable
 
       if (memtable_->getMemSize() >= maxMemTableSize_) {
-        memtable_->SetReadOnly();
-        compactor_->AddReadOnlyTable(memtable_);
+        memtable_->setReadOnly();
+        // compactor_->AddReadOnlyTable(memtable_);
         // make_shared, 创建一个新的 memtable
+        // 新创建的 memtable 应该继承原有的 memtable_number;
+        auto origin_memtable_number = memtable_->getMemNumber();
+        // 重新创建一个新的 Memtable
         memtable_ = std::make_shared<Memtable>();
+        // 设置 memtable 编号
+        memtable_->setNumber(origin_memtable_number);
       }
     }
   });
@@ -84,7 +89,7 @@ void SharedMemtable::Init(const uint32_t memtable_N, const uint32_t singletableS
     taskworkers_[i] = std::make_shared<TaskWorker>();
     taskworkers_[i]->memtable_ = std::make_shared<Memtable>();
     // 编号
-    taskworkers_[i]->memtable_->SetNumber(i);
+    taskworkers_[i]->memtable_->setNumber(i);
     taskworkers_[i]->maxMemTableSize_ = this->singleMemTableSize_;
     taskworkers_[i]->compactor_ = this->comp_actor_;
   }

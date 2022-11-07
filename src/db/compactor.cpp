@@ -56,16 +56,21 @@ void CompWorker::Run() {
 
       
       for (auto& iter : wait_to_sync_sstable_) {
-
-
-        //TODO: 考虑对于每次刷入到 SSTable 中, 我们应该使用 BTree 来维护一个
-        // read_only_index,
+        //TODO: 考虑对于每次刷入到 SSTable 中, 我们应该使用 BTree 来维护一个 read_only_index,
         // 查找顺序 => memory_memtable_
         //        => read_only_memtable_
         //        => btree_index
         //        => sstable.
+        auto mem_table_data = iter->getMemTable();
+        
+        // read_only_memtable => SSTable
+        for (auto& key_value : mem_table_data) {
+          
+        }
       }
 
+      // 清理 str_data
+      wait_for_to_be_sstable_data.clear();
     }
   });
 }

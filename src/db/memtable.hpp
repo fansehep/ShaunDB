@@ -38,12 +38,15 @@ class Memtable {
   absl::btree_set<std::string, Comparator, std::allocator<std::string>>& getMemTable();
  
   // 让当前 Memtable 只读
-  void SetReadOnly();
+  void setReadOnly();
 
   // 设置 Memtable 的编号
-  void SetNumber(const uint32_t number);
+  void setNumber(const uint32_t number);
+
+  // 获取当前内存表的编号
+  uint32_t getMemNumber() const;
  private:
-  
+
   // 是否只是可读
   // 当一个 Memtable 写到一定容量之时, 便应该成为一个
   // ImmuTable, 等待后台线程做 Minor_Compaction.
@@ -54,9 +57,6 @@ class Memtable {
   // 当前 memtable 的编号
   uint64_t memtable_number_;
 
-  // 最大容量
-  // 当超过该容量时, 即变成 不可写入状态, 等待被 compaction
-  uint32_t maxSize_;
 
   // 存储数据的内存表
   absl::btree_set<std::string, Comparator, std::allocator<std::string>> memMap_;

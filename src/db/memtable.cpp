@@ -10,7 +10,7 @@ namespace fver {
 
 namespace db {
 
-Memtable::Memtable() : isReadonly_(false), maxSize_(0) {}
+Memtable::Memtable() : isReadonly_(false) {}
 
 // clang-format off
 
@@ -41,12 +41,10 @@ void Memtable::Set(const std::shared_ptr<SetContext> set_context) {
 
   // 使用 读写锁保证线程安全
 
-
   // 插入到 bloomFilter, 方便快速进行判断
   bloomFilter_.Insert(simple_set_str);
   // 如果 key 已经存在, 那么根据自定义比较器应该会覆盖
   memMap_.insert(std::move(simple_set_str));
-
 }
 
 static thread_local std::string simple_get_str;
@@ -70,7 +68,6 @@ void Memtable::Get(const std::shared_ptr<GetContext> get_context) {
   // 读写锁, 当多个线程共同读, 线程安全
 
   auto iter = memMap_.find(simple_get_str);
-
 
   if (iter == memMap_.end()) {
     LOG_WARN("key: {} can not find in memTable", get_context->key);
@@ -123,7 +120,6 @@ void Memtable::Delete(const std::shared_ptr<DeleteContext> del_context) {
 
   auto iter = memMap_.find(simple_get_str);
 
-
   if (iter == memMap_.end()) {
     LOG_WARN("del key: {} can not find in memtable", del_context->key);
     del_context->code.setCode(StatusCode::kNotFound);
@@ -139,11 +135,11 @@ void Memtable::Delete(const std::shared_ptr<DeleteContext> del_context) {
 
 uint32_t Memtable::getMemSize() { return memMap_.size(); }
 
-void Memtable::SetReadOnly() { isReadonly_ = true; }
+void Memtable::setReadOnly() { isReadonly_ = true; }
 
-void Memtable::SetNumber(const uint32_t number) {
-  memtable_number_ = number;
-}
+void Memtable::setNumber(const uint32_t number) { memtable_number_ = number; }
+
+uint32_t Memtable::getMemNumber() const { return memtable_number_; }
 
 }  // namespace db
 

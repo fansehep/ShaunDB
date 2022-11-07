@@ -9,6 +9,7 @@
 #include "src/net/net_server.hpp"
 #include "src/net/repeated_timer.hpp"
 #include "src/raft/raft.pb.h"
+#include <thread>
 
 using ::fver::base::NonCopyable;
 using ::fver::base::TimeStamp;

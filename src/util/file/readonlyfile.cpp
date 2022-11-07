@@ -19,7 +19,8 @@ bool ReadonlyFile::Init(const std::string& path, const std::string& filename) {
   fullfilename_ = fmt::format("{}/{}", path, filename);
   auto fd = ::open(filename.c_str(), O_RDONLY);
   if (fd < 0) [[unlikely]] {
-    LOG_ERROR("open file {} error!", fullfilename_);
+    LOG_ERROR("open file {} error_reasion: {}", fullfilename_,
+              ::strerror(errno));
     return false;
   }
   struct ::stat file_stat;
@@ -37,7 +38,8 @@ bool ReadonlyFile::Init(const std::string& path, const std::string& filename) {
     }
   }
   path_ = std::string_view(fullfilename_.data(), path.size());
-  filename_ = std::string_view(fullfilename_.data() + path.size(), filename.size());
+  filename_ =
+      std::string_view(fullfilename_.data() + path.size(), filename.size());
   ::close(fd);
   return true;
 }
@@ -63,13 +65,9 @@ void ReadonlyFile::Close() {
 
 ReadonlyFile::~ReadonlyFile() { Close(); }
 
-std::string ReadonlyFile::getPath() {
-  return std::string(path_);
-}
+std::string ReadonlyFile::getPath() { return std::string(path_); }
 
-std::string ReadonlyFile::getFileName() {
-  return std::string(filename_);
-}
+std::string ReadonlyFile::getFileName() { return std::string(filename_); }
 
 }  // namespace file
 }  // namespace util
