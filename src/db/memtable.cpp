@@ -154,10 +154,7 @@ uint32_t Memtable::getRefs() { return refs_.load(); }
 
 void Memtable::decreaseRefs() { refs_--; }
 
-auto Memtable::getMemTable()
-    -> absl::btree_set<std::string, Comparator, std::allocator<std::string>>& {
-  return memMap_;
-}
+auto Memtable::getMemTable() -> MemBTree { return memMap_; }
 
 }  // namespace db
 

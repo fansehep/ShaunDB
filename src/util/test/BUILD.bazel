@@ -32,3 +32,18 @@ cc_test(
     "-luring",
   ],
 )
+
+cc_test(
+  name="bitset_test",
+  srcs=glob(["bitset_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/util:fver_util_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+  linkopts=[
+    "-lpthread",
+    "-luring",
+  ],
+)

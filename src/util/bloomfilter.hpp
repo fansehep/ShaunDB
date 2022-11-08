@@ -1,11 +1,10 @@
 #ifndef SRC_UTIL_BLOOMFILTER_H_
 #define SRC_UTIL_BLOOMFILTER_H_
 
-
+#include "src/util/bitset.hpp"
 #include "src/util/hash/city_hash.hpp"
 #include "src/util/hash/farmhash.hpp"
 #include "src/util/hash/xxhash64.hpp"
-
 
 namespace fver {
 namespace util {
@@ -24,25 +23,30 @@ class BloomFilter {
     auto idx_2 = stdHash_(key);
     auto idx_3 = CityHash64WithSeed(key.data(), key.length(), seed_);
     auto idx_4 = ::util::Hash64WithSeed(key.data(), key.length(), seed_);
-    filter_.set(idx_1 % N, true);
-    filter_.set(idx_2 % N, true);
-    filter_.set(idx_3 % N, true);
-    filter_.set(idx_4 % N, true);
+    filter_.set(idx_1 % N);
+    filter_.set(idx_2 % N);
+    filter_.set(idx_3 % N);
+    filter_.set(idx_4 % N);
   }
 
   bool IsMatch(const std::string_view& key) {
-    if (XXHash64::hash(key.data(), key.length(), seed_) && stdHash_(key) &&
-        CityHash64WithSeed(key.data(), key.length(), seed_) &&
-        ::util::Hash64WithSeed(key.data(), key.length(), seed_)) {
+    if (filter_.test(XXHash64::hash(key.data(), key.length(), seed_) % N) &&
+        filter_.test(stdHash_(key) % N) &&
+        filter_.test(CityHash64WithSeed(key.data(), key.length(), seed_) % N) &&
+        filter_.test(::util::Hash64WithSeed(key.data(), key.length(), seed_) %
+                     N)) {
       return true;
     }
     return false;
   }
 
+  // 返回 bloom_filter 数据, 供 Compactor 做 Compaction.
+  auto& getFilterData() { return filter_; }
+
  private:
   uint64_t seed_;
   std::hash<std::string_view> stdHash_;
-  std::bitset<N> filter_;
+  BitSet<N> filter_;
 };
 
 }  // namespace util

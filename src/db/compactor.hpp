@@ -8,7 +8,6 @@
 #include "src/db/sstable_manager.hpp"
 #include "src/util/iouring.hpp"
 
-
 namespace fver {
 
 namespace db {
@@ -46,7 +45,7 @@ namespace db {
           \                   |                   /
            \                  |                  /
       |-------------------------------------------------|
-      |                     Compactor                   |
+      |                     Compactor                   | --- : 每个 compworker 都拥有一个 io_uring 实例
       |-------------------------------------------------|
       |                 multi_thread_compact            |
       |-------------------------------------------------|
@@ -57,9 +56,6 @@ namespace db {
       |-------|         |---------|         |---------| -- Memtable_3_SSTable_1
       |-------|         |---------|         |---------| -- Memtable_3_SSTable_2
           |                   |                  |
-      |--------------------------------------------|
-      |                   io_uring                 |
-      |--------------------------------------------|
 */
 
 // clang-format on
@@ -74,6 +70,9 @@ constexpr static uint32_t kDefaultCompactor_N = 2;
 constexpr static uint32_t kDefaultIOUringSize = 32;
 
 struct CompWorker {
+  //
+  std::string comp_meta_data_str_;
+  //
   CompWorker() : isRunning_(false) {}
   // 是否正在运行
   bool isRunning_;
@@ -90,6 +89,10 @@ struct CompWorker {
   // io_uring 来做异步高性能写入, 读取还是做同步读
   util::iouring::IOUring iouring_;
 
+  // TODO: 让每个 CompWorker 都拥有一个 IO_Uring实例
+  // 由于在 Compactor 那里, 我们需要记录每次 compaction 的所对应的
+  // memtable.
+
   // 用来保护 compaction 任务池
   std::mutex task_mtx_;
 
@@ -98,16 +101,47 @@ struct CompWorker {
 
   std::vector<std::shared_ptr<Memtable>> wait_to_sync_sstable_;
 
+
   // 向单个 memtable 中增加 任务
   void AddSStable(const std::shared_ptr<Memtable>& memtable);
   // 启动 comp_worker, 等待  read_only table 刷入
   void Run();
 };
 
+// clang-format off
+/*
+ * memtable key_value style :
+ *  | key_size | key_value | sequence_number | value_type | value_size | value_val |
+ *  | 
+ *
+ * sstable key_value style :
+ *  | 
+ *
+*/
+
+
+/*
+ * |       48 byte              |
+ * |                            |
+ * |   4 byte                |     4 byte             |        4 byte           |      4byte                     |
+ * | max_key_value_index     | min_key_value_index    | bloom_filter_data_index | _key_value_size                |
+ * | 当前 sstable key最大值    | 当前 sstable key最小值  |     布隆过滤器的数据下标    |      当前的 sstable 的key_value |
+ * |   的下标                 |   的下标                |                         |              的容量             |
+ * 
+ *
+ *   每隔 16 个key_value 将不采用前缀压缩
+ * |      4 byte         |      4 byte         |   4 byte         |
+ * | kv_data_index_0     |   kv_data_index_1   |  kv_data_index_2 |
+ * |                     |                     |                  |
+ *
+ *
+*/
+
+// clang-format on
+
 class Compactor : public NonCopyable {
  public:
-
-  // 启动 Compactor. 
+  // 启动 Compactor.
   void Run();
 
   // 设置 memtable 的数量

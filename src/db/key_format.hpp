@@ -7,10 +7,13 @@
 //
 //
 
+#include <absl/container/btree_set.h>
+
 #include <memory>
 #include <string>
 #include <string_view>
 
+#include "src/db/comp.hpp"
 #include "src/db/request.hpp"
 
 // clang-format off
@@ -121,6 +124,9 @@ namespace fver {
 
 namespace db {
 
+using MemBTree =
+    absl::btree_set<std::string, Comparator, std::allocator<std::string>>;
+
 // 将 set 请求 WalLog 格式化
 void SetContextWalLogFormat(const std::shared_ptr<SetContext>& set_context,
                             const uint64_t number, std::string* log);
@@ -146,6 +152,17 @@ void formatEncodeFixed8(const uint8_t value, char* data);
 
 uint8_t formatDecodeFixed8(char* data);
 
+struct SSTableKeyValueStyle {
+  std::string_view key_view;
+  std::string_view value_view;
+  // 是否存在
+  bool isExist;
+};
+
+// 返回 memtable kvstyle => sstable kvstyle
+[[nodiscard]] SSTableKeyValueStyle formatMemTableToSSTable(
+    const MemBTree::iterator& iter);
+
 // 1 bit
 enum ValueType {
   // 删除的标志
@@ -159,18 +176,28 @@ struct ParsedInternalKey {
   ValueType type;
 };
 
+// 为了格式化, 1 个空格
+const std::string kEmpty1Space = " ";
+
+// 为了格式化, 4 个空格
+const std::string kEmpty4Space = "    ";
+
+// 为了格式化, 8 个空格
+const std::string kEmpty8Space = "        ";
+
+// 为了格式化, 32 个空格
+const std::string kEmpty32Space = "                                ";
 
 /*
 leveldb 使用 skiplist 来实现位于内存中的 Memtable
 leveldb 将 user_key 和 user_value 打包成一个更大的 key
 
 memtable_entry:
-          | key_size | user_key | sequence_number | key_type | value_size | value  |
-          |  4 byte  |   ? byte |       8 byte    |   1 byte |   4 byte   | ? byte |
+          | key_size | user_key | sequence_number | key_type | value_size |
+value  | |  4 byte  |   ? byte |       8 byte    |   1 byte |   4 byte   | ?
+byte |
 
 */
-
-
 
 }  // namespace db
 

@@ -1,4 +1,5 @@
 #include "src/util/bloomfilter.hpp"
+#include "src/base/log/logging.hpp"
 
 #include <gtest/gtest.h>
 #include <memory>
@@ -24,7 +25,7 @@ class BloomFilterTest : public ::testing::Test {
 
 
 TEST_F(BloomFilterTest, MultiKeyInsert) {
-  const int N = 1000;
+  const int N = 100000;
   int i = 0;
   char key[64];
   char value[64];

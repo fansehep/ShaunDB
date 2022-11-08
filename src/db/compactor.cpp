@@ -1,5 +1,7 @@
 #include "src/db/compactor.hpp"
 
+#include "src/base/log/logging.hpp"
+#include "src/db/key_format.hpp"
 #include "src/db/memtable.hpp"
 #include "src/db/sstable_manager.hpp"
 
@@ -30,12 +32,11 @@ void Compactor::Init(const uint32_t size, const uint32_t worker_size,
   sstable_manager_ = std::make_shared<SSTableManager>();
 }
 
+// 将 read_only_memtable 轮询放置在不同的 compworker 上.
 void Compactor::AddReadOnlyTable(const std::shared_ptr<Memtable>& mem_table) {
   bg_comp_workers_[current_comp_index_]->AddSStable(mem_table);
   current_comp_index_ = ((current_comp_index_ + 1) % bg_comp_workers_.size());
 }
-
-
 
 void CompWorker::Run() {
   // io_uring 默认队列深度 32层
@@ -55,23 +56,39 @@ void CompWorker::Run() {
         task_mtx_.unlock();
       }
 
-      
       for (auto& iter : wait_to_sync_sstable_) {
-        //TODO: 考虑对于每次刷入到 SSTable 中, 我们应该使用 BTree 来维护一个 read_only_index,
-        // 查找顺序 => memory_memtable_
-        //        => read_only_memtable_
-        //        => btree_index
-        //        => sstable.
-        auto mem_table_data = iter->getMemTable();
-        
+        // TODO: 考虑对于每次刷入到 SSTable 中, 我们应该使用 BTree 来维护一个
+        // read_only_index,
+        //  查找顺序 => memory_memtable_
+        //         => read_only_memtable_
+        //         => btree_index
+        //         => sstable.
+        auto mem_table_data_ref = iter->getMemTable();
+        // bloom 过滤器的数据
+        auto mem_bloom_filter_data_ref = iter->getFilterData();
+        //
+        // 元数据.
+
         // read_only_memtable => SSTable
-        for (auto& key_value : mem_table_data) {
-          
+        // 内存表 kv 的容量
+        uint32_t memtable_size = mem_table_data_ref.size();
+        comp_meta_data_str_ =
+            fmt::format("{}{}{}{}{}", kEmpty32Space, kEmpty4Space, kEmpty4Space,
+                        kEmpty4Space, kEmpty4Space);
+
+        // 最大的 key_value_view
+        auto max_sstable_fmt_style = formatMemTableToSSTable(mem_table_data_ref.end());
+        // 最小的 key_value_view
+        auto min_sstable_fmt_style = formatMemTableToSSTable(mem_table_data_ref.begin());
+        //
+        //
+        //
+        
+        for (auto& iter : mem_table_data_ref) {
         }
       }
 
       // 清理 str_data
-      
     }
   });
 }

@@ -118,6 +118,18 @@ void DeleteContextWalLogFormat(
   formatEncodeFixed32(crc32_check_sum, log->data());
 }
 
+//
+inline SSTableKeyValueStyle formatMemTableToSSTable(const MemBTree::iterator &iter) {
+  SSTableKeyValueStyle sstable_key_value;
+  uint32_t key_size = formatDecodeFixed32(iter->data()); 
+  uint32_t value_size = formatDecodeFixed32(iter->data() + key_size + 13);
+  sstable_key_value.isExist = formatDecodeFixed8(iter->data() + 4 + key_size);
+  sstable_key_value.key_view = std::string_view(iter->data() + 4, key_size);
+  sstable_key_value.value_view = std::string_view(iter->data() + 4 + key_size + 13, value_size);
+  return sstable_key_value;
+}
+
+
 }  // namespace db
 
 }  // namespace fver
