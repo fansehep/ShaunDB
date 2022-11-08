@@ -2,7 +2,9 @@
 #define SRC_DB_REQUEST_H_
 
 #include <cstring>
+#include <functional>
 #include <string>
+#include <memory>
 
 #include "src/db/status.hpp"
 
@@ -38,15 +40,19 @@ struct PutContext {
   uint64_t number;
 };
 
-//TODO: get request need a condition_variable to notify the wait thread
-// to tell the 
+// TODO: get request need a condition_variable to notify the wait thread
+//  to tell the
 struct GetContext {
   GetContext() = default;
   std::string key;
   std::string value;
   Status code;
   uint64_t number;
-  GetContext(const std::string_view& key_view) : key(key_view) {}
+  // 由于是异步, 所以要在这里做回调
+  std::function<void(const std::shared_ptr<GetContext>&)> get_callback;
+
+  GetContext(const std::string_view& key_view)
+      : key(key_view), get_callback(nullptr) {}
 };
 
 struct DeleteContext {

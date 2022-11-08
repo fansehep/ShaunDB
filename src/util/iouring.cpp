@@ -15,6 +15,8 @@ namespace iouring {
 bool IOUring::Init(const uint32_t ring_depth) {
   ring_depth_ = ring_depth;
   // TODO: 考虑不同的选择方式
+  // IORING_SETUP_IOPOLL : 执行忙等待 IO 完成, 而不是通过异步 IRQ(中断请求获取通知)
+  // IORING_SETUP_SQPOLL : 
   auto init_ue = ::io_uring_queue_init(ring_depth_, &ring_, 0);
   // io_uring_queue_init 成功返回 0
   if (init_ue != 0) {
@@ -78,6 +80,7 @@ struct ConSumptionQueue IOUring::WaitFinishQueue() {
 
 void IOUring::DeleteEvent(struct ConSumptionQueue* que) {
   //
+  assert(que->_con_queue_ != nullptr);
   ::io_uring_cqe_seen(&ring_, que->_con_queue_);
 }
 

@@ -1,6 +1,7 @@
 #include "src/db/memtable.hpp"
 
 #include "src/base/log/logging.hpp"
+#include "src/db/comp.hpp"
 #include "src/db/key_format.hpp"
 #include "src/db/request.hpp"
 #include "src/db/status.hpp"
@@ -10,7 +11,8 @@ namespace fver {
 
 namespace db {
 
-Memtable::Memtable() : isReadonly_(false) {}
+// reference 引用计数
+Memtable::Memtable() : isReadonly_(false), refs_(0) {}
 
 // clang-format off
 
@@ -44,7 +46,14 @@ void Memtable::Set(const std::shared_ptr<SetContext> set_context) {
   // 插入到 bloomFilter, 方便快速进行判断
   bloomFilter_.Insert(simple_set_str);
   // 如果 key 已经存在, 那么根据自定义比较器应该会覆盖
+  auto origin_memMap_size = memMap_.size();
+  auto origin_insert_str_size = simple_set_str.size();
   memMap_.insert(std::move(simple_set_str));
+  // set 请求有可能覆盖原有的值
+  // 只有当 memMap_ 的值发生改变, 才会去增加 memMap 的size
+  if (memMap_.size() > origin_memMap_size) {
+    memSize_ += origin_insert_str_size;
+  }
 }
 
 static thread_local std::string simple_get_str;
@@ -64,8 +73,6 @@ void Memtable::Get(const std::shared_ptr<GetContext> get_context) {
   // 赋值 number
   formatEncodeFixed64(get_context->number,
                       simple_get_str.data() + 4 + get_context->key.size());
-
-  // 读写锁, 当多个线程共同读, 线程安全
 
   auto iter = memMap_.find(simple_get_str);
 
@@ -133,13 +140,24 @@ void Memtable::Delete(const std::shared_ptr<DeleteContext> del_context) {
   LOG_INFO("del key: {} ok", del_context->key);
 }
 
-uint32_t Memtable::getMemSize() { return memMap_.size(); }
+uint32_t Memtable::getMemSize() { return memSize_; }
 
 void Memtable::setReadOnly() { isReadonly_ = true; }
 
 void Memtable::setNumber(const uint32_t number) { memtable_number_ = number; }
 
 uint32_t Memtable::getMemNumber() const { return memtable_number_; }
+
+void Memtable::addRefs() { refs_++; }
+
+uint32_t Memtable::getRefs() { return refs_.load(); }
+
+void Memtable::decreaseRefs() { refs_--; }
+
+auto Memtable::getMemTable()
+    -> absl::btree_set<std::string, Comparator, std::allocator<std::string>>& {
+  return memMap_;
+}
 
 }  // namespace db
 

@@ -12,6 +12,10 @@ extern "C" {
 #include <uuid/uuid.h>
 }
 
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
+
 namespace fver {
 
 namespace db {
@@ -24,12 +28,19 @@ class SharedMemtableTest : public ::testing::Test {
   void TearDown() override {}
 };
 
+struct CallBackCompare {
+  std::string value;
+  void Compare(const std::shared_ptr<GetContext>& get_context) {
+    ASSERT_EQ(value, get_context->value);
+  }
+};
+
 // 多线程插入
 // 验证正确性
 TEST_F(SharedMemtableTest, Multi_thread_insert) {
   SharedMemtable table;
   // 默认一个 SharedMemtable 拥有 4 个 memTable
-  table.Init();
+  table.Init(4, 256 * 1024 * 1024);
   table.Run();
   // 8 个线程同时插入
   const int curreny_N = 8;
@@ -46,7 +57,7 @@ TEST_F(SharedMemtableTest, Multi_thread_insert) {
   LOG_INFO("start insert");
   for (; i < curreny_N; i++) {
     workers_.emplace_back([&]() {
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 1; i++) {
         auto set_context = std::make_shared<SetContext>();
         uuid_generate(uuid_key);
         uuid_generate(uuid_value);
@@ -68,12 +79,20 @@ TEST_F(SharedMemtableTest, Multi_thread_insert) {
     }
   }
   LOG_INFO("multi thread start check");
-  auto get_context = std::make_shared<GetContext>();
   i = 0;
   for (auto& [key, value] : origin_map_test) {
+    auto get_context = std::make_shared<GetContext>();
     get_context->key = key;
+    // std::shared_ptr<CallBackCompare> compare =
+    // std::make_shared<CallBackCompare>(); compare->value = value;
+    // get_context->get_callback = std::bind(&CallBackCompare::Compare,
+    // compare.get(), _1);
     table.Get(get_context);
-    std::this_thread::sleep_for(std::chrono::microseconds(100));
+    while (true) {
+      if (get_context->value != "") {
+        break;
+      }
+    }
     ASSERT_EQ(get_context->value, value);
   }
 }

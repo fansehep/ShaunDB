@@ -1,11 +1,11 @@
 #include "src/db/shared_memtable.hpp"
 
 #include "src/base/log/logging.hpp"
+#include "src/db/compactor.hpp"
 #include "src/db/memtable.hpp"
 #include "src/db/request.hpp"
 #include "src/db/status.hpp"
 #include "src/util/hash/xxhash64.hpp"
-#include "src/db/compactor.hpp"
 
 namespace fver {
 
@@ -47,11 +47,17 @@ void TaskWorker::Run() {
           auto set_context = std::get<std::shared_ptr<SetContext>>(handle);
           assert(set_context != nullptr);
           memtable_->Set(set_context);
+          LOG_INFO("memtable: {} memory_usage: {}", memtable_->getMemNumber(),
+                   memtable_->getMemSize());
           // Get 请求
         } else if (handle.index() == 1) {
           auto get_context = std::get<std::shared_ptr<GetContext>>(handle);
           assert(get_context != nullptr);
           memtable_->Get(get_context);
+          // 触发回调函数
+          if (get_context->get_callback) {
+            get_context->get_callback(get_context);
+          }
           // Delete 请求
         } else if (handle.index() == 2) {
           auto del_context = std::get<std::shared_ptr<DeleteContext>>(handle);
@@ -63,22 +69,23 @@ void TaskWorker::Run() {
       // 当当前的写入超过 预期时, 将当前正在写入的表换下
       // 等待 compactor 刷入成为 sstable
 
-      if (memtable_->getMemSize() >= maxMemTableSize_) {
-        memtable_->setReadOnly();
-        // compactor_->AddReadOnlyTable(memtable_);
-        // make_shared, 创建一个新的 memtable
-        // 新创建的 memtable 应该继承原有的 memtable_number;
-        auto origin_memtable_number = memtable_->getMemNumber();
-        // 重新创建一个新的 Memtable
-        memtable_ = std::make_shared<Memtable>();
-        // 设置 memtable 编号
-        memtable_->setNumber(origin_memtable_number);
-      }
+      // if (memtable_->getMemSize() >= maxMemTableSize_) {
+      //   memtable_->setReadOnly();
+      //   // compactor_->AddReadOnlyTable(memtable_);
+      //   // make_shared, 创建一个新的 memtable
+      //   // 新创建的 memtable 应该继承原有的 memtable_number;
+      //   auto origin_memtable_number = memtable_->getMemNumber();
+      //   // 重新创建一个新的 Memtable
+      //   memtable_ = std::make_shared<Memtable>();
+      //   // 设置 memtable 编号
+      //   memtable_->setNumber(origin_memtable_number);
+      // }
     }
   });
 }
 
-void SharedMemtable::Init(const uint32_t memtable_N, const uint32_t singletableSize) {
+void SharedMemtable::Init(const uint32_t memtable_N,
+                          const uint32_t singletableSize) {
   assert(memtable_N != 0);
   memtable_N_ = memtable_N;
   taskworkers_.resize(memtable_N);
@@ -135,7 +142,6 @@ SharedMemtable::~SharedMemtable() {
     iter->Stop();
   }
 }
-
 
 void SharedMemtable::SetCompactorRef(
     const std::shared_ptr<Compactor>& compactor) {

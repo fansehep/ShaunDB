@@ -84,13 +84,17 @@ struct ReadRequest {
   int _file_offset_ = -1;
   ReadRequest(const int file_fd, char* data, const uint32_t data_size)
       : fd_(file_fd), data_(data), data_size_(data_size) {}
+  
 };
 
+//!!! 考虑 data 的生命周期
+// 同步 IO 的优点是阻塞但是可以保证数据即使被读取
+// std::shared_ptr<Buffer> shared_buf_;
 struct WriteRequest {
   // 需要写入的 fd
   int fd_;
   // 需要写入的数据
-  const char* data_;
+  char* data_;
   uint32_t data_size_;
   // 文件偏移量, -1 使用文件默认偏移量
   int _file_offset = -1;
@@ -149,7 +153,10 @@ class IOUring : public NonCopyable {
   [[nodiscard]] struct ConSumptionQueue WaitFinishQueue();
 
   // 将已完成事件标记为 完成
-  // 不然他重复通知
+  // 取消重复通知
+  // @return : no_return
+  // @struct ConSumptionQueue: que != nullptr
+  // 该参数应该由 PeekFinishQueue and WaitFinishQueue 返回.
   void DeleteEvent(struct ConSumptionQueue* que);
 
  private:

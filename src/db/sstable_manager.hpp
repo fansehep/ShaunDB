@@ -20,7 +20,7 @@ namespace db {
 // 每个 Memtable 对应一个 SStable.
 class SSTableManager : public NonCopyable {
  public:
-  SSTableManager();
+  SSTableManager() = default;
   void Init(const uint32_t MemTableN, const std::string& sstable_path,
             const uint32_t level_size);
 

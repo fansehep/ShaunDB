@@ -35,10 +35,11 @@ void Compactor::AddReadOnlyTable(const std::shared_ptr<Memtable>& mem_table) {
   current_comp_index_ = ((current_comp_index_ + 1) % bg_comp_workers_.size());
 }
 
-// thread_local 无锁复用数据.
-static thread_local std::string wait_for_to_be_sstable_data;
+
 
 void CompWorker::Run() {
+  // io_uring 默认队列深度 32层
+  iouring_.Init(kDefaultIOUringSize);
   isRunning_ = true;
   bg_thread_ = std::thread([&]() {
     while (true == isRunning_) {
@@ -70,7 +71,7 @@ void CompWorker::Run() {
       }
 
       // 清理 str_data
-      wait_for_to_be_sstable_data.clear();
+      
     }
   });
 }

@@ -6,6 +6,8 @@
 #include "src/db/memtable.hpp"
 #include "src/db/shared_memtable.hpp"
 #include "src/db/sstable_manager.hpp"
+#include "src/util/iouring.hpp"
+
 
 namespace fver {
 
@@ -54,6 +56,10 @@ namespace db {
       |-------|         |---------|         |---------| -- Memtable_3_SSTable_0
       |-------|         |---------|         |---------| -- Memtable_3_SSTable_1
       |-------|         |---------|         |---------| -- Memtable_3_SSTable_2
+          |                   |                  |
+      |--------------------------------------------|
+      |                   io_uring                 |
+      |--------------------------------------------|
 */
 
 // clang-format on
@@ -62,9 +68,16 @@ namespace db {
 // TODO: 应该提供一个配置文件来进行设置
 constexpr static uint32_t kDefaultCompactor_N = 2;
 
+// io_uring 默认写入的队列深度
+// 理论上来说, io_uring 写入的速度很快
+// 而且这里的 compaction 每一次都是一个大 IO
+constexpr static uint32_t kDefaultIOUringSize = 32;
+
 struct CompWorker {
   CompWorker() : isRunning_(false) {}
+  // 是否正在运行
   bool isRunning_;
+  //
   std::thread bg_thread_;
 
   // 专门用来唤醒
@@ -73,6 +86,9 @@ struct CompWorker {
 
   // 单个 CompWorker 持有  SStable 的所有权
   std::shared_ptr<SSTableManager> sstable_manager_;
+
+  // io_uring 来做异步高性能写入, 读取还是做同步读
+  util::iouring::IOUring iouring_;
 
   // 用来保护 compaction 任务池
   std::mutex task_mtx_;

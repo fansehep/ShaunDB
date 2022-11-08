@@ -32,7 +32,7 @@ class Memtable {
 
   void Delete(const std::shared_ptr<DeleteContext> del_context);
 
-
+  // 获取当前 memMap 的所占内容容量
   uint32_t getMemSize();
 
   absl::btree_set<std::string, Comparator, std::allocator<std::string>>& getMemTable();
@@ -45,7 +45,20 @@ class Memtable {
 
   // 获取当前内存表的编号
   uint32_t getMemNumber() const;
+  
+  // 增加一次引用计数
+  void addRefs();
+
+  // 获取引用计数
+  uint32_t getRefs();
+
+  // 减少引用计数
+  void decreaseRefs();
+
  private:
+
+  // 当前内存表所花费的内存
+  uint32_t memSize_;
 
   // 是否只是可读
   // 当一个 Memtable 写到一定容量之时, 便应该成为一个
@@ -57,6 +70,11 @@ class Memtable {
   // 当前 memtable 的编号
   uint64_t memtable_number_;
 
+  // memtable 当写到固定阈值的时候
+  // 会成为一个 read_only_memtable
+  // 但是查找的时候, 可能会去从 read_only_memtable
+  // 为了在合适的时候刷入, 需要自动维护一个引用计数
+  std::atomic<uint32_t> refs_;
 
   // 存储数据的内存表
   absl::btree_set<std::string, Comparator, std::allocator<std::string>> memMap_;
