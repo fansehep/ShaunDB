@@ -32,6 +32,7 @@ struct CallBackCompare {
   std::string value;
   void Compare(const std::shared_ptr<GetContext>& get_context) {
     ASSERT_EQ(value, get_context->value);
+    delete this;
   }
 };
 
@@ -57,7 +58,7 @@ TEST_F(SharedMemtableTest, Multi_thread_insert) {
   LOG_INFO("start insert");
   for (; i < curreny_N; i++) {
     workers_.emplace_back([&]() {
-      for (int i = 0; i < 1; i++) {
+      for (int i = 0; i < 100000; i++) {
         auto set_context = std::make_shared<SetContext>();
         uuid_generate(uuid_key);
         uuid_generate(uuid_value);
@@ -83,17 +84,11 @@ TEST_F(SharedMemtableTest, Multi_thread_insert) {
   for (auto& [key, value] : origin_map_test) {
     auto get_context = std::make_shared<GetContext>();
     get_context->key = key;
-    // std::shared_ptr<CallBackCompare> compare =
-    // std::make_shared<CallBackCompare>(); compare->value = value;
-    // get_context->get_callback = std::bind(&CallBackCompare::Compare,
-    // compare.get(), _1);
+    auto compare = new CallBackCompare;
+    compare->value = value;
+    get_context->get_callback =
+        std::bind(&CallBackCompare::Compare, compare, _1);
     table.Get(get_context);
-    while (true) {
-      if (get_context->value != "") {
-        break;
-      }
-    }
-    ASSERT_EQ(get_context->value, value);
   }
 }
 
