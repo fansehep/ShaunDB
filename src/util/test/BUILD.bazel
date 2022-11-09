@@ -47,3 +47,19 @@ cc_test(
     "-luring",
   ],
 )
+
+cc_test(
+  name="hash_func_test",
+  srcs=glob(["hash_func_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/util:fver_util_lib",
+    "@com_google_googletest//:gtest_main",
+    "//src/util/hash:util_hash_lib",
+  ],
+  linkopts=[
+    "-lpthread",
+    "-luuid",
+  ],
+)

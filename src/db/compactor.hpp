@@ -70,8 +70,10 @@ constexpr static uint32_t kDefaultCompactor_N = 2;
 constexpr static uint32_t kDefaultIOUringSize = 32;
 
 struct CompWorker {
-  //
+  // 复用元数据 
   std::string comp_meta_data_str_;
+  // 复用 kv 数据
+  std::string comp_kv_data_str_;
   //
   CompWorker() : isRunning_(false) {}
   // 是否正在运行
@@ -138,9 +140,12 @@ struct CompWorker {
 */
 
 // clang-format on
-
+//
 class Compactor : public NonCopyable {
+
  public:
+  constexpr Compactor() = default;
+
   // 启动 Compactor.
   void Run();
 

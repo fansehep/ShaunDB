@@ -163,6 +163,12 @@ struct SSTableKeyValueStyle {
 [[nodiscard]] SSTableKeyValueStyle formatMemTableToSSTable(
     const MemBTree::iterator& iter);
 
+[[nodiscard]] SSTableKeyValueStyle formatMemTableToSSTableStr(std::string&);
+
+// 对 16 个 sstable_key_value_style 进行前缀压缩.
+void Format16PrefixStr(const std::vector<SSTableKeyValueStyle>& sstable_vec,
+                       std::string* meta_kv_str);
+
 // 1 bit
 enum ValueType {
   // 删除的标志

@@ -61,6 +61,8 @@ void TaskWorker::Run() {
           // Delete 请求
         } else if (handle.index() == 2) {
           auto del_context = std::get<std::shared_ptr<DeleteContext>>(handle);
+          //
+          assert(del_context != nullptr);
           memtable_->Delete(del_context);
         }
       }

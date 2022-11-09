@@ -1,9 +1,11 @@
 #include "src/db/key_format.hpp"
 
-#include "src/util/crc32.hpp"
 #include <fmt/format.h>
-#include "src/db/wal_writer.hpp"
+
 #include "src/base/log/logging.hpp"
+#include "src/db/wal_writer.hpp"
+#include "src/util/crc32.hpp"
+#include <string_view>
 
 extern "C" {
 #include <assert.h>
@@ -119,16 +121,64 @@ void DeleteContextWalLogFormat(
 }
 
 //
-inline SSTableKeyValueStyle formatMemTableToSSTable(const MemBTree::iterator &iter) {
+SSTableKeyValueStyle formatMemTableToSSTable(const MemBTree::iterator& iter) {
   SSTableKeyValueStyle sstable_key_value;
-  uint32_t key_size = formatDecodeFixed32(iter->data()); 
+  uint32_t key_size = formatDecodeFixed32(iter->data());
   uint32_t value_size = formatDecodeFixed32(iter->data() + key_size + 13);
   sstable_key_value.isExist = formatDecodeFixed8(iter->data() + 4 + key_size);
   sstable_key_value.key_view = std::string_view(iter->data() + 4, key_size);
-  sstable_key_value.value_view = std::string_view(iter->data() + 4 + key_size + 13, value_size);
+  sstable_key_value.value_view =
+      std::string_view(iter->data() + 4 + key_size + 13, value_size);
   return sstable_key_value;
 }
 
+SSTableKeyValueStyle formatMemTableToSSTable(std::string& str) {
+  SSTableKeyValueStyle sstable_key_value;
+  uint32_t key_size = formatDecodeFixed32(str.data());
+  uint32_t value_size = formatDecodeFixed32(str.data() + key_size + 13);
+  sstable_key_value.isExist = formatDecodeFixed8(str.data() + 4 + key_size);
+  sstable_key_value.key_view = std::string_view(str.data() + 4, key_size);
+  sstable_key_value.value_view =
+      std::string_view(str.data() + 4 + key_size + 13, value_size);
+  return sstable_key_value;
+}
+
+// 每隔 16 个前缀压缩.
+void Format16PrefixStr(const std::vector<SSTableKeyValueStyle>& sstable_vec,
+                       std::string* meta_kv_str) {
+  const int sstable_vec_size = sstable_vec.size();
+  // 当 sstable_vec 只有 0 个 或者 1 个时需要特殊处理.
+  if (0 == sstable_vec_size || 1 == sstable_vec_size) {
+  }
+  // 相同前缀的 key
+  std::string same_key_str;
+  // 相同前缀的 value
+  std::string same_value_str;
+  //
+  int i = 0;
+  // 前缀压缩 key 最小的 size
+  int prefix_key_min_size = 0;
+  for (auto& iter : sstable_vec) {
+    prefix_key_min_size =
+        std::min<int>(iter.key_view.size(), prefix_key_min_size);
+  }
+  const int lnner_same_size = sstable_vec_size - 1;
+  for (; i < prefix_key_min_size; i++) {
+    int j = i;
+    //
+    for (; j < lnner_same_size; i++) {
+      if (sstable_vec[j].key_view[i] != sstable_vec[j + 1].key_view[i]) {
+        break;
+      }
+    }
+    //
+  }
+
+
+  // 相同 key 的前缀.
+  same_key_str = std::string_view(sstable_vec[0].key_view.data(), prefix_key_min_size);
+  return;
+}
 
 }  // namespace db
 

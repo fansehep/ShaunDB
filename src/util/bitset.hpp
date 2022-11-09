@@ -4,6 +4,7 @@
 #include <cstring>
 #include <new>
 #include <string>
+#include <bitset>
 
 extern "C" {
 #include <assert.h>
@@ -35,49 +36,57 @@ constexpr uint8_t kdel_Remain_Idx[] = {
     127,  //         0111 1111
 };
 
+// 2^5 = 32
+constexpr uint32_t kshiftSize = 5;
+constexpr uint32_t kmask = 0x1f;
+
 template <int N>
 class BitSet {
+ static_assert(N >= 64, "bitset size must >= 64");
  public:
   // 析构函数
   ~BitSet() { delete[] data; }
 
-  BitSet() : data(nullptr) {
+  constexpr BitSet() : data(nullptr), data_size(N/4) {
     // 一个字节占 8 位
-    data = new (std::nothrow) char[(N / 8)];
+    data = new (std::nothrow) int[(N / 4)];
     assert(data != nullptr);
     std::memset(data, 0, data_size);
   }
 
   // 将某一个位设置为 1
-  void set(int idx) {
-    auto pre_idx = idx / 8;
-    auto remain_idx = idx % 8;
-    data[pre_idx] |= kset_Remain_Idx[remain_idx];
+  void set(uint32_t idx) {
+    // auto pre_idx = idx / 8;
+    // auto remain_idx = idx % 8;
+    // data[pre_idx] |= kset_Remain_Idx[remain_idx];
+    data[idx >> kshiftSize] |= (1 << ( idx & kmask));
   }
 
   // 将某个位设置为 0
-  void del(int idx) {
-    auto pre_idx = idx / 8;
-    auto remain_idx = idx % 8;
-    data[pre_idx] &= kdel_Remain_Idx[remain_idx];
+  void del(uint32_t idx) {
+    // auto pre_idx = idx / 8;
+    // auto remain_idx = idx % 8;
+    // data[pre_idx] &= kdel_Remain_Idx[remain_idx];
+    data[idx >> kshiftSize] &= ~(1 << (idx & kmask));
   }
 
   // 判断某个位是否是 true
-  bool test(int idx) {
-    auto pre_idx = idx / 8;
-    auto remain_idx = idx % 8;
-    return data[pre_idx] & kset_Remain_Idx[remain_idx];
+  bool test(uint32_t idx) {
+    // auto pre_idx = idx / 8;
+    // auto remain_idx = idx % 8;
+    // return data[pre_idx] & kset_Remain_Idx[remain_idx];
+    return data[idx >> kshiftSize] & (1 << (idx & kmask));
   }
 
   // 获取 data_size
   uint32_t getSize() { return data_size; }
 
   // 获取 data
-  char* getData() { return data; }
+  int* getData() { return data; }
 
  private:
-  char* data;
-  const uint32_t data_size = N / 8;
+  int* data;
+  const uint32_t data_size;
 };
 
 }  // namespace util

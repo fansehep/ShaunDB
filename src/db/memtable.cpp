@@ -44,7 +44,7 @@ void Memtable::Set(const std::shared_ptr<SetContext> set_context) {
   // 使用 读写锁保证线程安全
 
   // 插入到 bloomFilter, 方便快速进行判断
-  bloomFilter_.Insert(simple_set_str);
+  bloomFilter_.Insert(set_context->key);
   // 如果 key 已经存在, 那么根据自定义比较器应该会覆盖
   auto origin_memMap_size = memMap_.size();
   auto origin_insert_str_size = simple_set_str.size();
@@ -62,7 +62,7 @@ void Memtable::Get(const std::shared_ptr<GetContext> get_context) {
   // 使用 bloomFilter 进行快速判断
   if (false == bloomFilter_.IsMatch(get_context->key)) {
     get_context->code.setCode(StatusCode::kNotFound);
-    LOG_INFO("from bloomfilter key: {} can not found", get_context->key);
+    LOG_INFO("bloomfilter key: {} can not found", get_context->key);
     return;
   }
 

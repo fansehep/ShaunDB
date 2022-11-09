@@ -64,8 +64,8 @@ TEST_F(SharedMemtableTest, Multi_thread_insert) {
         uuid_generate(uuid_value);
         uuid_unparse(uuid_key, key);
         uuid_unparse(uuid_value, value);
-        set_context->key = key;
-        set_context->value = value;
+        set_context->key = std::string_view(key, 36);
+        set_context->value = std::string_view(value, 36);
         origin_map_mtx.lock();
         origin_map_test[set_context->key] = set_context->value;
         origin_map_mtx.unlock();
@@ -84,7 +84,8 @@ TEST_F(SharedMemtableTest, Multi_thread_insert) {
   for (auto& [key, value] : origin_map_test) {
     auto get_context = std::make_shared<GetContext>();
     get_context->key = key;
-    auto compare = new CallBackCompare;
+    auto compare = new (std::nothrow) CallBackCompare;
+    assert(compare != nullptr);
     compare->value = value;
     get_context->get_callback =
         std::bind(&CallBackCompare::Compare, compare, _1);

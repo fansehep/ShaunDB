@@ -16,5 +16,6 @@ cc_library(
   deps = [
     "//src/util/hash:util_hash_lib",
     "//src/util/file:fver_util_file_lib",
+    "//src/base/log:fver_log_lib",
   ],
 ) 

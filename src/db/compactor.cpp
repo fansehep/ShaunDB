@@ -72,19 +72,35 @@ void CompWorker::Run() {
         // read_only_memtable => SSTable
         // 内存表 kv 的容量
         uint32_t memtable_size = mem_table_data_ref.size();
+        // 32 + 4 + 4 + 4 + 4 = 48.
         comp_meta_data_str_ =
             fmt::format("{}{}{}{}{}", kEmpty32Space, kEmpty4Space, kEmpty4Space,
                         kEmpty4Space, kEmpty4Space);
 
         // 最大的 key_value_view
-        auto max_sstable_fmt_style = formatMemTableToSSTable(mem_table_data_ref.end());
+        auto max_sstable_fmt_style =
+            formatMemTableToSSTable(mem_table_data_ref.end());
         // 最小的 key_value_view
-        auto min_sstable_fmt_style = formatMemTableToSSTable(mem_table_data_ref.begin());
+        auto min_sstable_fmt_style =
+            formatMemTableToSSTable(mem_table_data_ref.begin());
         //
         //
         //
-        
+        //
+        //
+        int format_idx = 32;
+
+        int i = 0;
+        // 复用数据
+        std::vector<SSTableKeyValueStyle> sstable_key_value_vec;
+        sstable_key_value_vec.resize(16);
         for (auto& iter : mem_table_data_ref) {
+          sstable_key_value_vec[i] = formatMemTableToSSTableStr(iter);
+          i++;
+          if (i == 15) {
+            
+            i --;
+          }
         }
       }
 
