@@ -73,8 +73,17 @@ namespace iouring {
  */
 //
 
-//
-
+// TODO: use io_uring_prep_write_fixed();
+// and io_uring_prep_read_fiexed();
+/*
+ *
+ * 相比于 io_uring_prep_write
+ * buf_index, 指的是从buf哪里开始写入
+ void io_uring_prep_write_fixed(struct io_uring_sqe* sqe,
+  int fd, const void* buf, unsigned buf_size, off_t offset,
+  int buf_index);
+ *
+*/
 struct ReadRequest {
   // 需要读取数据的 fd
   int fd_;
@@ -88,7 +97,7 @@ struct ReadRequest {
 };
 
 //!!! 考虑 data 的生命周期
-// 同步 IO 的优点是阻塞但是可以保证数据即使被读取
+// 同步 IO 的优点是阻塞但是可以保证数据及时被读取
 // std::shared_ptr<Buffer> shared_buf_;
 struct WriteRequest {
   // 需要写入的 fd

@@ -2,10 +2,12 @@
 
 #include <fmt/format.h>
 
+#include <cstdint>
+#include <string_view>
+
 #include "src/base/log/logging.hpp"
 #include "src/db/wal_writer.hpp"
 #include "src/util/crc32.hpp"
-#include <string_view>
 
 extern "C" {
 #include <assert.h>
@@ -39,6 +41,8 @@ uint64_t formatDecodeFixed64(char* data) {
 }
 
 void formatEncodeFixed8(const uint8_t value, char* data) { data[0] = value; }
+
+uint8_t formatDecodeFixed8(const char* data) { return data[0]; }
 
 uint8_t formatDecodeFixed8(char* data) { return data[0]; }
 
@@ -132,7 +136,7 @@ SSTableKeyValueStyle formatMemTableToSSTable(const MemBTree::iterator& iter) {
   return sstable_key_value;
 }
 
-SSTableKeyValueStyle formatMemTableToSSTable(std::string& str) {
+SSTableKeyValueStyle formatMemTableToSSTableStr(std::string& str) {
   SSTableKeyValueStyle sstable_key_value;
   uint32_t key_size = formatDecodeFixed32(str.data());
   uint32_t value_size = formatDecodeFixed32(str.data() + key_size + 13);
@@ -143,41 +147,230 @@ SSTableKeyValueStyle formatMemTableToSSTable(std::string& str) {
   return sstable_key_value;
 }
 
-// 每隔 16 个前缀压缩.
-void Format16PrefixStr(const std::vector<SSTableKeyValueStyle>& sstable_vec,
-                       std::string* meta_kv_str) {
+// 每隔 16 个进行前缀压缩.
+Format16PrefixResult Format16PrefixStr(
+    const std::vector<SSTableKeyValueStyle>& sstable_vec,
+    std::string* meta_kv_str) {
+  //
   const int sstable_vec_size = sstable_vec.size();
   // 当 sstable_vec 只有 0 个 或者 1 个时需要特殊处理.
   if (0 == sstable_vec_size || 1 == sstable_vec_size) {
   }
-  // 相同前缀的 key
-  std::string same_key_str;
-  // 相同前缀的 value
-  std::string same_value_str;
+  //
+  Format16PrefixResult result;
+
   //
   int i = 0;
   // 前缀压缩 key 最小的 size
-  int prefix_key_min_size = 0;
+  int prefix_key_min_size = sstable_vec[0].key_view.size();
   for (auto& iter : sstable_vec) {
     prefix_key_min_size =
         std::min<int>(iter.key_view.size(), prefix_key_min_size);
   }
+
   const int lnner_same_size = sstable_vec_size - 1;
+
+  /*
+   * sstable_vec[0] abcdddd
+   * sstable_vec[1] abcfff
+   * sstable_vec[2] abcll
+   * sstable_vec[3] abcz
+   * 对这些前缀进行压缩.
+   */
+
   for (; i < prefix_key_min_size; i++) {
-    int j = i;
+    int j = 0;
     //
-    for (; j < lnner_same_size; i++) {
+    for (; j < lnner_same_size; j++) {
       if (sstable_vec[j].key_view[i] != sstable_vec[j + 1].key_view[i]) {
         break;
       }
     }
-    //
+    // 说明 j 没有 到达 lnner_same_size
+    // but i think here goto is right.
+    // but no problem.
+    if (j != lnner_same_size) {
+      break;
+    }
   }
 
+  i -= 1;
+  if (i == -1) {
+    i = 0;
+  } else {
+    // 相同 key 的前缀.
+    result.key_view = std::string_view(sstable_vec[0].key_view.data(), i + 1);
+  }
+  // 前缀压缩 value 最小的 size
+  int prefix_value_min_size = sstable_vec[0].value_view.size();
+  for (auto& iter : sstable_vec) {
+    prefix_value_min_size =
+        std::min<int>(iter.value_view.size(), prefix_value_min_size);
+  }
+  i = 0;
+  for (; i < prefix_value_min_size; i++) {
+    int j = 0;
+    for (; j < lnner_same_size; j++) {
+      if (sstable_vec[j].value_view[i] != sstable_vec[j + 1].value_view[i]) {
+        break;
+      }
+    }
 
-  // 相同 key 的前缀.
-  same_key_str = std::string_view(sstable_vec[0].key_view.data(), prefix_key_min_size);
-  return;
+    if (j != lnner_same_size) {
+      break;
+    }
+  }
+
+  i -= 1;
+  if (i == -1) {
+    i = 0;
+  }
+  // 最大相同 value 前缀.
+  else {
+    result.value_view =
+        std::string_view(sstable_vec[0].value_view.data(), i + 1);
+  }
+  // data_kv_赋值.
+
+  return result;
+}
+
+
+
+
+char* encodeVarint32(char* dst, const uint32_t v) {
+  uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
+  static constexpr int B = 128;
+  if (v < (1 << 7)) {
+    *(ptr++) = v;
+
+  } else if (v < (1 << 14)) {
+    // v | B,
+    // 例如: value(二进制表示) =  00000000 00000000 00000000 00000000
+    // 通过  value | 128 则可以得到                |--------|
+    // 这一部分的值, 然后在进行保存
+    // 下面的行为类似
+    *(ptr++) = v | B;
+    *(ptr++) = v >> 7;
+  } else if (v < (1 << 21)) {
+    *(ptr++) = v | B;
+    *(ptr++) = (v >> 7) | B;
+    *(ptr++) = v >> 14;
+  } else if (v < (1 << 28)) {
+    *(ptr++) = v | B;
+    *(ptr++) = (v >> 7) | B;
+    *(ptr++) = (v >> 14) | B;
+    *(ptr++) = v >> 21;
+  } else {
+    *(ptr++) = v | B;
+    *(ptr++) = (v >> 7) | B;
+    *(ptr++) = (v >> 14) | B;
+    *(ptr++) = (v >> 21) | B;
+    *(ptr++) = v >> 28;
+  }
+  return reinterpret_cast<char*>(ptr);
+}
+
+char* encodeVarint64(char* dst, uint64_t v) {
+  static const int B = 128;
+  uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
+  // i think 循环是好的
+  while (v >= B) {
+    *(ptr++) = v | B;
+    v >>= 7;
+  }
+  *(ptr++) = static_cast<uint8_t>(v);
+  return reinterpret_cast<char*>(ptr);
+}
+
+const char* getVarint32Ptr(const char* p, const char* limit, uint32_t* value) {
+  if (p < limit) {
+    // char buf[4] = 00000000 00000000 00000000 00000000
+    //               |       |        |        |        |
+    // 依次取出每个buf[i] 中的值
+    uint32_t result = *(reinterpret_cast<const uint8_t*>(p));
+    // result & 128(1 << 7), 在判断第一个字节是否为 0
+    // 在上面的EncodeVarInt32中, 使用每个字节的第一位来判断后续是否还有数字
+    // 如果第一位 == 0, 则表示解码成功, 直接返回即可
+    if ((result & 128) == 0) {
+      *value = result;
+      return p + 1;
+    }
+  }
+  return getVarint32PtrFallback(p, limit, value);
+}
+
+const char* getVarint32PtrFallback(const char* p, const char* limit,
+                                   uint32_t* value) {
+  uint32_t result = 0;
+  for (uint32_t shift = 0; shift <= 28 && p < limit; shift += 7) {
+    // | 00000000 | 00000000 | 00000000 | 00000000 |
+    //
+    uint32_t byte = *(reinterpret_cast<const uint8_t*>(p));
+    p++;
+    // 如果 byte | 00000000 | & (1 << 7) => 第一个字节为 1
+    // 则表示后续还有更多的字符需要格式化
+    if (byte & 128) {
+      // More bytes are present
+      result |= ((byte & 127) << shift);
+    } else {
+      // 后续没有了
+      result |= (byte << shift);
+      *value = result;
+      return reinterpret_cast<const char*>(p);
+    }
+  }
+  return nullptr;
+}
+
+const char* getVarint64Ptr(const char* p, const char* limit, uint64_t* value) {
+  uint64_t result = 0;
+  for (uint32_t shift = 0; shift <= 63 && p < limit; shift += 7) {
+    uint64_t byte = *(reinterpret_cast<const uint8_t*>(p));
+    p++;
+    if (byte & 128) {
+      // More bytes are present
+      result |= ((byte & 127) << shift);
+    } else {
+      result |= (byte << shift);
+      *value = result;
+      return reinterpret_cast<const char*>(p);
+    }
+  }
+  return nullptr;
+}
+
+int varintLength(uint64_t v) {
+  int len = 1;
+  while (v >= 128) {
+    v >>= 7;
+    len++;
+  }
+  return len;
+}
+
+bool decodeVarint32(std::string* input, uint32_t* value) {
+  const char* p = input->data();
+  const char* limit = p + input->size();
+  const char* q = getVarint32Ptr(p, limit, value);
+  if (q == nullptr) {
+    return false;
+  } else {
+    *input = std::string_view(q, limit - q);
+    return true;
+  }
+}
+
+bool decodeVarint64(std::string* input, uint64_t* value) {
+  const char* p = input->data();
+  const char* limit = p + input->size();
+  const char* q = getVarint64Ptr(p, limit, value);
+  if (q == nullptr) {
+    return false;
+  } else {
+    *input = std::string_view(q, limit - q);
+    return true;
+  }
 }
 
 }  // namespace db

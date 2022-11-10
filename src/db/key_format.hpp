@@ -150,6 +150,8 @@ void formatEncodeFixed64(const uint64_t value, char* data);
 
 void formatEncodeFixed8(const uint8_t value, char* data);
 
+uint8_t formatDecodeFixed8(const char* data);
+
 uint8_t formatDecodeFixed8(char* data);
 
 struct SSTableKeyValueStyle {
@@ -166,8 +168,21 @@ struct SSTableKeyValueStyle {
 [[nodiscard]] SSTableKeyValueStyle formatMemTableToSSTableStr(std::string&);
 
 // 对 16 个 sstable_key_value_style 进行前缀压缩.
-void Format16PrefixStr(const std::vector<SSTableKeyValueStyle>& sstable_vec,
-                       std::string* meta_kv_str);
+/*
+ * @ std::pair<std::string_view, std::string_view>
+ * @ first: 传入 sstable_vec 中最多相同前缀的 key_view
+ * @ second: 传入 sstable_vec 中最多相同前缀的 value_view
+ */
+//
+
+struct Format16PrefixResult {
+  std::string_view key_view;
+  std::string_view value_view;
+};
+
+Format16PrefixResult Format16PrefixStr(
+    const std::vector<SSTableKeyValueStyle>& sstable_vec,
+    std::string* meta_kv_str);
 
 // 1 bit
 enum ValueType {
@@ -185,11 +200,43 @@ struct ParsedInternalKey {
 // 为了格式化, 1 个空格
 const std::string kEmpty1Space = " ";
 
+// for format_style
+const std::string kEmpty2Space = "  ";
+// for format_style
+const std::string kEmpty3Space = "   ";
+
 // 为了格式化, 4 个空格
 const std::string kEmpty4Space = "    ";
+const std::string kEmpty5Space = "     ";
+const std::string kEmpty6Space = "      ";
+const std::string kEmpty7Space = "       ";
+const std::string kEmpty8Space = "        ";
+const std::string kEmpty9Space = "         ";
 
 // 为了格式化, 8 个空格
-const std::string kEmpty8Space = "        ";
+
+const std::string format32_vec[] = {
+    kEmpty1Space,  // 0 => 1 个空格
+    kEmpty1Space,  // 1 => 1 个空格
+    kEmpty2Space,  // 2 => 2 个空格
+    kEmpty3Space,  // 3 => 3 个空格
+    kEmpty4Space,  // 4 => 4 个空格
+    kEmpty5Space,  // 5 => 5 个空格
+};
+
+const std::string format64_vec[] = {
+    kEmpty1Space,  // 0 => 1 个空格
+    kEmpty1Space,  // 1 => 1 个空格
+    kEmpty2Space,  // 2 => 2 个空格
+    kEmpty3Space,  // 3 => 3 个空格
+    kEmpty4Space,  // 4 => 4 个空格
+    kEmpty5Space,  // 5 => 5 个空格
+    kEmpty6Space,  // 6 => 6 个空格
+    kEmpty7Space,  // 7 => 7 个空格
+    kEmpty8Space,  // 8 => 8 个空格
+    kEmpty9Space,  // 9 => 9 个空格
+};
+
 
 // 为了格式化, 32 个空格
 const std::string kEmpty32Space = "                                ";
@@ -205,8 +252,25 @@ byte |
 
 */
 
-}  // namespace db
+int varintLength(uint64_t v);
 
+// 对 value 进行 varint32 编码
+char* encodeVarint32(char* dst, const uint32_t value);
+// 对 value 进行 varint32编码
+char* encodeVarint64(char* dst, uint64_t value);
+
+bool decodeVarint32(std::string* int32_view, uint32_t* value);
+bool decodeVarint64(std::string* int64_view, uint64_t* value);
+
+const char* getVarint32Ptr(const char* p, const char* limit, uint32_t* v);
+const char* getVarint64Ptr(const char* p, const char* limit, uint64_t* v);
+
+// for getVarint64Ptr 
+const char* getVarint32PtrFallback(const char* p, const char* limit,
+                                   uint32_t* value);
+
+
+}  // namespace db
 }  // namespace fver
 
 #endif

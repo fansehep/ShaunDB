@@ -36,7 +36,43 @@ struct CallBackCompare {
   }
 };
 
-// 多线程插入
+// 简单的插入, 验证 varint 是否正确
+TEST_F(SharedMemtableTest, simple_insert_tset) {
+  SharedMemtable table;
+  // 默认一个 SharedMemtable 拥有 4 个 memTable
+  table.Init(4, 256 * 1024 * 1024);
+  table.Run();
+  auto set_context_1 = std::make_shared<SetContext>();
+  const std::string key_1 = "123123";
+  const std::string value_1 = "12dajfiljdsklf";
+  set_context_1->key = key_1;
+  set_context_1->value = value_1;
+
+  auto set_context_2 = std::make_shared<SetContext>();
+  const std::string key_2 = "djakfhn";
+  const std::string value_2 = "cjsiklfhsuidkf";
+  set_context_2->key = key_2;
+  set_context_2->value = value_2;
+  table.Set(set_context_1);
+  table.Set(set_context_2);
+
+  auto get_context_1 = std::make_shared<GetContext>();
+  get_context_1->key = key_1;
+  auto compare = new (std::nothrow) CallBackCompare;
+  compare->value = value_1;
+  get_context_1->get_callback =
+      std::bind(&CallBackCompare::Compare, compare, _1);
+
+  auto get_context_2 = std::make_shared<GetContext>();
+  get_context_2->key = key_2;
+  auto compare_2 = new (std::nothrow) CallBackCompare;
+  compare_2->value = value_2;
+  get_context_2->get_callback =
+      std::bind(&CallBackCompare::Compare, compare_2, _1);
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+}
+
+//多线程插入
 // 验证正确性
 TEST_F(SharedMemtableTest, Multi_thread_insert) {
   SharedMemtable table;
