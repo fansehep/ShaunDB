@@ -63,7 +63,7 @@ void CompWorker::Run() {
         //         => read_only_memtable_
         //         => btree_index
         //         => sstable.
-        auto mem_table_data_ref = iter->getMemTable();
+        auto mem_table_data_ref = iter->getMemTableRef();
         // bloom 过滤器的数据
         auto mem_bloom_filter_data_ref = iter->getFilterData();
         //

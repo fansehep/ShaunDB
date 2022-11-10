@@ -26,7 +26,7 @@ Memtable::Memtable() : isReadonly_(false), refs_(0) {}
 
 static thread_local std::string simple_set_str;
 
-void Memtable::Set(const std::shared_ptr<SetContext> set_context) {
+void Memtable::Set(const std::shared_ptr<SetContext>& set_context) {
   auto key_size_32_varint_size = varintLength(set_context->key.size());
   auto value_size_32_varint_size = varintLength(set_context->value.size());
   auto sequence_number_64_varint_size = varintLength(set_context->value.size());
@@ -76,7 +76,7 @@ void Memtable::Set(const std::shared_ptr<SetContext> set_context) {
 
 static thread_local std::string simple_get_str;
 
-void Memtable::Get(const std::shared_ptr<GetContext> get_context) {
+void Memtable::Get(const std::shared_ptr<GetContext>& get_context) {
   // 使用 bloomFilter 进行快速判断
   if (false == bloomFilter_.IsMatch(get_context->key)) {
     get_context->code.setCode(StatusCode::kNotFound);
@@ -139,22 +139,21 @@ void Memtable::Get(const std::shared_ptr<GetContext> get_context) {
 
 static thread_local std::string simple_del_str;
 
-void Memtable::Delete(const std::shared_ptr<DeleteContext> del_context) {
+void Memtable::Delete(const std::shared_ptr<DeleteContext>& del_context) {
   // 使用 bloomFilter 进行快速判断
   if (false == bloomFilter_.IsMatch(del_context->key)) {
     del_context->code.setCode(StatusCode::kNotFound);
     LOG_INFO("from bloomfilter delete key: {} can not found", del_context->key);
     return;
   }
+  auto key_size_32_varint_size = varintLength(del_context->key.size());
+  auto sequence_number_64_varint_size = varintLength(del_context->number);
 
-  simple_del_str = fmt::format("{}{}{}{}", kEmpty4Space, del_context->key,
-                               kEmpty8Space, kEmpty1Space);
-  // 赋值 key_size
-  formatEncodeFixed32(del_context->key.size(), simple_get_str.data());
-  // 赋值 number
-  formatEncodeFixed64(del_context->number,
-                      simple_get_str.data() + 4 + del_context->key.size());
-  // 这里也是查找行为
+  simple_del_str = fmt::format(
+      "{}{}{}{}", format32_vec[key_size_32_varint_size], del_context->key,
+      format64_vec[sequence_number_64_varint_size], kEmpty1Space);
+  char* start_ptr = simple_set_str.data();
+  start_ptr = encodeVarint32(start_ptr, del_context->key.size());
 
   auto iter = memMap_.find(simple_get_str);
 
@@ -163,11 +162,16 @@ void Memtable::Delete(const std::shared_ptr<DeleteContext> del_context) {
     del_context->code.setCode(StatusCode::kNotFound);
     return;
   }
+  //
   // 标记 删除
   // 获取 key_size;
-  uint32_t mem_key_size = formatDecodeFixed32(iter->data());
+  uint32_t mem_key_size = 0;
+  auto end_ptr = getVarint32Ptr(iter->data(), iter->data() + 5, &mem_key_size);
   // 标志位删除.
-  *(iter->data() + mem_key_size + 12) = ValueType::kTypeDeletion;
+  uint64_t mem_number = 0;
+  end_ptr = getVarint64Ptr(end_ptr + mem_key_size, end_ptr + 9, &mem_number);
+  //
+  *(const_cast<char*>(end_ptr)) = ValueType::kTypeDeletion;
   LOG_INFO("del key: {} ok", del_context->key);
 }
 
@@ -185,7 +189,7 @@ uint32_t Memtable::getRefs() { return refs_.load(); }
 
 void Memtable::decreaseRefs() { refs_--; }
 
-auto Memtable::getMemTable() -> MemBTree { return memMap_; }
+auto Memtable::getMemTableRef() -> MemBTree& { return memMap_; }
 
 }  // namespace db
 

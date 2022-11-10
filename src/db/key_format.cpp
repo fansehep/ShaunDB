@@ -127,23 +127,35 @@ void DeleteContextWalLogFormat(
 //
 SSTableKeyValueStyle formatMemTableToSSTable(const MemBTree::iterator& iter) {
   SSTableKeyValueStyle sstable_key_value;
-  uint32_t key_size = formatDecodeFixed32(iter->data());
-  uint32_t value_size = formatDecodeFixed32(iter->data() + key_size + 13);
-  sstable_key_value.isExist = formatDecodeFixed8(iter->data() + 4 + key_size);
-  sstable_key_value.key_view = std::string_view(iter->data() + 4, key_size);
-  sstable_key_value.value_view =
-      std::string_view(iter->data() + 4 + key_size + 13, value_size);
+  uint32_t key_size;
+  uint32_t value_size;
+  auto key_end_ptr = getVarint32Ptr(iter->data(), iter->data() + 5, &key_size);
+  sstable_key_value.key_view = std::string_view(key_end_ptr, key_size);
+  uint64_t number_value;
+  auto next_value_end_ptr = getVarint64Ptr(
+      key_end_ptr + key_size, key_end_ptr + key_size + 9, &number_value);
+  LOG_INFO("next_value: {}", *next_value_end_ptr);
+  sstable_key_value.isExist = formatDecodeFixed8(next_value_end_ptr);
+  key_end_ptr = getVarint32Ptr(next_value_end_ptr + 1, next_value_end_ptr + 6,
+                               &value_size);
+  sstable_key_value.value_view = std::string_view(key_end_ptr, value_size);
   return sstable_key_value;
 }
 
 SSTableKeyValueStyle formatMemTableToSSTableStr(std::string& str) {
   SSTableKeyValueStyle sstable_key_value;
-  uint32_t key_size = formatDecodeFixed32(str.data());
-  uint32_t value_size = formatDecodeFixed32(str.data() + key_size + 13);
-  sstable_key_value.isExist = formatDecodeFixed8(str.data() + 4 + key_size);
-  sstable_key_value.key_view = std::string_view(str.data() + 4, key_size);
-  sstable_key_value.value_view =
-      std::string_view(str.data() + 4 + key_size + 13, value_size);
+  uint32_t key_size;
+  uint32_t value_size;
+  auto key_end_ptr = getVarint32Ptr(str.data(), str.data() + 5, &key_size);
+  sstable_key_value.key_view = std::string_view(key_end_ptr, key_size);
+  uint64_t number_value;
+  auto next_value_end_ptr = getVarint64Ptr(
+      key_end_ptr + key_size, key_end_ptr + key_size + 9, &number_value);
+  //
+  sstable_key_value.isExist = formatDecodeFixed8(next_value_end_ptr);
+  key_end_ptr = getVarint32Ptr(next_value_end_ptr + 1, next_value_end_ptr + 6,
+                               &value_size);
+  sstable_key_value.value_view = std::string_view(key_end_ptr, value_size);
   return sstable_key_value;
 }
 
@@ -234,9 +246,6 @@ Format16PrefixResult Format16PrefixStr(
 
   return result;
 }
-
-
-
 
 char* encodeVarint32(char* dst, const uint32_t v) {
   uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);

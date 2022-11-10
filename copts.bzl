@@ -17,7 +17,7 @@ FVER_FLAGS = [
     "-std=c++20",
     "-O2",
     # "-g0",
-    # "-fno-exceptions",
+    "-fno-exceptions",
 ]
 #TODO: should -fno-exception but the yaml-cpp don't 
 

@@ -127,6 +127,8 @@ namespace db {
 using MemBTree =
     absl::btree_set<std::string, Comparator, std::allocator<std::string>>;
 
+
+// TODO: use snappy algorithm instread of fixed algorithm
 // 将 set 请求 WalLog 格式化
 void SetContextWalLogFormat(const std::shared_ptr<SetContext>& set_context,
                             const uint64_t number, std::string* log);
@@ -187,9 +189,10 @@ Format16PrefixResult Format16PrefixStr(
 // 1 bit
 enum ValueType {
   // 删除的标志
-  kTypeDeletion = 0x0,
-  kTypeValue = 0x1,
+  kTypeDeletion = 0,
+  kTypeValue = 1,
 };
+
 
 struct ParsedInternalKey {
   std::string_view user_key;

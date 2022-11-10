@@ -2,6 +2,7 @@
 
 #include "src/db/compactor.hpp"
 #include "src/db/key_format.hpp"
+#include "src/db/request.hpp"
 
 namespace fver {
 
@@ -66,6 +67,31 @@ TEST_F(CompactionTest, no_prefix_key_value) {
   ASSERT_EQ(prefix16_key_value.key_view.empty(), true);
   ASSERT_EQ(prefix16_key_value.value_view.empty(), true);
 }
+
+TEST_F(CompactionTest, sstable_transform_test) {
+  Memtable mem_table;
+  const std::string key_1 = "123123dajsikdjiu23hrui";
+  const std::string value_1 = "djiahfukrsjhgfiurhugf";
+  auto set_context = std::make_shared<SetContext>();
+  set_context->key = key_1;
+  set_context->value = value_1;
+  mem_table.Set(set_context);
+  auto iter = mem_table.getMemTableRef().begin();
+  LOG_INFO("iter: {}", *iter);
+  auto kv_style = formatMemTableToSSTable(iter);
+  ASSERT_EQ(kv_style.key_view, key_1);
+  ASSERT_EQ(kv_style.value_view, value_1);
+  ASSERT_EQ(kv_style.isExist, true);
+  auto del_context = std::make_shared<DeleteContext>();
+  del_context->key = key_1;
+  mem_table.Delete(del_context);
+  auto iter_2 = mem_table.getMemTableRef().begin();
+  auto kv_style_2 = formatMemTableToSSTable(iter_2);
+  ASSERT_EQ(kv_style_2.key_view, key_1);
+  ASSERT_EQ(kv_style_2.value_view, value_1);
+  ASSERT_EQ(kv_style_2.isExist, false);
+}
+
 }  // namespace db
 
 }  // namespace fver
