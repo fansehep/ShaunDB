@@ -90,11 +90,11 @@ void SharedMemtable::Init(const uint32_t memtable_N,
                           const uint32_t singletableSize) {
   assert(memtable_N != 0);
   memtable_N_ = memtable_N;
-  taskworkers_.resize(memtable_N);
+  taskworkers_.resize(memtable_N_);
   int i = 0;
   // 每个 memtable 的容量
   singleMemTableSize_ = singletableSize;
-  for (; i < memtable_N; i++) {
+  for (; i < memtable_N_; i++) {
     taskworkers_[i] = std::make_shared<TaskWorker>();
     taskworkers_[i]->memtable_ = std::make_shared<Memtable>();
     // 编号

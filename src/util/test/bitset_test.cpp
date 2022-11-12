@@ -32,6 +32,20 @@ TEST_F(BitSetTest, simple_test) {
   for (auto& iter : vec_int_) {
     ASSERT_EQ(bitset_.test(iter), stl_bitset_.test(iter));
   }
+  const int N_2 = 65;
+  BitSet<N_2> bitset_2;
+  bitset_2.set(0);
+  LOG_INFO("bitset_2 : {}", *reinterpret_cast<int*>(bitset_2.getData()));
+  bitset_2.set(1);
+  LOG_INFO("bitset_2 : {}", *reinterpret_cast<int*>(bitset_2.getData()));
+  bitset_2.set(2);
+  LOG_INFO("bitset_2 : {}", *reinterpret_cast<int*>(bitset_2.getData()));
+  bitset_2.set(3);
+  LOG_INFO("bitset_2 : {}", *reinterpret_cast<int*>(bitset_2.getData()));
+  bitset_2.del(2);
+  // 3 2 1 0
+  // 1 0 1 1
+  LOG_INFO("bitset_2 : {}", *reinterpret_cast<int*>(bitset_2.getData()));
 }
 
 }  // namespace util

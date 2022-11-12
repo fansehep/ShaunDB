@@ -69,11 +69,35 @@ constexpr static uint32_t kDefaultCompactor_N = 2;
 // 而且这里的 compaction 每一次都是一个大 IO
 constexpr static uint32_t kDefaultIOUringSize = 32;
 
+
+// clang-format off
+/*
+ * comp_kv_data_str:
+ * | 0 | index_1 | index_2 | ... | index_end |
+ * 
+ *
+ *
+*/
+
+/*
+ * comp_kv_meta_str:
+ * | memtable_number             | maxkey_value_record | min_key_value_record | bloomfilter_data |
+ * | 当前 sstable 所对应的 memtable| 最大
+ *
+ *
+ */
+
+// clang-format on
+
 struct CompWorker {
-  // 复用元数据 
-  std::string comp_meta_data_str_;
-  // 复用 kv 数据
-  std::string comp_kv_data_str_;
+  // 每隔多少个前缀 kv 进行前缀压缩
+  uint32_t prefix_size_;
+  // 复用 memtable_kv 数据
+  std::vector<char> comp_kv_data_str_;
+  // 复用 memtable_kv 元数据
+  std::vector<char> comp_kv_meta_str_;
+  // 每次对于单个 memtable 的 kv index
+  std::vector<uint32_t> comp_kv_index_vec_;
   //
   CompWorker() : isRunning_(false) {}
   // 是否正在运行
@@ -102,7 +126,6 @@ struct CompWorker {
   std::vector<std::shared_ptr<Memtable>> bg_wait_to_sync_sstable_;
 
   std::vector<std::shared_ptr<Memtable>> wait_to_sync_sstable_;
-
 
   // 向单个 memtable 中增加 任务
   void AddSStable(const std::shared_ptr<Memtable>& memtable);
@@ -139,10 +162,19 @@ struct CompWorker {
  *
 */
 
+/*
+ * | shared_key_size | key_size | key_val | shared_value_size | value_size | value_val |
+ * | var_int         |  ...
+ * |
+ * |
+ * | key_size | key_val | value_size | value_val |
+ *  .
+ *  .
+ */
+
 // clang-format on
 //
 class Compactor : public NonCopyable {
-
  public:
   constexpr Compactor() = default;
 
@@ -171,6 +203,8 @@ class Compactor : public NonCopyable {
   uint32_t current_comp_index_;
   // sstable 存放的目录
   std::string db_path_;
+  // 每隔多少个前缀 kv 进行前缀压缩
+  uint32_t prefix_size_;
 };
 
 }  // namespace db

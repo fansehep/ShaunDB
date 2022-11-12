@@ -91,7 +91,7 @@ SSTable 设计:
   |   |->|    Meta_Block_1 |  --> 用于存储 bloom_filter 的元数据, 但 leveldb 在这里做了优化,
   |   |->|    Meta_Block_3 |
   |   |  |  -------------- |
-  |   -- |  Metaindex Block|  --> 记录下 Filter_Block 的起始地址和大小即可, 
+  |   -- |  Metaindex Block|  --> 记录下 Filter_Block 的起始地址和大小即可
   -----  |   IndexBlock    |
          |    Footer       | -----> |  Metaindex Handle |  Metaindex block 的索引 (uint64_t)
                                   |  Index Handle     |  Index block 的索引
@@ -183,8 +183,7 @@ struct Format16PrefixResult {
 };
 
 Format16PrefixResult Format16PrefixStr(
-    const std::vector<SSTableKeyValueStyle>& sstable_vec,
-    std::string* meta_kv_str);
+    const std::vector<SSTableKeyValueStyle>& sstable_vec);
 
 // 1 bit
 enum ValueType {
@@ -207,8 +206,6 @@ const std::string kEmpty1Space = " ";
 const std::string kEmpty2Space = "  ";
 // for format_style
 const std::string kEmpty3Space = "   ";
-
-// 为了格式化, 4 个空格
 const std::string kEmpty4Space = "    ";
 const std::string kEmpty5Space = "     ";
 const std::string kEmpty6Space = "      ";
@@ -268,7 +265,7 @@ bool decodeVarint64(std::string* int64_view, uint64_t* value);
 const char* getVarint32Ptr(const char* p, const char* limit, uint32_t* v);
 const char* getVarint64Ptr(const char* p, const char* limit, uint64_t* v);
 
-// for getVarint64Ptr 
+// for getVarint64Ptr sync
 const char* getVarint32PtrFallback(const char* p, const char* limit,
                                    uint32_t* value);
 

@@ -14,18 +14,18 @@ class BloomFilterTest : public ::testing::Test {
   BloomFilterTest() = default;
   ~BloomFilterTest() = default;
   void SetUp() override {
-    filter_ = std::make_shared<BloomFilter<>>();
+    filter_ = std::make_shared<BloomFilter<64 * 1024 * 1024>>();
   }
   void TearDown() override {
 
   }
   std::unordered_map<std::string, bool> map_;
-  std::shared_ptr<BloomFilter<>> filter_;
+  std::shared_ptr<BloomFilter<64 * 1024 * 1024>> filter_;
 };
 
 
 TEST_F(BloomFilterTest, MultiKeyInsert) {
-  const int N = 1000000;
+  const int N = 100000;
   int i = 0;
   char key[64];
   char value[64];
@@ -51,7 +51,7 @@ TEST_F(BloomFilterTest, MultiKeyInsert) {
     uuid_generate(uuid_key);
     uuid_unparse(uuid_key, key);
     if (true == filter_->IsMatch(key)) {
-      LOG_INFO("uuid_key: {} error", key);
+      LOG_INFO("uuid_key: {} error i: {}", key, i);
     }
     ASSERT_EQ(false, filter_->IsMatch(key));
   }

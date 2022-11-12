@@ -93,7 +93,6 @@ struct ReadRequest {
   int _file_offset_ = -1;
   ReadRequest(const int file_fd, char* data, const uint32_t data_size)
       : fd_(file_fd), data_(data), data_size_(data_size) {}
-  
 };
 
 //!!! 考虑 data 的生命周期
@@ -111,13 +110,15 @@ struct WriteRequest {
       : fd_(file_fd), data_(data), data_size_(data_size) {}
 };
 
-
-
-
-
 // 就绪事件组
 struct ConSumptionQueue {
   struct ::io_uring_cqe* _con_queue_ = nullptr;
+  auto getData() {
+    return ::io_uring_cqe_get_data(_con_queue_);
+  }
+  bool isEmpty() {
+    return _con_queue_ == nullptr;
+  }
 };
 
 class IOUring : public NonCopyable {
@@ -132,15 +133,28 @@ class IOUring : public NonCopyable {
     停止一个 io_uring 实例
   */
   void Stop();
+
   /*
-    @request: 准备读取请求
+    @request: 准备读取请求, 一次读请求, 需要保证
+    * 事件就绪之前, buf 的生命周期一直存在
+    *
   */
   void PrepRead(ReadRequest* read_request);
 
   /*
+    @request: 准备写请求, 一次写请求, 不保证
+    *         读写的顺序性, 即 read & write 与顺序执行的结果不同.
     写请求
   */
   void PrepWrite(WriteRequest* write_request);
+
+
+
+  // 将本次读取请求与下一次请求链接, 保证有序性
+  void PrepReadLink(ReadRequest* read_request);
+
+  // 将本次写入请求与下一次请求链接, 保证有序性
+  void PrepWriteLink(WriteRequest* write_request);
 
   /*
     提交请求

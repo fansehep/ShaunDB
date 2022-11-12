@@ -1,10 +1,12 @@
 #ifndef SRC_UTIL_BITSET_H_
 #define SRC_UTIL_BITSET_H_
 
+#include <bitset>
 #include <cstring>
 #include <new>
 #include <string>
-#include <bitset>
+
+#include "src/base/log/logging.hpp"
 
 extern "C" {
 #include <assert.h>
@@ -42,50 +44,48 @@ constexpr uint32_t kmask = 0x1f;
 
 template <int N>
 class BitSet {
- static_assert(N >= 64, "bitset size must >= 64");
+  static_assert(N >= 64, "bitset size must >= 64");
+
  public:
   // 析构函数
   ~BitSet() { delete[] data; }
 
-  constexpr BitSet() : data(nullptr), data_size(N/4) {
+  constexpr BitSet() : data(nullptr), data_size(N / 8) {
     // 一个字节占 8 位
-    data = new (std::nothrow) int[(N / 4)];
+    data = new (std::nothrow) char[N / 8];
     assert(data != nullptr);
     std::memset(data, 0, data_size);
   }
 
   // 将某一个位设置为 1
   void set(uint32_t idx) {
-    // auto pre_idx = idx / 8;
-    // auto remain_idx = idx % 8;
-    // data[pre_idx] |= kset_Remain_Idx[remain_idx];
-    data[idx >> kshiftSize] |= (1 << ( idx & kmask));
+    auto pre_idx = idx / 8;
+    auto remain_idx = idx % 8;
+    data[pre_idx] |= kset_Remain_Idx[remain_idx];
   }
 
   // 将某个位设置为 0
   void del(uint32_t idx) {
-    // auto pre_idx = idx / 8;
-    // auto remain_idx = idx % 8;
-    // data[pre_idx] &= kdel_Remain_Idx[remain_idx];
-    data[idx >> kshiftSize] &= ~(1 << (idx & kmask));
+    auto pre_idx = idx / 8;
+    auto remain_idx = idx % 8;
+    data[pre_idx] &= kdel_Remain_Idx[remain_idx];
   }
 
   // 判断某个位是否是 true
   bool test(uint32_t idx) {
-    // auto pre_idx = idx / 8;
-    // auto remain_idx = idx % 8;
-    // return data[pre_idx] & kset_Remain_Idx[remain_idx];
-    return data[idx >> kshiftSize] & (1 << (idx & kmask));
+    auto pre_idx = idx / 8;
+    auto remain_idx = idx % 8;
+    return data[pre_idx] & kset_Remain_Idx[remain_idx];
   }
 
   // 获取 data_size
   uint32_t getSize() { return data_size; }
 
   // 获取 data
-  int* getData() { return data; }
+  auto* getData() { return data; }
 
  private:
-  int* data;
+  char* data;
   const uint32_t data_size;
 };
 

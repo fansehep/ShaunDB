@@ -3,8 +3,8 @@
 
 #include <cstring>
 #include <functional>
-#include <string>
 #include <memory>
+#include <string>
 
 #include "src/db/status.hpp"
 
@@ -32,6 +32,17 @@ struct SetContext {
       : key(key_view), value(value_view) {}
 };
 
+// TODO: 增加 batch 操作
+struct SetContextBatch {
+  SetContextBatch() = default;
+  std::vector<std::pair<std::string, std::string>> kv_vec;
+  Status code;
+  uint64_t number;
+  void AddKVRecord(const std::pair<std::string, std::string>& add_record) {
+    kv_vec.push_back(add_record);
+  }
+};
+
 struct PutContext {
   PutContext() = default;
   std::string key;
@@ -39,6 +50,26 @@ struct PutContext {
   Status code;
   uint64_t number;
 };
+
+struct PutContextBatch {
+  PutContextBatch() = default;
+  std::vector<std::pair<std::string, std::string>> kv_vec;
+  Status code;
+  uint64_t number;
+  void AddKVRecord(const std::pair<std::string, std::string>& add_record) {
+    kv_vec.push_back(add_record);
+  }
+};
+
+struct GetContextBatch {
+
+};
+
+
+struct DeleteContextBatch {
+
+};
+
 
 // TODO: get request need a condition_variable to notify the wait thread
 //  to tell the

@@ -38,13 +38,6 @@ class BloomFilter {
                      N)) {
       return true;
     }
-    auto idx_1 = XXHash64::hash(key.data(), key.length(), seed_);
-    auto idx_2 = stdHash_(key);
-    auto idx_3 = CityHash64WithSeed(key.data(), key.length(), seed_);
-    auto idx_4 = ::util::Hash64WithSeed(key.data(), key.length(), seed_);
-    LOG_INFO("idx_1: {} idx_2: {} idx_3: {} idx_4: {}", filter_.test(idx_1 % N),
-             filter_.test(idx_2 % N), filter_.test(idx_3 % N),
-             filter_.test(idx_4 % N));
     return false;
   }
 

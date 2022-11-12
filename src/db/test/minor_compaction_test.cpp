@@ -36,7 +36,7 @@ TEST_F(CompactionTest, prefix16_keyvalue) {
   kv_style.key_view = key_3;
   kv_style.value_view = value_3;
   sstable_vec.push_back(kv_style);
-  auto prefix16_key_value = Format16PrefixStr(sstable_vec, nullptr);
+  auto prefix16_key_value = Format16PrefixStr(sstable_vec);
   LOG_INFO("prefix16_key_value key_view: {} value_view: {}",
            prefix16_key_value.key_view, prefix16_key_value.value_view);
   ASSERT_EQ(prefix16_key_value.key_view, "abc");
@@ -61,7 +61,7 @@ TEST_F(CompactionTest, no_prefix_key_value) {
   kv_style.key_view = key_3;
   kv_style.value_view = value_3;
   sstable_vec.push_back(kv_style);
-  auto prefix16_key_value = Format16PrefixStr(sstable_vec, nullptr);
+  auto prefix16_key_value = Format16PrefixStr(sstable_vec);
   LOG_INFO("prefix16_key_value key_view: {} value_view: {}",
            prefix16_key_value.key_view, prefix16_key_value.value_view);
   ASSERT_EQ(prefix16_key_value.key_view.empty(), true);
@@ -77,14 +77,26 @@ TEST_F(CompactionTest, sstable_transform_test) {
   set_context->value = value_1;
   mem_table.Set(set_context);
   auto iter = mem_table.getMemTableRef().begin();
-  LOG_INFO("iter: {}", *iter);
+  auto mem_table_ref = mem_table.getMemTableRef();
+  for (auto& iter : mem_table_ref) {
+    LOG_INFO("iter: {} origin_size: {}", iter, key_1.size() + value_1.size());
+    for (int i = 0; i < iter.size(); i++) {
+      fmt::print("{}: {}\n", i, iter[i]);
+    }
+  }
+  LOG_INFO("iter: {}", iter->c_str());
   auto kv_style = formatMemTableToSSTable(iter);
+  //
   ASSERT_EQ(kv_style.key_view, key_1);
   ASSERT_EQ(kv_style.value_view, value_1);
   ASSERT_EQ(kv_style.isExist, true);
+  //
   auto del_context = std::make_shared<DeleteContext>();
+  //
   del_context->key = key_1;
+  LOG_INFO("begin delete");
   mem_table.Delete(del_context);
+  LOG_INFO("delete end");
   auto iter_2 = mem_table.getMemTableRef().begin();
   auto kv_style_2 = formatMemTableToSSTable(iter_2);
   ASSERT_EQ(kv_style_2.key_view, key_1);

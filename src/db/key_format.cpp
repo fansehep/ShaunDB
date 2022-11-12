@@ -134,7 +134,6 @@ SSTableKeyValueStyle formatMemTableToSSTable(const MemBTree::iterator& iter) {
   uint64_t number_value;
   auto next_value_end_ptr = getVarint64Ptr(
       key_end_ptr + key_size, key_end_ptr + key_size + 9, &number_value);
-  LOG_INFO("next_value: {}", *next_value_end_ptr);
   sstable_key_value.isExist = formatDecodeFixed8(next_value_end_ptr);
   key_end_ptr = getVarint32Ptr(next_value_end_ptr + 1, next_value_end_ptr + 6,
                                &value_size);
@@ -161,8 +160,7 @@ SSTableKeyValueStyle formatMemTableToSSTableStr(std::string& str) {
 
 // 每隔 16 个进行前缀压缩.
 Format16PrefixResult Format16PrefixStr(
-    const std::vector<SSTableKeyValueStyle>& sstable_vec,
-    std::string* meta_kv_str) {
+    const std::vector<SSTableKeyValueStyle>& sstable_vec) {
   //
   const int sstable_vec_size = sstable_vec.size();
   // 当 sstable_vec 只有 0 个 或者 1 个时需要特殊处理.

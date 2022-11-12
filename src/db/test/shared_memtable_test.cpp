@@ -40,7 +40,7 @@ struct CallBackCompare {
 TEST_F(SharedMemtableTest, simple_insert_tset) {
   SharedMemtable table;
   // 默认一个 SharedMemtable 拥有 4 个 memTable
-  table.Init(4, 256 * 1024 * 1024);
+  table.Init(8, 256 * 1024 * 1024);
   table.Run();
   auto set_context_1 = std::make_shared<SetContext>();
   const std::string key_1 = "123123";
@@ -74,6 +74,7 @@ TEST_F(SharedMemtableTest, simple_insert_tset) {
 
 //多线程插入
 // 验证正确性
+// 29993
 TEST_F(SharedMemtableTest, Multi_thread_insert) {
   SharedMemtable table;
   // 默认一个 SharedMemtable 拥有 4 个 memTable
