@@ -109,8 +109,7 @@ struct CompWorker {
   std::mutex notify_mtx_;
   std::condition_variable cond_;
 
-  // 单个 CompWorker 持有  SStable 的所有权
-  std::shared_ptr<SSTableManager> sstable_manager_;
+
 
   // io_uring 来做异步高性能写入, 读取还是做同步读
   util::iouring::IOUring iouring_;
@@ -172,6 +171,16 @@ struct CompWorker {
  *  .
  */
 
+/*
+ * | memtable_number_0 |
+ *
+ *
+ *
+ *
+*/
+
+
+
 // clang-format on
 //
 class Compactor : public NonCopyable {
@@ -194,7 +203,6 @@ class Compactor : public NonCopyable {
   // 工作者的数量, 即有多少个 Compactor
   uint32_t task_workers_n_;
   // 每个 memtable 对应一个 sstable
-  std::shared_ptr<SSTableManager> sstable_manager_;
   // 后台负责将 readonly_memtable 刷入到磁盘中
   std::vector<std::shared_ptr<CompWorker>> bg_comp_workers_;
   // round_lobin 轮询方式放置任务

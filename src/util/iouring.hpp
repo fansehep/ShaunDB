@@ -91,6 +91,11 @@ struct ReadRequest {
   uint32_t data_size_;
   // 文件偏移量, -1 使用文件默认偏移量
   int _file_offset_ = -1;
+  ~ReadRequest() = default;
+  ReadRequest(const ReadRequest&) = default;
+  ReadRequest(ReadRequest&&) = default;
+  ReadRequest& operator=(const ReadRequest&) = default;
+  ReadRequest& operator=(ReadRequest&&) = default;
   ReadRequest(const int file_fd, char* data, const uint32_t data_size)
       : fd_(file_fd), data_(data), data_size_(data_size) {}
 };
@@ -112,13 +117,13 @@ struct WriteRequest {
 
 // 就绪事件组
 struct ConSumptionQueue {
+  ConSumptionQueue(const ConSumptionQueue&) = default;
+  ConSumptionQueue(ConSumptionQueue&&) = default;
+  ConSumptionQueue& operator=(const ConSumptionQueue&) = default;
+  ConSumptionQueue& operator=(ConSumptionQueue&&) = default;
   struct ::io_uring_cqe* _con_queue_ = nullptr;
-  auto getData() {
-    return ::io_uring_cqe_get_data(_con_queue_);
-  }
-  bool isEmpty() {
-    return _con_queue_ == nullptr;
-  }
+  auto getData() { return ::io_uring_cqe_get_data(_con_queue_); }
+  bool isEmpty() { return _con_queue_ == nullptr; }
 };
 
 class IOUring : public NonCopyable {
@@ -147,8 +152,6 @@ class IOUring : public NonCopyable {
     写请求
   */
   void PrepWrite(WriteRequest* write_request);
-
-
 
   // 将本次读取请求与下一次请求链接, 保证有序性
   void PrepReadLink(ReadRequest* read_request);
