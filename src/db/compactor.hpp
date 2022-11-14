@@ -1,6 +1,8 @@
 #ifndef SRC_DB_COMPACTOR_H_
 #define SRC_DB_COMPACTOR_H_
 
+#include <absl/container/btree_map.h>
+
 #include "src/base/log/logging.hpp"
 #include "src/base/noncopyable.hpp"
 #include "src/db/memtable.hpp"
@@ -69,7 +71,6 @@ constexpr static uint32_t kDefaultCompactor_N = 2;
 // 而且这里的 compaction 每一次都是一个大 IO
 constexpr static uint32_t kDefaultIOUringSize = 32;
 
-
 // clang-format off
 /*
  * comp_kv_data_str:
@@ -93,23 +94,22 @@ struct CompWorker {
   // 每隔多少个前缀 kv 进行前缀压缩
   uint32_t prefix_size_;
   // 复用 memtable_kv 数据
-  std::vector<char> comp_kv_data_str_;
-  // 复用 memtable_kv 元数据
-  std::vector<char> comp_kv_meta_str_;
+  std::shared_ptr<std::vector<char>> comp_kv_data_str_;
   // 每次对于单个 memtable 的 kv index
   std::vector<uint32_t> comp_kv_index_vec_;
   //
   CompWorker() : isRunning_(false) {}
   // 是否正在运行
   bool isRunning_;
+
+  // compWorker 持有 Compactor 
+  std::shared_ptr<Compactor> compactor_ref_;
   //
   std::thread bg_thread_;
 
   // 专门用来唤醒
   std::mutex notify_mtx_;
   std::condition_variable cond_;
-
-
 
   // io_uring 来做异步高性能写入, 读取还是做同步读
   util::iouring::IOUring iouring_;
@@ -179,13 +179,11 @@ struct CompWorker {
  *
 */
 
-
-
 // clang-format on
 //
 class Compactor : public NonCopyable {
  public:
-  constexpr Compactor() = default;
+  Compactor() = default;
 
   // 启动 Compactor.
   void Run();
@@ -204,6 +202,9 @@ class Compactor : public NonCopyable {
   uint32_t task_workers_n_;
   // 每个 memtable 对应一个 sstable
   // 后台负责将 readonly_memtable 刷入到磁盘中
+  // number => vec<Memtable>
+  std::vector<std::vector<std::shared_ptr<std::vector<char>>>> comp_data_map_;
+  //
   std::vector<std::shared_ptr<CompWorker>> bg_comp_workers_;
   // round_lobin 轮询方式放置任务
   // TODO: 考虑负载均衡

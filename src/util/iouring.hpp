@@ -117,10 +117,6 @@ struct WriteRequest {
 
 // 就绪事件组
 struct ConSumptionQueue {
-  ConSumptionQueue(const ConSumptionQueue&) = default;
-  ConSumptionQueue(ConSumptionQueue&&) = default;
-  ConSumptionQueue& operator=(const ConSumptionQueue&) = default;
-  ConSumptionQueue& operator=(ConSumptionQueue&&) = default;
   struct ::io_uring_cqe* _con_queue_ = nullptr;
   auto getData() { return ::io_uring_cqe_get_data(_con_queue_); }
   bool isEmpty() { return _con_queue_ == nullptr; }

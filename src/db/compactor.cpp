@@ -1,5 +1,6 @@
 #include "src/db/compactor.hpp"
 
+#include <cstring>
 #include <iterator>
 
 #include "src/base/log/logging.hpp"
@@ -27,6 +28,7 @@ void Compactor::Init(const uint32_t size, const uint32_t worker_size,
   int i = 0;
   // 初始化 CompactorWorker
   bg_comp_workers_.resize(worker_size);
+  comp_data_map_.resize(memtable_n_);
   for (; i < memtable_n_; i++) {
     bg_comp_workers_[i] = std::make_shared<CompWorker>();
   }
@@ -65,6 +67,10 @@ void CompWorker::Run() {
         //         => read_only_memtable_
         //         => btree_index
         //         => sstable.
+
+        //
+        comp_kv_data_str_ = std::make_shared<std::vector<char>>();
+        //
         auto mem_table_data_ref = iter->getMemTableRef();
         // bloom 过滤器的数据
         auto mem_bloom_filter_data_ref = iter->getFilterData();
@@ -73,13 +79,43 @@ void CompWorker::Run() {
             varintLength(mem_bloom_filter_data_ref.getSize());
 
         // bloom_filter_var_size | bloom_filter_data
-        fmt::format_to(std::back_inserter(comp_kv_meta_str_), "{}{}",
+        fmt::format_to(std::back_inserter(*comp_kv_data_str_), "{}{}",
                        format32_vec[mem_bloom_filter_var_size],
                        std::string_view(mem_bloom_filter_data_ref.getData(),
                                         mem_bloom_filter_data_ref.getSize()));
         // 给 bloom_filter_varint_size 赋值
-        auto end_ptr = encodeVarint32(comp_kv_meta_str_.data(), mem_bloom_filter_data_ref.getSize());
-        std::mempcy(end_ptr, mem_bloom_filter_data_ref.getData(), )
+        encodeVarint32((*comp_kv_data_str_).data(),
+                                      mem_bloom_filter_data_ref.getSize());
+        // copy bloom_filter_varint_元数据.
+        // 这里不能进行压缩, 必须全量存储.
+        // 方便 bloom_filter_mmap 做映射.
+        //
+        // 由于 std::vector 会自动扩容, 所以只能通过下标来访问数据.
+        auto start_idx = comp_kv_data_str_->size();
+        //
+        auto str_ptr = comp_kv_data_str_->data() + start_idx;
+        for (auto& iter : mem_table_data_ref) {
+          auto sstable_style_iter = formatMemTableToSSTableStr(iter);
+          // key 存在, value 则也要存储
+          // key_varint32_size
+          auto varint_key_size = varintLength(sstable_style_iter.key_view.size());
+          // value_varint32_size
+          auto varint_value_size = varintLength(sstable_style_iter.value_view.size());
+
+          if (sstable_style_iter.isExist == true) {
+            fmt::format_to(std::back_inserter(*comp_kv_data_str_), "{}{}{}{}",
+                           format32_vec[varint_key_size],
+                           sstable_style_iter.key_view,
+                           format32_vec[varint_key_size],
+                           sstable_style_iter.value_view);
+            str_ptr = encodeVarint32(str_ptr, sstable_style_iter.key_view.size());
+            str_ptr += sstable_style_iter.key_view.size();
+            str_ptr = encodeVarint32(str_ptr, sstable_style_iter.value_view.size());
+            start_idx
+            // key 不存在, value 直接不用存储
+          } else if (sstable_style_iter.isExist == false) {
+          }
+        };
       }
     }
   });

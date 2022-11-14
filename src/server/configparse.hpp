@@ -1,7 +1,6 @@
 #ifndef SRC_SERVER_CONFIGPARSE_H_
 #define SRC_SERVER_CONFIGPARSE_H_
 
-#include <yaml.h>
 #include <string>
 #include "src/base/log/logger.hpp"
 

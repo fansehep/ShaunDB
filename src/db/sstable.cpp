@@ -10,7 +10,7 @@
 extern "C" {
 #include <error.h>
 #include <fcntl.h>
-#include <sys/fcnml.h>
+#include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 }
