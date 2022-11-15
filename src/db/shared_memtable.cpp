@@ -71,17 +71,19 @@ void TaskWorker::Run() {
       // 当当前的写入超过 预期时, 将当前正在写入的表换下
       // 等待 compactor 刷入成为 sstable
 
-      // if (memtable_->getMemSize() >= maxMemTableSize_) {
-      //   memtable_->setReadOnly();
-      //   // compactor_->AddReadOnlyTable(memtable_);
-      //   // make_shared, 创建一个新的 memtable
-      //   // 新创建的 memtable 应该继承原有的 memtable_number;
-      //   auto origin_memtable_number = memtable_->getMemNumber();
-      //   // 重新创建一个新的 Memtable
-      //   memtable_ = std::make_shared<Memtable>();
-      //   // 设置 memtable 编号
-      //   memtable_->setNumber(origin_memtable_number);
-      // }
+      if (memtable_->getMemSize() >= maxMemTableSize_) {
+        memtable_->setReadOnly();
+        // compactor_->AddReadOnlyTable(memtable_);
+        // make_shared, 创建一个新的 memtable
+        // 新创建的 memtable 应该继承原有的 memtable_number;
+        auto origin_memtable_number = memtable_->getMemNumber();
+        auto origin_compaction_n = memtable_->getCompactionN();
+        // 重新创建一个新的 Memtable
+        memtable_ = std::make_shared<Memtable>();
+        // 设置 memtable 编号
+        memtable_->setNumber(origin_memtable_number);
+        memtable_->setCompactionN(++origin_compaction_n);
+      }
     }
   });
 }

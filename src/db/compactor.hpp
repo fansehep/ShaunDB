@@ -10,6 +10,7 @@
 #include "src/db/sstable_manager.hpp"
 #include "src/util/iouring.hpp"
 
+
 namespace fver {
 
 namespace db {
@@ -126,10 +127,18 @@ struct CompWorker {
 
   std::vector<std::shared_ptr<Memtable>> wait_to_sync_sstable_;
 
+
+  //
+  std::shared_ptr<SSTableManager> sstable_manager_;
+
   // 向单个 memtable 中增加 任务
   void AddSStable(const std::shared_ptr<Memtable>& memtable);
   // 启动 comp_worker, 等待  read_only table 刷入
   void Run();
+
+
+  std::string path;
+  
 };
 
 // clang-format off
@@ -183,6 +192,9 @@ struct CompWorker {
 //
 class Compactor : public NonCopyable {
  public:
+
+  friend CompWorker;
+
   Compactor() = default;
 
   // 启动 Compactor.
@@ -195,7 +207,16 @@ class Compactor : public NonCopyable {
   // 向 Compactor 中增加只读 memtable, 等待被后台线程刷入
   void AddReadOnlyTable(const std::shared_ptr<Memtable>& mem_table);
 
+
  private:
+
+  /*
+   * @data: compworker 格式化好的数据
+   * @n : 向哪个 vec push
+   *
+   */
+  void AddSyncData(const std::shared_ptr<std::vector<char>>& data, const int n);
+
   // memtable 的数量
   uint32_t memtable_n_;
   // 工作者的数量, 即有多少个 Compactor
@@ -203,9 +224,17 @@ class Compactor : public NonCopyable {
   // 每个 memtable 对应一个 sstable
   // 后台负责将 readonly_memtable 刷入到磁盘中
   // number => vec<Memtable>
+  std::mutex mtx_;
   std::vector<std::vector<std::shared_ptr<std::vector<char>>>> comp_data_map_;
   //
   std::vector<std::shared_ptr<CompWorker>> bg_comp_workers_;
+
+
+  //
+  std::shared_ptr<SSTableManager> manager_;
+
+
+  //
   // round_lobin 轮询方式放置任务
   // TODO: 考虑负载均衡
   // 但其实应该也不太顾虑, 因为每个 memtable 的大小应该相差不大

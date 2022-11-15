@@ -6,6 +6,7 @@
 #include "src/base/log/logging.hpp"
 #include "src/db/key_format.hpp"
 #include "src/db/memtable.hpp"
+#include "src/db/request.hpp"
 #include "src/db/sstable_manager.hpp"
 
 namespace fver {
@@ -42,6 +43,13 @@ void Compactor::AddReadOnlyTable(const std::shared_ptr<Memtable>& mem_table) {
   current_comp_index_ = ((current_comp_index_ + 1) % bg_comp_workers_.size());
 }
 
+void Compactor::AddSyncData(const std::shared_ptr<std::vector<char>>& data,
+                            const int n) {
+  mtx_.lock();
+  comp_data_map_[n].push_back(data);
+  mtx_.unlock();
+}
+
 void CompWorker::Run() {
   // io_uring 默认队列深度 32层
   iouring_.Init(kDefaultIOUringSize);
@@ -68,7 +76,7 @@ void CompWorker::Run() {
         //         => btree_index
         //         => sstable.
 
-        //
+        // 这里会直接让 memtable 引用技术 = 0.
         comp_kv_data_str_ = std::make_shared<std::vector<char>>();
         //
         auto mem_table_data_ref = iter->getMemTableRef();
@@ -85,37 +93,72 @@ void CompWorker::Run() {
                                         mem_bloom_filter_data_ref.getSize()));
         // 给 bloom_filter_varint_size 赋值
         encodeVarint32((*comp_kv_data_str_).data(),
-                                      mem_bloom_filter_data_ref.getSize());
+                       mem_bloom_filter_data_ref.getSize());
         // copy bloom_filter_varint_元数据.
         // 这里不能进行压缩, 必须全量存储.
         // 方便 bloom_filter_mmap 做映射.
         //
-        // 由于 std::vector 会自动扩容, 所以只能通过下标来访问数据.
-        auto start_idx = comp_kv_data_str_->size();
         //
-        auto str_ptr = comp_kv_data_str_->data() + start_idx;
         for (auto& iter : mem_table_data_ref) {
           auto sstable_style_iter = formatMemTableToSSTableStr(iter);
           // key 存在, value 则也要存储
           // key_varint32_size
-          auto varint_key_size = varintLength(sstable_style_iter.key_view.size());
+          auto varint_key_size =
+              varintLength(sstable_style_iter.key_view.size());
           // value_varint32_size
-          auto varint_value_size = varintLength(sstable_style_iter.value_view.size());
-
+          auto varint_value_size =
+              varintLength(sstable_style_iter.value_view.size());
+          //
+          auto before_insert_size = comp_kv_data_str_->size();
           if (sstable_style_iter.isExist == true) {
-            fmt::format_to(std::back_inserter(*comp_kv_data_str_), "{}{}{}{}",
-                           format32_vec[varint_key_size],
-                           sstable_style_iter.key_view,
-                           format32_vec[varint_key_size],
-                           sstable_style_iter.value_view);
-            str_ptr = encodeVarint32(str_ptr, sstable_style_iter.key_view.size());
+            fmt::format_to(
+                std::back_inserter(*comp_kv_data_str_), "{}{}{}{}",
+                format32_vec[varint_key_size], sstable_style_iter.key_view,
+                format32_vec[varint_value_size], sstable_style_iter.value_view);
+            // 找到之前的下标
+            auto str_ptr = comp_kv_data_str_->data() + before_insert_size;
+            // key 赋值
+            str_ptr =
+                encodeVarint32(str_ptr, sstable_style_iter.key_view.size());
             str_ptr += sstable_style_iter.key_view.size();
-            str_ptr = encodeVarint32(str_ptr, sstable_style_iter.value_view.size());
-            start_idx
+            str_ptr =
+                encodeVarint32(str_ptr, sstable_style_iter.value_view.size());
+            str_ptr += sstable_style_iter.value_view.size();
             // key 不存在, value 直接不用存储
           } else if (sstable_style_iter.isExist == false) {
+            fmt::format_to(std::back_inserter(*comp_kv_data_str_), "{}{}",
+                           format32_vec[varint_key_size],
+                           sstable_style_iter.key_view);
+            auto str_ptr = comp_kv_data_str_->data() + before_insert_size;
+            encodeVarint32(str_ptr, sstable_style_iter.key_view.size());
           }
-        };
+        }
+        // 格式化完成
+        /*
+         minor_compaction
+        */
+        //
+        auto current_memtable_level = iter->getCompactionN();
+        auto current_memtable_number = iter->getMemNumber();
+        //
+        auto cu_sstable = sstable_manager_->newSSTable(current_memtable_number,
+                                                       current_memtable_level);
+        //
+        auto cu_sstable_name =
+            fmt::format("memtable_{}_level{}.sst", current_memtable_number,
+                        current_memtable_level);
+        // 初始化当前 sstable
+        auto re =
+            cu_sstable->Init(path, cu_sstable_name, current_memtable_level,
+                             current_memtable_number);
+        if (false == re) {
+          LOG_ERROR("sstable init {} error", cu_sstable);
+        }
+        LOG_INFO("sstable init {} ok begin write", cu_sstable);
+        util::iouring::WriteRequest write_request(cu_sstable->getFd(), comp_kv_data_str_->data(), comp_kv_data_str_->size());
+        compactor_ref_->AddSyncData(comp_kv_data_str_, iter->getMemNumber());
+        iouring_.PrepWrite(&write_request);
+        iouring_.Submit();
       }
     }
   });

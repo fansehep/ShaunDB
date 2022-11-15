@@ -104,6 +104,11 @@ TEST_F(CompactionTest, sstable_transform_test) {
   ASSERT_EQ(kv_style_2.isExist, false);
 }
 
+TEST_F(CompactionTest, minor_compaction_test) {
+  
+}
+
+
 }  // namespace db
 
 }  // namespace fver

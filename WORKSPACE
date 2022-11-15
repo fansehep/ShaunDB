@@ -45,12 +45,6 @@ git_repository(
 )
 
 
-git_repository(
-    name = "brpc",
-    branch = "release-1.3",
-    remote = "https://github.com/apache/incubator-brpc",
-)
-
 http_archive(
     name = "rules_cc",
     urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.4/rules_cc-0.0.4.tar.gz"],

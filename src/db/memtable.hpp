@@ -58,6 +58,14 @@ class Memtable {
   // 返回 bloom_filter 数据
   auto& getFilterData() { return bloomFilter_.getFilterData(); }
 
+  auto getCompactionN() {
+    return compaction_number_;
+  }
+
+  auto setCompactionN(const uint32_t n) {
+    compaction_number_ = n;
+  }
+
  private:
   // 当前内存表所花费的内存
   uint32_t memSize_;
@@ -71,6 +79,9 @@ class Memtable {
 
   // 当前 memtable 的编号
   uint64_t memtable_number_;
+
+  // 当前 memtable 第几次被 compaction;
+  uint32_t compaction_number_;
 
   // memtable 当写到固定阈值的时候
   // 会成为一个 read_only_memtable

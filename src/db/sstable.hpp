@@ -15,7 +15,7 @@ class SSTable {
     @brief : null
     @return : return sstable => fd
   */
-  auto getFd();
+  auto getFd() -> int;
 
   /*
     @return : return init success

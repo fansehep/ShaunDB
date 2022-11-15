@@ -12,7 +12,7 @@ namespace fver {
 namespace db {
 
 // reference 引用计数
-Memtable::Memtable() : isReadonly_(false), refs_(0) {}
+Memtable::Memtable() : isReadonly_(false), compaction_number_(0), refs_(0) {}
 
 // clang-format off
 
@@ -24,14 +24,12 @@ Memtable::Memtable() : isReadonly_(false), refs_(0) {}
 
 // clang-format on
 
-static thread_local std::string simple_set_str;
-
 void Memtable::Set(const std::shared_ptr<SetContext>& set_context) {
   auto key_size_32_varint_size = varintLength(set_context->key.size());
   auto value_size_32_varint_size = varintLength(set_context->value.size());
   auto sequence_number_64_varint_size = varintLength(set_context->value.size());
   //
-  simple_set_str = fmt::format(
+  std::string simple_set_str = fmt::format(
       "{}{}{}{}{}{}", format32_vec[key_size_32_varint_size], set_context->key,
       format64_vec[sequence_number_64_varint_size], kEmpty1Space,
       format32_vec[value_size_32_varint_size], set_context->value);
@@ -39,6 +37,7 @@ void Memtable::Set(const std::shared_ptr<SetContext>& set_context) {
   // 赋值 key_size;
   // formatEncodeFixed32(set_context->key.size(), simple_set_str.data());
   //
+
   char* start_ptr = simple_set_str.data();
   start_ptr = encodeVarint32(start_ptr, set_context->key.size());
   //
@@ -77,8 +76,6 @@ void Memtable::Set(const std::shared_ptr<SetContext>& set_context) {
   }
 }
 
-static thread_local std::string simple_get_str;
-
 void Memtable::Get(const std::shared_ptr<GetContext>& get_context) {
   // 使用 bloomFilter 进行快速判断
   if (false == bloomFilter_.IsMatch(get_context->key)) {
@@ -90,7 +87,7 @@ void Memtable::Get(const std::shared_ptr<GetContext>& get_context) {
   auto pre_key_var_size = varintLength(get_context->key.size());
   auto pre_number_var_size = varintLength(get_context->number);
 
-  simple_get_str =
+  std::string simple_get_str =
       fmt::format("{}{}{}", format32_vec[pre_key_var_size], get_context->key,
                   format64_vec[pre_number_var_size]);
   // 赋值 key_size
@@ -142,7 +139,6 @@ void Memtable::Get(const std::shared_ptr<GetContext>& get_context) {
 //
 //
 //
-static thread_local std::string simple_del_str;
 
 void Memtable::Delete(const std::shared_ptr<DeleteContext>& del_context) {
   //
@@ -160,7 +156,7 @@ void Memtable::Delete(const std::shared_ptr<DeleteContext>& del_context) {
   //
   auto sequence_number_64_varint_size = varintLength(del_context->number);
 
-  simple_del_str = fmt::format(
+  std::string simple_del_str = fmt::format(
       "{}{}{}{}", format32_vec[key_size_32_varint_size], del_context->key,
       format64_vec[sequence_number_64_varint_size], kEmpty1Space);
   char* start_ptr = simple_del_str.data();
@@ -181,7 +177,8 @@ void Memtable::Delete(const std::shared_ptr<DeleteContext>& del_context) {
   assert(end_ptr != nullptr);
   // 标志位删除.
   uint64_t mem_number = 0;
-  end_ptr = getVarint64Ptr(end_ptr + mem_key_size, end_ptr + mem_key_size + 9, &mem_number);
+  end_ptr = getVarint64Ptr(end_ptr + mem_key_size, end_ptr + mem_key_size + 9,
+                           &mem_number);
   //
   *(const_cast<char*>(end_ptr)) = ValueType::kTypeDeletion;
   LOG_INFO("del key: {} ok", del_context->key);
