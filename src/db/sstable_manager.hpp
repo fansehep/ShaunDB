@@ -11,7 +11,7 @@ namespace db {
 
 class SSTableManager {
  public:
-  auto Init(const uint32_t memtable_n);
+  void Init(const uint32_t memtable_n, const std::string& dbpath);
 
   // 新创建一个 sstable.
   auto newSSTable(const uint32_t number, const uint32_t level)
@@ -31,6 +31,8 @@ class SSTableManager {
   uint32_t memtable_n_;
 
   //
+  std::string db_path_;
+
   std::vector<std::vector<std::shared_ptr<SSTable>>> sstable_vec_;
 };
 

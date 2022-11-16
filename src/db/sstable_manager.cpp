@@ -6,13 +6,14 @@ namespace fver {
 
 namespace db {
 
-auto SSTableManager::Init(const uint32_t memtable_n) {
-  //
+void SSTableManager::Init(const uint32_t memtable_n,
+                          const std::string& dbpath) {
   memtable_n_ = memtable_n;
   sstable_vec_.resize(memtable_n);
   for (auto& iter : sstable_vec_) {
     iter.resize(12);
   }
+  db_path_ = dbpath;
 }
 
 auto SSTableManager::newSSTable(const uint32_t number, const uint32_t level)

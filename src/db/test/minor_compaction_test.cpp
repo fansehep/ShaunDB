@@ -1,113 +1,66 @@
 #include <gtest/gtest.h>
 
-#include "src/db/compactor.hpp"
-#include "src/db/key_format.hpp"
-#include "src/db/request.hpp"
+extern "C" {
+#include <uuid/uuid.h>
+}
+
+#include "src/base/log/logging.hpp"
+#include "src/db/exportdb.hpp"
 
 namespace fver {
 
 namespace db {
 
-class CompactionTest : public ::testing::Test {
+class MinorCompactionTest : public ::testing::Test {
  public:
-  CompactionTest() = default;
-  ~CompactionTest() = default;
+  MinorCompactionTest() = default;
+  ~MinorCompactionTest() = default;
   void SetUp() override {}
   void TearDown() override {}
 };
 
-// 测试16个 key_value 前缀压缩
-TEST_F(CompactionTest, prefix16_keyvalue) {
-  const std::string key_1 = "abcdef_123123123";
-  const std::string key_2 = "abcd123";
-  const std::string key_3 = "abc1231231";
-  //
-  const std::string value_1 = "abcjdiasdj";
-  const std::string value_2 = "abcjdiasdj";
-  const std::string value_3 = "abcjdiijlajida";
-  std::vector<SSTableKeyValueStyle> sstable_vec;
-  SSTableKeyValueStyle kv_style;
-  kv_style.key_view = key_1;
-  kv_style.value_view = value_1;
-  sstable_vec.push_back(kv_style);
-  kv_style.key_view = key_2;
-  kv_style.value_view = value_2;
-  sstable_vec.push_back(kv_style);
-  kv_style.key_view = key_3;
-  kv_style.value_view = value_3;
-  sstable_vec.push_back(kv_style);
-  auto prefix16_key_value = Format16PrefixStr(sstable_vec);
-  LOG_INFO("prefix16_key_value key_view: {} value_view: {}",
-           prefix16_key_value.key_view, prefix16_key_value.value_view);
-  ASSERT_EQ(prefix16_key_value.key_view, "abc");
-  ASSERT_EQ(prefix16_key_value.value_view, "abcjdi");
-}
+TEST_F(MinorCompactionTest, simple_compaction_test) {
+  struct DBConfig config;
+  config.wal_log_size = 64 * 1024 * 1024;
+  config.db_path = "./test";
+  config.memtable_N = 4;
+  // 8 mb 直接触发 minor_compaction
+  config.memtable_trigger_size = 8 * 1024;
+  config.compactor_thread_size = 1;
+  config.isRecover = false;
+  DB db;
+  db.Init(config);
+  // 8 个线程同时插入
+  const int curreny_N = 40;
+  std::vector<std::thread> workers_;
 
-TEST_F(CompactionTest, no_prefix_key_value) {
-  const std::string key_1 = "123123dajsikdjiu23hrui";
-  const std::string value_1 = "djiahfukrsjhgfiurhugf";
-  const std::string key_2 = "dhuaskchusrhf";
-  const std::string value_2 = "123djkadukehf";
-  const std::string key_3 = "mmmzzzdhuakehdu";
-  const std::string value_3 = "zzzzdjilfjsdikf";
-  std::vector<SSTableKeyValueStyle> sstable_vec;
-  SSTableKeyValueStyle kv_style;
-  kv_style.key_view = key_1;
-  kv_style.value_view = value_1;
-  sstable_vec.push_back(kv_style);
-  kv_style.key_view = key_2;
-  kv_style.value_view = value_2;
-  sstable_vec.push_back(kv_style);
-  kv_style.key_view = key_3;
-  kv_style.value_view = value_3;
-  sstable_vec.push_back(kv_style);
-  auto prefix16_key_value = Format16PrefixStr(sstable_vec);
-  LOG_INFO("prefix16_key_value key_view: {} value_view: {}",
-           prefix16_key_value.key_view, prefix16_key_value.value_view);
-  ASSERT_EQ(prefix16_key_value.key_view.empty(), true);
-  ASSERT_EQ(prefix16_key_value.value_view.empty(), true);
-}
+  std::map<std::string, std::string> origin_map_test;
 
-TEST_F(CompactionTest, sstable_transform_test) {
-  Memtable mem_table;
-  const std::string key_1 = "123123dajsikdjiu23hrui";
-  const std::string value_1 = "djiahfukrsjhgfiurhugf";
-  auto set_context = std::make_shared<SetContext>();
-  set_context->key = key_1;
-  set_context->value = value_1;
-  mem_table.Set(set_context);
-  auto iter = mem_table.getMemTableRef().begin();
-  auto mem_table_ref = mem_table.getMemTableRef();
-  for (auto& iter : mem_table_ref) {
-    LOG_INFO("iter: {} origin_size: {}", iter, key_1.size() + value_1.size());
-    for (int i = 0; i < iter.size(); i++) {
-      fmt::print("{}: {}\n", i, iter[i]);
-    }
+  int i = 0;
+  static thread_local char key[64] = {0};
+  static thread_local char value[64] = {0};
+  static thread_local uuid_t uuid_key;
+  static thread_local uuid_t uuid_value;
+  LOG_INFO("start insert");
+  for (; i < curreny_N; i++) {
+    workers_.emplace_back([&]() {
+      for (int i = 0; i < 100; i++) {
+        auto set_context = std::make_shared<SetContext>();
+        uuid_generate(uuid_key);
+        uuid_generate(uuid_value);
+        uuid_unparse(uuid_key, key);
+        uuid_unparse(uuid_value, value);
+        set_context->key = std::string_view(key, 36);
+        set_context->value = std::string_view(value, 36);
+        db.Set(set_context);
+      }
+    });
   }
-  LOG_INFO("iter: {}", iter->c_str());
-  auto kv_style = formatMemTableToSSTable(iter);
   //
-  ASSERT_EQ(kv_style.key_view, key_1);
-  ASSERT_EQ(kv_style.value_view, value_1);
-  ASSERT_EQ(kv_style.isExist, true);
-  //
-  auto del_context = std::make_shared<DeleteContext>();
-  //
-  del_context->key = key_1;
-  LOG_INFO("begin delete");
-  mem_table.Delete(del_context);
-  LOG_INFO("delete end");
-  auto iter_2 = mem_table.getMemTableRef().begin();
-  auto kv_style_2 = formatMemTableToSSTable(iter_2);
-  ASSERT_EQ(kv_style_2.key_view, key_1);
-  ASSERT_EQ(kv_style_2.value_view, value_1);
-  ASSERT_EQ(kv_style_2.isExist, false);
+  for (auto& iter : workers_) {
+    iter.join();
+  }
 }
-
-TEST_F(CompactionTest, minor_compaction_test) {
-  
-}
-
 
 }  // namespace db
 

@@ -12,7 +12,8 @@ namespace fver {
 namespace db {
 
 // reference 引用计数
-Memtable::Memtable() : isReadonly_(false), compaction_number_(0), refs_(0) {}
+Memtable::Memtable()
+    : memSize_(0), isReadonly_(false), compaction_number_(0), refs_(0) {}
 
 // clang-format off
 

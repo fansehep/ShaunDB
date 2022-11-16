@@ -57,7 +57,7 @@ void AppendFile::Append(char* data, const size_t data_size) {
 void AppendFile::Init(const std::string& path, const std::string& filename) {
   fullFilename_ = fmt::format("{}/{}", path, filename);
   // 所有人可读
-  fd_ = ::open(fullFilename_.c_str(), O_RDWR | O_CREAT, 0644);
+  fd_ = ::open(fullFilename_.c_str(), O_RDWR | O_CREAT, 0655);
   if (fd_ < 0) {
     // 打印全局错误
     LOG_ERROR("can not open path: {} filename: {} error_reason: {}", path,

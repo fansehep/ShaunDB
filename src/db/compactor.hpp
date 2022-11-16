@@ -70,7 +70,7 @@ constexpr static uint32_t kDefaultCompactor_N = 2;
 // io_uring 默认写入的队列深度
 // 理论上来说, io_uring 写入的速度很快
 // 而且这里的 compaction 每一次都是一个大 IO
-constexpr static uint32_t kDefaultIOUringSize = 32;
+constexpr static uint32_t kDefaultIOUringSize = 128;
 
 // clang-format off
 /*
@@ -126,8 +126,6 @@ struct CompWorker {
   std::vector<std::shared_ptr<Memtable>> bg_wait_to_sync_sstable_;
 
   std::vector<std::shared_ptr<Memtable>> wait_to_sync_sstable_;
-
-
   //
   std::shared_ptr<SSTableManager> sstable_manager_;
 
@@ -136,6 +134,7 @@ struct CompWorker {
   // 启动 comp_worker, 等待  read_only table 刷入
   void Run();
 
+  void SetCompactorRef(const std::shared_ptr<Compactor>&);
 
   std::string path;
   
@@ -197,7 +196,7 @@ class Compactor : public NonCopyable {
 
   Compactor() = default;
 
-  // 启动 Compactor.
+
   void Run();
 
   // 设置 memtable 的数量
@@ -207,6 +206,7 @@ class Compactor : public NonCopyable {
   // 向 Compactor 中增加只读 memtable, 等待被后台线程刷入
   void AddReadOnlyTable(const std::shared_ptr<Memtable>& mem_table);
 
+  void SetCompWorkerCompactorRef(const std::shared_ptr<Compactor>& compactor);
 
  private:
 
@@ -230,8 +230,11 @@ class Compactor : public NonCopyable {
   std::vector<std::shared_ptr<CompWorker>> bg_comp_workers_;
 
 
+  // 保护 MemWorker 放置任务
+  std::mutex memTaskmtx_;
+
   //
-  std::shared_ptr<SSTableManager> manager_;
+  std::shared_ptr<SSTableManager> sstable_manager_;
 
 
   //

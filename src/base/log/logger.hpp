@@ -118,10 +118,10 @@ class Logger {
     // TODO: should judge the log_vec size
     //  if log.size() >
     //  日志到达水平线直接丢弃, 就不会引发过度扩容
-    if ((buf_.curPtr_->capacity() - buf_.curPtr_->size()) < 128) {
-      mtx->unlock();
-      return;
-    }
+    // if ((buf_.curPtr_->capacity() - buf_.curPtr_->size()) < 128) {
+    //   mtx->unlock();
+    //   return;
+    // }
     fmt::format_to(
         std::back_inserter((*buf_.curPtr_)), "{}{} {}:{}] {}\n",
         kLogLevelNums[lev], timeNow_.ToFormatTodayNowUs(), filename, line,

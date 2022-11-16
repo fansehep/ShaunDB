@@ -55,7 +55,7 @@ cc_test(
 
 cc_test(
   name="key_format_test",
-  srcs=glob(["minor_compaction_test.cpp"]),
+  srcs=glob(["ket_format_test.cpp"]),
   visibility=["//visibility:public"],
   copts=FVER_FLAGS,
   deps=[
@@ -73,6 +73,40 @@ cc_test(
 cc_test(
   name="varint_encode_test",
   srcs=glob(["varint_encode_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/base/log:fver_log_lib",
+    "//src/util:fver_util_lib",
+    "//src/db:fver_db_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+  linkopts=[
+    "-luuid",
+    "-lpthread",
+  ],
+)
+
+cc_test(
+  name = "minor_compaction_test",
+  srcs = glob(["minor_compaction_test.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    "//src/base/log:fver_log_lib",
+    "//src/util:fver_util_lib",
+    "//src/db:fver_db_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+  linkopts=[
+    "-luuid",
+    "-lpthread",
+  ],
+)
+
+cc_test(
+  name = "sstable_io_uring_test",
+  srcs = glob(["sstable_io_uring_test.cpp"]),
   visibility=["//visibility:public"],
   copts=FVER_FLAGS,
   deps=[

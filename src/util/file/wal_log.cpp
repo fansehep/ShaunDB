@@ -33,6 +33,7 @@ bool WalLog::Init(const std::string &path, const std::string &filename) {
     LOG_WARN("wallog open {} error!", fullFilename_);
     return false;
   }
+  LOG_INFO("wal_log: {} init success", fullFilename_);
   path_ = std::string_view(fullFilename_.c_str(), path.size());
   fileName_ =
       std::string_view(fullFilename_.data() + path.size(), filename.size());
@@ -42,13 +43,13 @@ bool WalLog::Init(const std::string &path, const std::string &filename) {
 void WalLog::AddRecord(const char *data, const size_t data_size) {
   assert(fd_ > 0);
   auto simple_write_size = write(fd_, data, data_size);
-  LOG_TRACE("simple_write_size: {}", simple_write_size);
   assert(simple_write_size == data_size);
 
   // sync 操作, 保证数据落盘
   // but 根据 posix 文件系统语义, 当此操作发生断电 / 宕机行为
   // 是一个 ub 行为. >_<
-  ::fsync(fd_);
+  // 默认不 sync
+  // ::fsync(fd_);
 }
 
 void WalLog::Close() {

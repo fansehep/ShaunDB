@@ -83,7 +83,6 @@ void SetContextWalLogFormat(const std::shared_ptr<SetContext>& set_context,
                      set_context->value, kFlagLogEnd);
   // 计算 crc32 的值
   auto crc32_check_sum = util::Value(log->c_str() + 4, log->size() - 4);
-  LOG_DEBUG("crc32_check_sum = {}", crc32_check_sum);
   // 赋值 crc32_check_sum
   formatEncodeFixed32(crc32_check_sum, log->data());
   // 赋值 number

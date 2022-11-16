@@ -100,6 +100,14 @@ TEST_F(IOUringTest, io_uring_set_flag_read_test) {
   ::close(fd);
 }
 
+TEST_F(IOUringTest, io_uring_write_test) {
+  // IOUring io_uring;
+  // io_uring.Init(12);
+  // int fd = ::open("./test/io_uring_test.log");
+}
+
+
+
 }  // namespace iouring
 
 }  // namespace util

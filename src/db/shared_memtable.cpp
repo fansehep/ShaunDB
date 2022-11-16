@@ -47,8 +47,6 @@ void TaskWorker::Run() {
           auto set_context = std::get<std::shared_ptr<SetContext>>(handle);
           assert(set_context != nullptr);
           memtable_->Set(set_context);
-          LOG_INFO("memtable: {} memory_usage: {}", memtable_->getMemNumber(),
-                   memtable_->getMemSize());
           // Get 请求
         } else if (handle.index() == 1) {
           auto get_context = std::get<std::shared_ptr<GetContext>>(handle);
@@ -70,7 +68,8 @@ void TaskWorker::Run() {
       handle_vec_.clear();
       // 当当前的写入超过 预期时, 将当前正在写入的表换下
       // 等待 compactor 刷入成为 sstable
-
+      LOG_INFO("current_mem_size: {} maxMemtableSize: {}",
+               memtable_->getMemSize(), maxMemTableSize_);
       if (memtable_->getMemSize() >= maxMemTableSize_) {
         memtable_->setReadOnly();
         // compactor_->AddReadOnlyTable(memtable_);
@@ -78,11 +77,16 @@ void TaskWorker::Run() {
         // 新创建的 memtable 应该继承原有的 memtable_number;
         auto origin_memtable_number = memtable_->getMemNumber();
         auto origin_compaction_n = memtable_->getCompactionN();
+        //
+        //
+        assert(compactor_.get() != nullptr);
+        compactor_->AddReadOnlyTable(memtable_);
         // 重新创建一个新的 Memtable
         memtable_ = std::make_shared<Memtable>();
         // 设置 memtable 编号
         memtable_->setNumber(origin_memtable_number);
         memtable_->setCompactionN(++origin_compaction_n);
+        LOG_TRACE("new memtable: {}", origin_memtable_number);
       }
     }
   });
@@ -150,6 +154,9 @@ SharedMemtable::~SharedMemtable() {
 void SharedMemtable::SetCompactorRef(
     const std::shared_ptr<Compactor>& compactor) {
   this->comp_actor_ = compactor;
+  for (auto& iter : taskworkers_) {
+    iter->compactor_ = compactor;
+  }
 }
 
 }  // namespace db

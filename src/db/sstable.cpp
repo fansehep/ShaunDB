@@ -19,17 +19,24 @@ namespace fver {
 
 namespace db {
 
-SSTable::SSTable() : isMmap_(false), isOpen_(false), mmapBasePtr_(nullptr) {}
+SSTable::SSTable() : isMmap_(false), mmapBasePtr_(nullptr), isOpen_(false) {}
 
-auto SSTable::getFd() { return fd_; }
+SSTable::~SSTable() {
+  if (isOpen_ == true) {
+    ::close(fd_);
+  }
+}
+
+int SSTable::getFd() { return fd_; }
 
 bool SSTable::Init(const std::string& path, const std::string& filename,
                    const uint32_t level, const uint32_t number) {
   fullfilename_ = fmt::format("{}/{}", path, filename);
-  fd_ = ::open(fullfilename_.c_str(), O_RDWR | O_CREAT, 0644);
+  fd_ = ::open(fullfilename_.c_str(), O_RDWR | O_CREAT, 0655);
   if (fd_ < 0) {
     LOG_WARN("sstable path: {} name: {} open error: {}", path, filename,
              ::strerror(errno));
+    return false;
   }
   fileName_ = filename;
   filePath_ = path;
@@ -70,10 +77,7 @@ void SSTable::CloseMmap() {
   }
 }
 
-char* SSTable::getMmapPtr() {
-  return mmapBasePtr_;
-}
-
+char* SSTable::getMmapPtr() { return mmapBasePtr_; }
 
 }  // namespace db
 
