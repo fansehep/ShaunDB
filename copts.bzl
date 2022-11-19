@@ -16,10 +16,10 @@ FVER_FLAGS = [
     "-DNOMINMAX",
     "-std=c++20",
     "-O2",
-    # "-g0",
+    "-g",
     "-fno-exceptions",
+    "-ggdb",
 ]
-#TODO: should -fno-exception but the yaml-cpp don't 
 
 FVER_BENCHMARK_FLAGS = [
     "-O2",

@@ -13,6 +13,7 @@
 #include "src/base/noncopyable.hpp"
 #include "src/db/comp.hpp"
 #include "src/db/memtable.hpp"
+#include "src/db/memtable_view.hpp"
 #include "src/db/request.hpp"
 
 using ::fver::base::NonCopyable;
@@ -66,6 +67,16 @@ class TaskWorker {
 
   // 等待 Compactor 的刷入
   std::shared_ptr<Compactor> compactor_;
+
+
+  std::mutex memtable_view_mtx_;
+
+  // read_only_view memTable
+  std::vector<MemTable_view> memtableview_vec_;
+
+
+  void AddMemTableView(MemTable_view& table_view);
+
 
   TaskWorker() : isRunning_(false) {}
 

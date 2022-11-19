@@ -127,6 +127,8 @@ namespace db {
 using MemBTree =
     absl::btree_set<std::string, Comparator, std::allocator<std::string>>;
 
+using MemBTreeView = absl::btree_set<std::string_view, Comparator,
+                                     std::allocator<std::string_view>>;
 
 // TODO: use snappy algorithm instread of fixed algorithm
 // 将 set 请求 WalLog 格式化
@@ -192,7 +194,6 @@ enum ValueType {
   kTypeValue = 1,
 };
 
-
 struct ParsedInternalKey {
   std::string_view user_key;
   uint64_t sequence_number;
@@ -237,7 +238,6 @@ const std::string format64_vec[] = {
     kEmpty9Space,  // 9 => 9 个空格
 };
 
-
 // 为了格式化, 32 个空格
 const std::string kEmpty32Space = "                                ";
 
@@ -268,7 +268,6 @@ const char* getVarint64Ptr(const char* p, const char* limit, uint64_t* v);
 // for getVarint64Ptr sync
 const char* getVarint32PtrFallback(const char* p, const char* limit,
                                    uint32_t* value);
-
 
 }  // namespace db
 }  // namespace fver

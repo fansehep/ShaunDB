@@ -20,6 +20,8 @@ enum StatusCode {
   kCorruption,
   // 非法参数
   kInvalidArgument,
+  // 被删除
+  kDelete,
 };
 
 const std::string statuslev[] = {

@@ -86,18 +86,13 @@ void Memtable::Get(const std::shared_ptr<GetContext>& get_context) {
   }
 
   auto pre_key_var_size = varintLength(get_context->key.size());
-  auto pre_number_var_size = varintLength(get_context->number);
 
   std::string simple_get_str =
-      fmt::format("{}{}{}", format32_vec[pre_key_var_size], get_context->key,
-                  format64_vec[pre_number_var_size]);
+      fmt::format("{}{}", format32_vec[pre_key_var_size], get_context->key);
   // 赋值 key_size
   char* start_ptr = simple_get_str.data();
   start_ptr = encodeVarint32(start_ptr, get_context->key.size());
   // 赋值 number
-  start_ptr += get_context->key.size();
-
-  start_ptr = encodeVarint64(start_ptr, get_context->number);
 
   auto iter = memMap_.find(simple_get_str);
 

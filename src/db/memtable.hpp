@@ -56,7 +56,7 @@ class Memtable {
   void decreaseRefs();
 
   // 返回 bloom_filter 数据
-  auto& getFilterData() { return bloomFilter_.getFilterData(); }
+  auto* getFilterData() { return bloomFilter_.getFilterData(); }
 
   auto getCompactionN() {
     return compaction_number_;
@@ -64,6 +64,10 @@ class Memtable {
 
   auto setCompactionN(const uint32_t n) {
     compaction_number_ = n;
+  }
+
+  uint64 getBloomSeed() {
+    return bloomFilter_.getFilterSeed();
   }
 
  private:

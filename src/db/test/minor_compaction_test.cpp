@@ -23,15 +23,15 @@ TEST_F(MinorCompactionTest, simple_compaction_test) {
   struct DBConfig config;
   config.wal_log_size = 64 * 1024 * 1024;
   config.db_path = "./test";
-  config.memtable_N = 4;
-  // 8 mb 直接触发 minor_compaction
-  config.memtable_trigger_size = 8 * 1024;
+  config.memtable_N = 16;
+  // 256 byte 直接触发 minor_compaction
+  config.memtable_trigger_size = 1024 * 1024 / 12;
   config.compactor_thread_size = 1;
   config.isRecover = false;
   DB db;
   db.Init(config);
-  // 8 个线程同时插入
-  const int curreny_N = 40;
+  // 80 个线程同时插入
+  const int curreny_N = 800;
   std::vector<std::thread> workers_;
 
   std::map<std::string, std::string> origin_map_test;
@@ -44,7 +44,7 @@ TEST_F(MinorCompactionTest, simple_compaction_test) {
   LOG_INFO("start insert");
   for (; i < curreny_N; i++) {
     workers_.emplace_back([&]() {
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 1000000; i++) {
         auto set_context = std::make_shared<SetContext>();
         uuid_generate(uuid_key);
         uuid_generate(uuid_value);
@@ -60,6 +60,7 @@ TEST_F(MinorCompactionTest, simple_compaction_test) {
   for (auto& iter : workers_) {
     iter.join();
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1000));
 }
 
 }  // namespace db

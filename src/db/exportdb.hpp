@@ -114,7 +114,7 @@ class DB : public NonCopyable {
   // 判断传入 路径是否为空
   bool isEmptyDir(const std::string& db_path);
 
-  SharedMemtable shared_memtable_;
+  std::shared_ptr<SharedMemtable> shared_memtable_;
 
   std::shared_ptr<Compactor> comp_actor_;
 };

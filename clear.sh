@@ -4,3 +4,4 @@ rm ./benchmark/logbenchmark/202*
 rm ./benchmark/logbenchmark/UNKNOWN.INFO
 rm ./test-*.log
 rm *.log
+rm ./test/*.sst

@@ -89,6 +89,10 @@ void LogThread::Init(const std::string& logpath, const int lev,
   // 如果不启用sync
   if (false == isSync) {
     syncThread_ = std::thread([&]() {
+      
+      // for gdb DEBUG
+      auto ue = ::pthread_setname_np(::pthread_self(), "log");
+      assert(ue != ERANGE);
       while (isRunning_) {
         // 将新加入的Logger加入到 logVectmp 中
         {

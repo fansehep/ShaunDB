@@ -10,7 +10,6 @@
 #include "src/db/sstable_manager.hpp"
 #include "src/util/iouring.hpp"
 
-
 namespace fver {
 
 namespace db {
@@ -91,6 +90,20 @@ constexpr static uint32_t kDefaultIOUringSize = 128;
 
 // clang-format on
 
+struct CompData {
+  // sync_data, 用来保存 io_uring 写入的数据
+  // 当 iouring peek 成功返回之后释放
+  std::shared_ptr<std::vector<char>> sync_data;
+  // 记录当前数据 memtable 的编号
+  uint32_t memtable_n;
+  // 用来构造 memtable_view 所指向的 sstable_shared_ref
+  std::shared_ptr<SSTable> sstable_ref;
+  //
+  CompData(const std::shared_ptr<std::vector<char>>& data_ref,
+           const uint32_t memtable_N, const std::shared_ptr<SSTable>& sstable)
+      : sync_data(data_ref), memtable_n(memtable_N), sstable_ref(sstable) {}
+};
+
 struct CompWorker {
   // 每隔多少个前缀 kv 进行前缀压缩
   uint32_t prefix_size_;
@@ -103,7 +116,7 @@ struct CompWorker {
   // 是否正在运行
   bool isRunning_;
 
-  // compWorker 持有 Compactor 
+  // compWorker 持有 Compactor
   std::shared_ptr<Compactor> compactor_ref_;
   //
   std::thread bg_thread_;
@@ -129,6 +142,11 @@ struct CompWorker {
   //
   std::shared_ptr<SSTableManager> sstable_manager_;
 
+  //
+  std::shared_ptr<SharedMemtable> shared_memtable_ref_;
+
+  absl::btree_map<const char*, CompData> sync_data_map_;
+
   // 向单个 memtable 中增加 任务
   void AddSStable(const std::shared_ptr<Memtable>& memtable);
   // 启动 comp_worker, 等待  read_only table 刷入
@@ -137,7 +155,6 @@ struct CompWorker {
   void SetCompactorRef(const std::shared_ptr<Compactor>&);
 
   std::string path;
-  
 };
 
 // clang-format off
@@ -191,11 +208,9 @@ struct CompWorker {
 //
 class Compactor : public NonCopyable {
  public:
-
   friend CompWorker;
 
   Compactor() = default;
-
 
   void Run();
 
@@ -208,15 +223,10 @@ class Compactor : public NonCopyable {
 
   void SetCompWorkerCompactorRef(const std::shared_ptr<Compactor>& compactor);
 
+  void SetSharedMemTableRef(
+      const std::shared_ptr<SharedMemtable>& sharedmemtable);
+
  private:
-
-  /*
-   * @data: compworker 格式化好的数据
-   * @n : 向哪个 vec push
-   *
-   */
-  void AddSyncData(const std::shared_ptr<std::vector<char>>& data, const int n);
-
   // memtable 的数量
   uint32_t memtable_n_;
   // 工作者的数量, 即有多少个 Compactor
@@ -225,17 +235,14 @@ class Compactor : public NonCopyable {
   // 后台负责将 readonly_memtable 刷入到磁盘中
   // number => vec<Memtable>
   std::mutex mtx_;
-  std::vector<std::vector<std::shared_ptr<std::vector<char>>>> comp_data_map_;
   //
   std::vector<std::shared_ptr<CompWorker>> bg_comp_workers_;
-
 
   // 保护 MemWorker 放置任务
   std::mutex memTaskmtx_;
 
   //
   std::shared_ptr<SSTableManager> sstable_manager_;
-
 
   //
   // round_lobin 轮询方式放置任务

@@ -52,10 +52,14 @@ class BitSet {
 
   constexpr BitSet() : data(nullptr), data_size(N / 8) {
     // 一个字节占 8 位
-    data = new (std::nothrow) char[N / 8];
+    data = new (std::nothrow) char[(N / 8)];
     assert(data != nullptr);
     std::memset(data, 0, data_size);
   }
+
+  // 作为视图,
+  BitSet(char* data_view, const uint32_t data_size)
+      : data(data_view), data_size(data_size) {}
 
   // 将某一个位设置为 1
   void set(uint32_t idx) {

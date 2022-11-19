@@ -1,5 +1,7 @@
 #include "src/db/shared_memtable.hpp"
 
+#include <thread>
+
 #include "src/base/log/logging.hpp"
 #include "src/db/compactor.hpp"
 #include "src/db/memtable.hpp"
@@ -19,9 +21,25 @@ void TaskWorker::addTask(Memtask hand) {
 
 void TaskWorker::Notify() { cond_.notify_one(); }
 
+uint32_t g_thread_n = 0;
+std::string ThreadNpName = "memworker_";
+
+void TaskWorker::AddMemTableView(MemTable_view& table_view) {
+  memtable_view_mtx_.lock();
+  memtableview_vec_.push_back(table_view);
+  memtable_view_mtx_.unlock();
+}
+
 void TaskWorker::Run() {
   isRunning_ = true;
+
+  auto current_id = g_thread_n++;
+
   worker_ = std::thread([&]() {
+    auto thread_name = ThreadNpName + std::to_string(current_id);
+    auto ue = ::pthread_setname_np(::pthread_self(), thread_name.c_str());
+    assert(ue != ERANGE);
+    //
     while (isRunning_) {
       // SharedMemtable 已经通知了,
       // 但可能此时还没有运行在这里
@@ -37,8 +55,6 @@ void TaskWorker::Run() {
         std::swap(bg_handle_vec_, handle_vec_);
         vec_mtx_.unlock();
       }
-
-      LOG_INFO("memtable start execute");
       // TODO: 优化, 将 handle.index() 做成 宏
       for (auto& handle : handle_vec_) {
         // 糟糕的设计 ...
@@ -81,8 +97,11 @@ void TaskWorker::Run() {
         //
         assert(compactor_.get() != nullptr);
         compactor_->AddReadOnlyTable(memtable_);
+        assert(memtable_.use_count() == 2);
         // 重新创建一个新的 Memtable
+        // 释放所有权
         memtable_ = std::make_shared<Memtable>();
+        assert(memtable_.use_count() == 1);
         // 设置 memtable 编号
         memtable_->setNumber(origin_memtable_number);
         memtable_->setCompactionN(++origin_compaction_n);
