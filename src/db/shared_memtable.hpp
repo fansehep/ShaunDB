@@ -14,6 +14,7 @@
 #include "src/db/comp.hpp"
 #include "src/db/memtable.hpp"
 #include "src/db/memtable_view.hpp"
+#include "src/db/memtable_view_manager.hpp"
 #include "src/db/request.hpp"
 
 using ::fver::base::NonCopyable;
@@ -36,7 +37,6 @@ using Memtask =
 
 class TaskWorker {
  public:
-
   // TaskWorker 共享 std::shared_ptr<Memtable> 的所有权
   std::shared_ptr<Memtable> memtable_;
 
@@ -68,14 +68,16 @@ class TaskWorker {
   // 等待 Compactor 的刷入
   std::shared_ptr<Compactor> compactor_;
 
+  // 将 memtbale_view 放置到该仓库中
+  std::shared_ptr<MemTableViewManager> memview_manager_;
 
   std::mutex memtable_view_mtx_;
 
-  // read_only_view memTable
-  std::vector<MemTable_view> memtableview_vec_;
-
-
-  void AddMemTableView(MemTable_view& table_view);
+  // 在 Compactor 写入到文件之前
+  // 我们可以获得两份数据的视图.
+  // 第一份是 push 到 Compworker 中的 read_only memtable
+  // 第二份是 Compworker 对于 read_only memtable 的序列化之后的数据
+  //
 
 
   TaskWorker() : isRunning_(false) {}
@@ -124,9 +126,12 @@ class SharedMemtable : public NonCopyable {
   void Get(const std::shared_ptr<GetContext>& get_context);
   void Delete(const std::shared_ptr<DeleteContext>& del_context);
 
-
   //!!! 必须在 Init 之前调用, 2.
   void SetCompactorRef(const std::shared_ptr<Compactor>& compactor);
+
+  // 让单个 mem_worker 拥有 memtable_view_manager 的所有权.
+  void SetMemTableViewRef(
+      const std::shared_ptr<MemTableViewManager>& memtable_view_manager);
 
  private:
   // 每个 memTable 的最大容量
@@ -142,8 +147,6 @@ class SharedMemtable : public NonCopyable {
   //
   std::shared_ptr<Compactor> comp_actor_;
 };
-
-
 
 }  // namespace db
 

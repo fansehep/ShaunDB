@@ -6,6 +6,7 @@
 #include "src/base/log/logging.hpp"
 #include "src/base/noncopyable.hpp"
 #include "src/db/memtable.hpp"
+#include "src/db/memtable_view_manager.hpp"
 #include "src/db/shared_memtable.hpp"
 #include "src/db/sstable_manager.hpp"
 #include "src/util/iouring.hpp"
@@ -91,6 +92,7 @@ constexpr static uint32_t kDefaultIOUringSize = 128;
 // clang-format on
 
 struct CompData {
+  CompData() = default;
   // sync_data, 用来保存 io_uring 写入的数据
   // 当 iouring peek 成功返回之后释放
   std::shared_ptr<std::vector<char>> sync_data;
@@ -139,13 +141,25 @@ struct CompWorker {
   std::vector<std::shared_ptr<Memtable>> bg_wait_to_sync_sstable_;
 
   std::vector<std::shared_ptr<Memtable>> wait_to_sync_sstable_;
+
+  //
   //
   std::shared_ptr<SSTableManager> sstable_manager_;
 
   //
+  //
   std::shared_ptr<SharedMemtable> shared_memtable_ref_;
 
-  absl::btree_map<const char*, CompData> sync_data_map_;
+  /*
+   * memtable 层级view manager
+   */
+  std::shared_ptr<MemTableViewManager> memview_manager_;
+
+  /*
+   * 由于 io_uring 的写入是异步的, 所以我们必须保证在 io_uring写入之后
+   * 再去释放需要写入的数据.
+   */
+  absl::btree_map<const char*, struct CompData> sync_data_map_;
 
   // 向单个 memtable 中增加 任务
   void AddSStable(const std::shared_ptr<Memtable>& memtable);
@@ -225,6 +239,9 @@ class Compactor : public NonCopyable {
 
   void SetSharedMemTableRef(
       const std::shared_ptr<SharedMemtable>& sharedmemtable);
+
+  void SetSharedMemTableViewSSRef(
+      const std::shared_ptr<MemTableViewManager>& manager);
 
  private:
   // memtable 的数量

@@ -4,10 +4,13 @@
 #include <memory>
 
 #include "src/base/noncopyable.hpp"
+#include "src/db/memtable_view.hpp"
 #include "src/db/request.hpp"
 #include "src/db/shared_memtable.hpp"
 #include "src/db/wal_writer.hpp"
 #include "src/util/file/wal_log.hpp"
+#include "src/db/memtable_view_manager.hpp"
+
 
 using ::fver::base::NonCopyable;
 using ::fver::db::SharedMemtable;
@@ -116,7 +119,13 @@ class DB : public NonCopyable {
 
   std::shared_ptr<SharedMemtable> shared_memtable_;
 
+  // 后台做 Compaction 的线程
   std::shared_ptr<Compactor> comp_actor_;
+
+  // 管理 MemTable_View_vew
+  // 当 comp_actor 负责将数据压入到磁盘之后
+  // 会产生一个 memtable_view 压入到 MemTableViewManager 中.
+  std::shared_ptr<MemTableViewManager> memviewtable_manager_;
 };
 
 }  // namespace db

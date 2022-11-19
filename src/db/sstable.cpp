@@ -22,9 +22,9 @@ namespace db {
 SSTable::SSTable() : isMmap_(false), mmapBasePtr_(nullptr), isOpen_(false) {}
 
 SSTable::~SSTable() {
-  // if (isOpen_ == true) {
-  //   ::close(fd_);
-  // }
+  if (isOpen_ == true) {
+     ::close(fd_);
+  }
 }
 
 int SSTable::getFd() { return fd_; }
@@ -68,6 +68,7 @@ bool SSTable::InitMmap() {
     return false;
   }
   isMmap_ = true;
+  return true;
 }
 
 void SSTable::CloseMmap() {

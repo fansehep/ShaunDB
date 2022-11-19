@@ -53,6 +53,15 @@ class SSTable {
 
   char* getMmapPtr();
 
+  const std::string& getfileName() {
+    return fullfilename_;
+  }
+
+  const std::string& getPath() {
+    return filePath_;
+  }
+
+
  private:
   
   // 是否初始化 mmap

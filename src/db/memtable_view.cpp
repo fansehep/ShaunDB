@@ -17,7 +17,11 @@ namespace db {
 | kv_data|
 */
 
-MemTable_view::MemTable_view(std::string_view mmap_view) {
+MemTable_view::MemTable_view(const char* data, const uint32_t data_size) {
+  this->Init(std::string_view(data, data_size));
+}
+
+bool MemTable_view::Init(std::string_view mmap_view) {
   uint64_t bloomfilter_seed;
   auto end_ptr =
       getVarint64Ptr(mmap_view.data(), mmap_view.data() + 5, &bloomfilter_seed);
@@ -48,6 +52,7 @@ MemTable_view::MemTable_view(std::string_view mmap_view) {
     memMapView_.insert(kv_str_view);
   }
   LOG_INFO("memtable_view construct ok size: {}", memMapView_.size());
+  return true;
 }
 
 /*

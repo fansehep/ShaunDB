@@ -20,7 +20,7 @@ Memtable::Memtable()
 /*
   | key_size      | key_value | sequence_number | value_type | value_size | value_val |
   | varint byte   |  ? byte   |    8 byte       |   1 byte   |   4 byte   | ? byte    |
-// 1 <= varient_size <= 5
+1 <= varient_size <= 5
 */
 
 // clang-format on

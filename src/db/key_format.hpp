@@ -7,9 +7,11 @@
 //
 //
 
+#include <absl/container/btree_map.h>
 #include <absl/container/btree_set.h>
 
 #include <memory>
+#include <set>
 #include <string>
 #include <string_view>
 
@@ -127,8 +129,7 @@ namespace db {
 using MemBTree =
     absl::btree_set<std::string, Comparator, std::allocator<std::string>>;
 
-using MemBTreeView = absl::btree_set<std::string_view, Comparator,
-                                     std::allocator<std::string_view>>;
+using MemBTreeView = absl::btree_set<std::string_view, Comparator>;
 
 // TODO: use snappy algorithm instread of fixed algorithm
 // 将 set 请求 WalLog 格式化

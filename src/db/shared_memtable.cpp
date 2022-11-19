@@ -24,12 +24,6 @@ void TaskWorker::Notify() { cond_.notify_one(); }
 uint32_t g_thread_n = 0;
 std::string ThreadNpName = "memworker_";
 
-void TaskWorker::AddMemTableView(MemTable_view& table_view) {
-  memtable_view_mtx_.lock();
-  memtableview_vec_.push_back(table_view);
-  memtable_view_mtx_.unlock();
-}
-
 void TaskWorker::Run() {
   isRunning_ = true;
 
@@ -175,6 +169,14 @@ void SharedMemtable::SetCompactorRef(
   this->comp_actor_ = compactor;
   for (auto& iter : taskworkers_) {
     iter->compactor_ = compactor;
+  }
+}
+
+void SharedMemtable::SetMemTableViewRef(
+    const std::shared_ptr<MemTableViewManager>& memtable_view_manager) {
+  assert(memtable_view_manager.get() != nullptr);
+  for (auto& iter : taskworkers_) {
+    iter->memview_manager_ = memtable_view_manager;
   }
 }
 

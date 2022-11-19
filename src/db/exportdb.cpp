@@ -3,6 +3,7 @@
 #include "src/base/log/logging.hpp"
 #include "src/db/compactor.hpp"
 #include "src/db/memtable.hpp"
+#include "src/db/memtable_view_manager.hpp"
 #include "src/db/request.hpp"
 #include "src/db/shared_memtable.hpp"
 #include "src/db/status.hpp"
@@ -43,6 +44,11 @@ void DB::NewDBimp(const DBConfig& db_config) {
   // 初始化内存表
   // 初始化压缩者
   comp_actor_ = std::make_shared<Compactor>();
+  
+  // memtable 视图初始化
+  memviewtable_manager_ = std::make_shared<MemTableViewManager>();
+  //
+  memviewtable_manager_->Init(db_config.memtable_N);
   LOG_INFO("compactor make_shared success");
   comp_actor_->Init(db_config.memtable_N, db_config.compactor_thread_size,
                     db_config.db_path);
@@ -54,6 +60,10 @@ void DB::NewDBimp(const DBConfig& db_config) {
   // 让 shared_memtable 同时获得 Compactor 的引用
   shared_memtable_->SetCompactorRef(comp_actor_);
   comp_actor_->SetSharedMemTableRef(shared_memtable_);
+  // comp_actor 让 comp_worker 获取引用
+  comp_actor_->SetSharedMemTableViewSSRef(memviewtable_manager_);
+  // shared_memtable 同时持有 memtable_view_vec 的所有权
+  shared_memtable_->SetMemTableViewRef(memviewtable_manager_);
   shared_memtable_->Run();
   comp_actor_->Run();
   LOG_INFO("init success");

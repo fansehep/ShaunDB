@@ -22,14 +22,17 @@ class MemTable_view {
 public:
   //
   MemTable_view() : isReadable_(false) {}
+  ~MemTable_view() = default;
   //
-  MemTable_view(std::string_view mmap_view);
+
+  MemTable_view(const char* data, const uint32_t data_size);
+
+  bool Init(std::string_view mmap_view);
 
 
-  void Close();
+  void Reset(const char* data, const uint32_t data_size);
 
   void Get(const std::shared_ptr<GetContext>& get_context);
-
 
   bool isReadAble() {
     return isReadable_;

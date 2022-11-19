@@ -71,6 +71,14 @@ void Compactor::SetSharedMemTableRef(
   }
 }
 
+void Compactor::SetSharedMemTableViewSSRef(
+    const std::shared_ptr<MemTableViewManager>& manager) {
+  assert(manager.get() != nullptr);
+  for (auto& iter : bg_comp_workers_) {
+    iter->memview_manager_ = manager;
+  }
+}
+
 // 将 read_only_memtable 轮询放置在不同的 compworker 上.
 void Compactor::AddReadOnlyTable(const std::shared_ptr<Memtable>& mem_table) {
   memTaskmtx_.lock();
@@ -93,7 +101,7 @@ uint32_t g_comp_thread_n = 0;
 std::string ThreadCompName = "compworker_";
 
 void CompWorker::Run() {
-  // io_uring 默认队列深度 32层
+  // io_uring 默认队列深度
   iouring_.Init(kDefaultIOUringSize);
   isRunning_ = true;
   auto current_id = g_comp_thread_n++;
@@ -115,9 +123,22 @@ void CompWorker::Run() {
         if (iter != sync_data_map_.end()) {
           /*
             io_uring 将数据刷入了磁盘
-            // 构造 MemTable_view push 到 MemTableWorker 中.
-            
+            构造 MemTable_view push 到 MemTableWorker 中.
           */
+          auto ue = iter->second.sstable_ref->InitMmap();
+          if (false == ue) {
+            LOG_ERROR("memtable: {} name: {} mmap error",
+                      iter->second.memtable_n,
+                      iter->second.sstable_ref->getfileName());
+            assert(false);
+          }
+          this->memview_manager_->PushTableView(
+              iter->second.sstable_ref->getNumber(),
+              iter->second.sstable_ref->getMmapPtr(),
+              iter->second.sstable_ref->getFileSize());
+          LOG_TRACE("mem_view_table: {} name: {} mmap finish",
+                    iter->second.sstable_ref->getNumber(),
+                    iter->second.sstable_ref->getfileName());
           sync_data_map_.erase(iter);
           iouring_.DeleteEvent(&conn);
         }
