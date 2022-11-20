@@ -31,10 +31,8 @@ TEST_F(MinorCompactionTest, simple_compaction_test) {
   DB db;
   db.Init(config);
   // 80 个线程同时插入
-  const int curreny_N = 800;
+  const int curreny_N = 8;
   std::vector<std::thread> workers_;
-
-  std::map<std::string, std::string> origin_map_test;
 
   int i = 0;
   static thread_local char key[64] = {0};

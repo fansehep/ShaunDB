@@ -108,6 +108,9 @@ void CompWorker::Run() {
   bg_thread_ = std::thread([&]() {
     auto thread_name = ThreadCompName + std::to_string(current_id);
     auto ue = ::pthread_setname_np(::pthread_self(), thread_name.c_str());
+    if (ue == ERANGE) {
+      LOG_INFO("pthread set name {} error", ::pthread_self());
+    }
     assert(ue != ERANGE);
 
     while (true == isRunning_) {
@@ -139,6 +142,9 @@ void CompWorker::Run() {
           LOG_TRACE("mem_view_table: {} name: {} mmap finish",
                     iter->second.sstable_ref->getNumber(),
                     iter->second.sstable_ref->getfileName());
+          this->shared_memtable_ref_->PushRemoveReadonlyMemtableContext(
+              iter->second.sstable_ref->getNumber());
+          LOG_INFO("erase: {}", iter->first);
           sync_data_map_.erase(iter);
           iouring_.DeleteEvent(&conn);
         }
@@ -255,13 +261,15 @@ void CompWorker::Run() {
         auto cu_sstable_name =
             fmt::format("memtable_{}_level{}.sst", current_memtable_number,
                         current_memtable_level);
-        //
-        LOG_INFO("memtable: {} level: {} ok", current_memtable_number,
-                 current_memtable_level);
         // 初始化当前 sstable
         auto re =
             cu_sstable->Init(path, cu_sstable_name, current_memtable_level,
                              current_memtable_number);
+        // 设置当前 sstable 的序号
+        cu_sstable->setNumber(iter->getMemNumber());
+        // 设置当前 sstable 的层级
+        // 即第几次被 compaction.
+        cu_sstable->setLevel(iter->getCompactionN());
         if (false == re) {
           LOG_ERROR("sstable init {} error", cu_sstable_name);
           assert(false);
@@ -270,10 +278,6 @@ void CompWorker::Run() {
         util::iouring::WriteRequest write_request(cu_sstable->getFd(),
                                                   (comp_kv_data_str_->data()),
                                                   comp_kv_data_str_->size());
-        LOG_INFO("sync data: {} data_use_count: {} comp_kv_size: {}",
-                 std::string_view(comp_kv_data_str_->data(),
-                                  comp_kv_data_str_->size()),
-                 comp_kv_data_str_.use_count(), comp_kv_data_str_->size());
         assert(compactor_ref_.get() != nullptr);
         // 需要让 sync_data_map 帮助我们管理 sync 的数据
         sync_data_map_[comp_kv_data_str_->data()] = {

@@ -10,3 +10,5 @@ logbenchmark2022*
 2022*
 *.sst
 /test/*.sst
+/tcmalloc
+.vscode

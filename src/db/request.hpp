@@ -100,6 +100,12 @@ struct ExistContext {
   Status code;
 };
 
+// MemTaskWorker 将负责将 read_only_memtable 删除
+struct RemoveReadOnlyMemTableContext {
+  RemoveReadOnlyMemTableContext() = default;
+};
+
+
 }  // namespace db
 
 }  // namespace fver

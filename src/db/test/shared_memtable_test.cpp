@@ -72,7 +72,7 @@ TEST_F(SharedMemtableTest, simple_insert_tset) {
   std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
-//多线程插入
+// 多线程插入
 // 验证正确性
 // 29993
 TEST_F(SharedMemtableTest, Multi_thread_insert) {

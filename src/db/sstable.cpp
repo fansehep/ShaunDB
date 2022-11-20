@@ -23,7 +23,7 @@ SSTable::SSTable() : isMmap_(false), mmapBasePtr_(nullptr), isOpen_(false) {}
 
 SSTable::~SSTable() {
   if (isOpen_ == true) {
-     ::close(fd_);
+    ::close(fd_);
   }
 }
 
@@ -53,6 +53,18 @@ auto SSTable::getLevel() { return sstable_level_; }
 void SSTable::setLevel(const uint32_t n) { sstable_level_ = n; }
 
 void SSTable::setNumber(const uint32_t n) { sstable_number_ = n; }
+
+//
+uint32_t SSTable::getNumber() { return sstable_number_; }
+
+uint32_t SSTable::getFileSize() {
+  struct ::stat file_stat;
+  if (-1 == ::fstat(fd_, &file_stat)) {
+    LOG_ERROR("get file: {} error: {}", fullfilename_, ::strerror(errno));
+    assert(false);
+  }
+  return file_stat.st_size;
+}
 
 bool SSTable::InitMmap() {
   struct ::stat stat_buf;

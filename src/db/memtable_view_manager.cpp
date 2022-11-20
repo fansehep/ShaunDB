@@ -22,8 +22,9 @@ void MemTableViewManager::PushTableView(const uint32_t number, const char *data,
   //     std::make_unique<MemTable_view>(data, data_size));
   assert(mem_all_vec_.size() > number);
   mem_all_vec_[number]->mtx_.lock();
-  mem_all_vec_[number]->memtable_vec_.push_back(
-      std::make_unique<MemTable_view>(data, data_size));
+  auto cur_memtable_vec_size = mem_all_vec_[number]->memtable_vec_.size();
+  mem_all_vec_[number]->memtable_vec_.push_back(std::make_unique<MemTable_view>(
+      data, data_size, number, cur_memtable_vec_size));
   mem_all_vec_[number]->mtx_.unlock();
 }
 
@@ -34,11 +35,8 @@ void MemTableViewManager::getRequest(
        r_iter != mem_all_vec_[number]->memtable_vec_.rend(); r_iter++) {
     (*r_iter)->Get(get_context);
     // 当前找到了
-    if (get_context->code.getCode() == kOk) {
-      return;
-    // 从后往前遍历, 发现被删除了, 那么最新的 sstable 显示被删除
-    // 直接返回即可.
-    } else if (get_context->code.getCode() == kDelete) {
+    if (get_context->code.getCode() == StatusCode::kOk ||
+        get_context->code.getCode() == StatusCode::kDelete) {
       return;
     }
   }

@@ -114,7 +114,7 @@ void Memtable::Get(const std::shared_ptr<GetContext>& get_context) {
   uint8_t key_type = formatDecodeFixed8(end_ptr);
   // key_type 处于已经被删除了, 直接返回即可
   if (key_type == ValueType::kTypeDeletion) {
-    get_context->code.setCode(StatusCode::kNotFound);
+    get_context->code.setCode(StatusCode::kDelete);
     LOG_WARN("get key: {} has been delete", get_context->key);
     return;
   }

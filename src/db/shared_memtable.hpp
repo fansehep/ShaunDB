@@ -32,8 +32,10 @@ namespace db {
 class Compactor;
 
 using Memtask =
-    std::variant<std::shared_ptr<SetContext>, std::shared_ptr<GetContext>,
-                 std::shared_ptr<DeleteContext>>;
+    std::variant<std::shared_ptr<SetContext>,
+                 std::shared_ptr<GetContext>,
+                 std::shared_ptr<DeleteContext>,
+                 std::shared_ptr<RemoveReadOnlyMemTableContext>>;
 
 class TaskWorker {
  public:
@@ -78,7 +80,12 @@ class TaskWorker {
   // 第一份是 push 到 Compworker 中的 read_only memtable
   // 第二份是 Compworker 对于 read_only memtable 的序列化之后的数据
   //
-
+  // read_only 的 memtable vec
+  // 当 TaskWorker 当前的 memtable 到达阈值时
+  // readonly_memtable_vec_ 会拥有一份引用
+  // 当 CompWorker 完成minor_compaction 之后
+  // 才会取消 readonly_memtable_vec_ 中的数据.
+  std::vector<std::shared_ptr<Memtable>> readonly_memtable_vec_;
 
   TaskWorker() : isRunning_(false) {}
 
@@ -132,6 +139,12 @@ class SharedMemtable : public NonCopyable {
   // 让单个 mem_worker 拥有 memtable_view_manager 的所有权.
   void SetMemTableViewRef(
       const std::shared_ptr<MemTableViewManager>& memtable_view_manager);
+
+  /*
+   * @n : 对应的 memtable 号码
+   *  
+   */
+  void PushRemoveReadonlyMemtableContext(const uint32_t n);
 
  private:
   // 每个 memTable 的最大容量

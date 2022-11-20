@@ -3,6 +3,10 @@
 
 #include <memory>
 
+extern "C" {
+#include <assert.h>
+}
+
 #include "src/db/key_format.hpp"
 #include "src/db/request.hpp"
 #include "src/db/status.hpp"
@@ -13,11 +17,13 @@ namespace fver {
 namespace db {
 
 /*
-| membloom_seed_ | membloom_size_ | bloom_filter_data |
-| kv_data|
+ | membloom_seed_ | membloom_size_ | bloom_filter_data |
+ | kv_data|
 */
 
-MemTable_view::MemTable_view(const char* data, const uint32_t data_size) {
+MemTable_view::MemTable_view(const char* data, const uint32_t data_size,
+                             const uint32_t n, const uint32_t lev)
+    : cur_level_(lev), number_n_(n) {
   this->Init(std::string_view(data, data_size));
 }
 
@@ -25,11 +31,12 @@ bool MemTable_view::Init(std::string_view mmap_view) {
   uint64_t bloomfilter_seed;
   auto end_ptr =
       getVarint64Ptr(mmap_view.data(), mmap_view.data() + 5, &bloomfilter_seed);
+  assert(bloomfilter_seed == 12);
   uint32_t bloomfilter_size;
   getVarint32Ptr(end_ptr, end_ptr + 4, &bloomfilter_size);
-  //
+  assert(bloomfilter_size == 2 * 1024 * 1024 / 8);
   bloomFilter_ = std::make_unique<util::BloomFilter<>>(
-      end_ptr, bloomfilter_size, bloomfilter_seed);
+      end_ptr, bloomfilter_size * 8, bloomfilter_seed);
   // 作为视图压入到 MemTable_view 中
   uint32_t key_size;
   uint32_t value_size;
@@ -51,9 +58,18 @@ bool MemTable_view::Init(std::string_view mmap_view) {
     std::string_view kv_str_view(begin_ptr, end_ptr);
     memMapView_.insert(kv_str_view);
   }
-  LOG_INFO("memtable_view construct ok size: {}", memMapView_.size());
+  LOG_INFO("memtable_view: {} lev: {} construct ok size: {}", getNumber(),
+           getLevel(), memMapView_.size());
   return true;
 }
+
+void MemTable_view::setNumber(const uint32_t n) { number_n_ = n; }
+
+uint32_t MemTable_view::getNumber() { return number_n_; }
+
+void MemTable_view::setLevel(const uint32_t n) { cur_level_ = n; }
+
+uint32_t MemTable_view::getLevel() { return cur_level_; }
 
 /*
   memtable_view kv_str_view: | key_size | key_view | value_size | value_view |
@@ -61,7 +77,8 @@ bool MemTable_view::Init(std::string_view mmap_view) {
 void MemTable_view::Get(const std::shared_ptr<GetContext>& get_context) {
   if (false == bloomFilter_->IsMatch(get_context->key)) {
     get_context->code.setCode(StatusCode::kNotFound);
-    LOG_INFO("memtable_view bloomFilter can not find: {}", get_context->key);
+    LOG_INFO("memtable_view: {} lev: {} bloomFilter can not find: {}",
+             getNumber(), getLevel(), get_context->key);
     return;
   }
   auto pre_key_var_size = varintLength(get_context->key.size());
@@ -72,12 +89,14 @@ void MemTable_view::Get(const std::shared_ptr<GetContext>& get_context) {
   auto find_iter = memMapView_.find(simple_get_str);
   if (find_iter == memMapView_.end()) {
     get_context->code.setCode(StatusCode::kNotFound);
-    LOG_INFO("memtable_view can not find: {} ", get_context->key);
+    LOG_INFO("memtable_view: {} lev: {} can not find: {} ", getNumber(),
+             getLevel(), get_context->key);
     return;
   }
   if (find_iter->size() == simple_get_str.size()) {
     get_context->code.setCode(StatusCode::kDelete);
-    LOG_INFO("memtable_view find: {} deleted", get_context->key);
+    LOG_INFO("memtable_view: {} lev: {} find: {} deleted", getNumber(),
+             getLevel(), get_context->key);
     return;
   }
   uint32_t key_size;
@@ -90,7 +109,8 @@ void MemTable_view::Get(const std::shared_ptr<GetContext>& get_context) {
   getVarint32Ptr(end_ptr, end_ptr + 5, &value_size);
   get_context->value = std::string_view(end_ptr, value_size);
   get_context->code.setCode(StatusCode::kOk);
-  LOG_INFO("get key: {} vlaue: {} ok", get_context->key, get_context->value);
+  LOG_INFO("memtable_view: {} lev: {} get key: {} vlaue: {} ok", getNumber(),
+           getLevel(), get_context->key, get_context->value);
 }
 
 }  // namespace db

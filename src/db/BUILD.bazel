@@ -21,16 +21,16 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 # )
 
 cc_library(
-  name="fver_db_lib",
-  hdrs=glob(["*.hpp"]),
-  srcs=glob(["*.cpp"]),
-  visibility=["//visibility:public"],
-  copts=FVER_FLAGS + ["-DDB_DEBUG"],
-  deps=[
-    "//src/base/log:fver_log_lib",
-    "//src/util:fver_util_lib",
-  ],
-  linkopts=[
-    "-lglog",
-  ],
+    name="fver_db_lib",
+    hdrs=glob(["*.hpp"]),
+    srcs=glob(["*.cpp"]),
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS + ["-DDB_DEBUG"],
+    deps=[
+        "//src/base/log:fver_log_lib",
+        "//src/util:fver_util_lib",
+    ],
+    linkopts=[
+        "-lglog",
+    ],
 )

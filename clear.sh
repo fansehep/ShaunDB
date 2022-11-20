@@ -5,3 +5,4 @@ rm ./benchmark/logbenchmark/UNKNOWN.INFO
 rm ./test-*.log
 rm *.log
 rm ./test/*.sst
+rm ./test/*.log

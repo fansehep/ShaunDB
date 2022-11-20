@@ -9,5 +9,5 @@ cc_library(
     srcs=glob(["*.cpp"]),
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
-    linkopts=["-lpthread",],
+    linkopts=["-lpthread", ],
 )

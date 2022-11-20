@@ -57,14 +57,50 @@ void TaskWorker::Run() {
           auto set_context = std::get<std::shared_ptr<SetContext>>(handle);
           assert(set_context != nullptr);
           memtable_->Set(set_context);
+          LOG_INFO("memtable set key: {} value: {} ok", set_context->key,
+                   set_context->value);
           // Get 请求
         } else if (handle.index() == 1) {
           auto get_context = std::get<std::shared_ptr<GetContext>>(handle);
           assert(get_context != nullptr);
           memtable_->Get(get_context);
-          // 触发回调函数
-          if (get_context->get_callback) {
-            get_context->get_callback(get_context);
+          // 如果在当前内存表中直接找到
+          // 立即触发回调函数返回即可.
+          // 在内存表已经找到或者发现被删除
+          if (get_context->code.getCode() == StatusCode::kOk ||
+              get_context->code.getCode() == StatusCode::kDelete) {
+            // 触发回调函数
+            if (get_context->get_callback) {
+              get_context->get_callback(get_context);
+            }
+          }
+          // 没有在当前内存表中找到
+          if (get_context->code.getCode() == StatusCode::kNotFound) {
+            // 从只读内存表中找
+            for (auto riter = readonly_memtable_vec_.rbegin();
+                 riter != readonly_memtable_vec_.rend(); riter++) {
+              (*riter)->Get(get_context);
+              // 在最新中的只读内存表中, 如果找到
+              // 或者被删除, 都即可返回.
+              // 找到了才触发回调函数
+              if (get_context->code.getCode() == StatusCode::kOk ||
+                  get_context->code.getCode() == StatusCode::kDelete) {
+                if (get_context->get_callback) {
+                  get_context->get_callback(get_context);
+                }
+                break;
+              }
+            }
+          }
+          // 只读 memtable 和 当前内存表中都没有找到
+          // 在 memtable_view_vec 中找
+          if (get_context->code.getCode() == StatusCode::kNotFound) {
+            memview_manager_->getRequest(memtable_->getMemNumber(),
+                                         get_context);
+            // 直接触发回调函数.
+            if (get_context->get_callback) {
+              get_context->get_callback(get_context);
+            }
           }
           // Delete 请求
         } else if (handle.index() == 2) {
@@ -72,9 +108,16 @@ void TaskWorker::Run() {
           //
           assert(del_context != nullptr);
           memtable_->Delete(del_context);
+          // erase the read_only memtable_vec head
+        } else if (handle.index() == 3) {
+          // 释放已经变成 memtable_view 的 memtable
+          // TODO: erase the vec.begin() performance ???
+          // but
+          if (false == readonly_memtable_vec_.empty()) {
+            readonly_memtable_vec_.erase(readonly_memtable_vec_.begin());
+          }
         }
       }
-
       handle_vec_.clear();
       // 当当前的写入超过 预期时, 将当前正在写入的表换下
       // 等待 compactor 刷入成为 sstable
@@ -91,12 +134,13 @@ void TaskWorker::Run() {
         //
         assert(compactor_.get() != nullptr);
         compactor_->AddReadOnlyTable(memtable_);
-        assert(memtable_.use_count() == 2);
+        readonly_memtable_vec_.push_back(memtable_);
+        assert(memtable_.use_count() == 3);
         // 重新创建一个新的 Memtable
         // 释放所有权
         memtable_ = std::make_shared<Memtable>();
         assert(memtable_.use_count() == 1);
-        // 设置 memtable 编号
+        // 设置 memtable 号码
         memtable_->setNumber(origin_memtable_number);
         memtable_->setCompactionN(++origin_compaction_n);
         LOG_TRACE("new memtable: {}", origin_memtable_number);
@@ -178,6 +222,12 @@ void SharedMemtable::SetMemTableViewRef(
   for (auto& iter : taskworkers_) {
     iter->memview_manager_ = memtable_view_manager;
   }
+}
+
+void SharedMemtable::PushRemoveReadonlyMemtableContext(const uint32_t n) {
+  assert(n >= 0 && n < taskworkers_.size());
+  Memtask task = std::make_shared<RemoveReadOnlyMemTableContext>();
+  taskworkers_[n]->addTask(task);
 }
 
 }  // namespace db

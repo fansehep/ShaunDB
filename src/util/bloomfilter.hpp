@@ -16,7 +16,7 @@ static constexpr int kBloomFilterDefaultSize = 2 * 1024 * 1024;
 template <int N = kBloomFilterDefaultSize>
 class BloomFilter {
  public:
-  BloomFilter() : seed_(rand()) {}
+  BloomFilter() : seed_(12) {}
 
   // 此构造函数用于一个bloomfilter_view 的构造.
   BloomFilter(const char* bitset_data, const uint32_t bitset_data_size,

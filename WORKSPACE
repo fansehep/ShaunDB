@@ -64,6 +64,9 @@ load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_
 rules_proto_dependencies()
 rules_proto_toolchains()
 
+
+
+
 # generate compile_commands.json
 http_archive(
     name="hedron_compile_commands",

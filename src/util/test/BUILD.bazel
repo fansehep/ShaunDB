@@ -4,62 +4,62 @@ load("//:copts.bzl", "FVER_FLAGS")
 
 
 cc_test(
-  name="bloomfilter_test",
-  srcs=glob(["bloomfilter_test.cpp"]),
-  visibility=["//visibility:public"],
-  copts=FVER_FLAGS,
-  deps=[
-    "//src/util:fver_util_lib",
-    "@com_google_googletest//:gtest_main",
-  ],
-  linkopts=[
-    "-lpthread",
-    "-luuid",
-  ],
+    name="bloomfilter_test",
+    srcs=glob(["bloomfilter_test.cpp"]),
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+    deps=[
+        "//src/util:fver_util_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkopts=[
+        "-lpthread",
+        "-luuid",
+    ],
 )
 
 cc_test(
-  name="io_uring_test",
-  srcs=glob(["iouring_test.cpp"]),
-  visibility=["//visibility:public"],
-  copts=FVER_FLAGS,
-  deps=[
-    "//src/util:fver_util_lib",
-    "@com_google_googletest//:gtest_main",
-  ],
-  linkopts=[
-    "-lpthread",
-    "-luring",
-  ],
+    name="io_uring_test",
+    srcs=glob(["iouring_test.cpp"]),
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+    deps=[
+        "//src/util:fver_util_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkopts=[
+        "-lpthread",
+        "-luring",
+    ],
 )
 
 cc_test(
-  name="bitset_test",
-  srcs=glob(["bitset_test.cpp"]),
-  visibility=["//visibility:public"],
-  copts=FVER_FLAGS,
-  deps=[
-    "//src/util:fver_util_lib",
-    "@com_google_googletest//:gtest_main",
-  ],
-  linkopts=[
-    "-lpthread",
-    "-luring",
-  ],
+    name="bitset_test",
+    srcs=glob(["bitset_test.cpp"]),
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+    deps=[
+        "//src/util:fver_util_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+    linkopts=[
+        "-lpthread",
+        "-luring",
+    ],
 )
 
 cc_test(
-  name="hash_func_test",
-  srcs=glob(["hash_func_test.cpp"]),
-  visibility=["//visibility:public"],
-  copts=FVER_FLAGS,
-  deps=[
-    "//src/util:fver_util_lib",
-    "@com_google_googletest//:gtest_main",
-    "//src/util/hash:util_hash_lib",
-  ],
-  linkopts=[
-    "-lpthread",
-    "-luuid",
-  ],
+    name="hash_func_test",
+    srcs=glob(["hash_func_test.cpp"]),
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+    deps=[
+        "//src/util:fver_util_lib",
+        "@com_google_googletest//:gtest_main",
+        "//src/util/hash:util_hash_lib",
+    ],
+    linkopts=[
+        "-lpthread",
+        "-luuid",
+    ],
 )
