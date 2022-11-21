@@ -146,6 +146,16 @@ SSTableKeyValueStyle formatMemTableToSSTableStr(std::string& str) {
   uint32_t value_size;
   auto key_end_ptr = getVarint32Ptr(str.data(), str.data() + 5, &key_size);
   sstable_key_value.key_view = std::string_view(key_end_ptr, key_size);
+  // 可能这里只插入了一条被删除的记录.
+  // 那么插入删除的数据格式是 | key_size | key_val |
+  // 所以就没有 value
+  // 这里需要特判
+  if ((sstable_key_value.key_view.data() + sstable_key_value.key_view.size()) ==
+      (str.data() + str.size())) {
+    sstable_key_value.isExist = false;
+    return sstable_key_value;
+  }
+  //
   uint64_t number_value;
   auto next_value_end_ptr = getVarint64Ptr(
       key_end_ptr + key_size, key_end_ptr + key_size + 9, &number_value);

@@ -148,7 +148,7 @@ void TaskWorker::Run() {
              *
              *
              */
-            get_for_del_context->key = del_context->key;
+            get_for_del_context->key = std::move(del_context->key);
             for (auto r_iter = readonly_memtable_vec_.rbegin();
                  r_iter != readonly_memtable_vec_.rend(); r_iter++) {
               (*r_iter)->Get(get_for_del_context);
@@ -159,10 +159,48 @@ void TaskWorker::Run() {
                 memtable_->InsertDeleteRecord(del_context);
                 // 在 read_only_memtable_vec 中发现该条记录已经被删除
                 // 那么直接返回即可
+                del_context->key = std::move(get_for_del_context->key);
+                del_context->code.setCode(StatusCode::kOk);
+                if (del_context->del_callback) {
+                  //
+                  del_context->del_callback(del_context);
+                }
+                break;
               } else if (get_for_del_context->code.getCode() ==
                          StatusCode::kDelete) {
                 // 当前所需要删除的 kv 记录已经被删除
                 del_context->code.setCode(StatusCode::kDelete);
+                if (del_context->del_callback) {
+                  del_context->del_callback(del_context);
+                }
+              }
+              break;
+            }
+            // 在 read_only_memtable_view_vec 中查找
+            if (del_context->code.getCode() == StatusCode::kNotFound) {
+              auto del_get_view_context = std::make_shared<GetContext>();
+              del_get_view_context->key = std::move(del_context->key);
+              memview_manager_->getRequest(memtable_->getMemNumber(),
+                                           del_get_view_context);
+              // 如果找到.
+              if (del_get_view_context->code.getCode() == StatusCode::kOk) {
+                del_context->code.setCode(StatusCode::kOk);
+                del_context->key = std::move(del_get_view_context->key);
+                // 并且没有被删除
+                // 那么就需要在当前的内存表中插入一条删除记录.
+                auto del_get_insert_record = std::make_shared<DeleteContext>();
+                del_get_insert_record->key = del_context->key;
+                memtable_->InsertDeleteRecord(del_get_insert_record);
+                if (del_context->del_callback) {
+                  del_context->del_callback(del_context);
+                }
+                // 如果发现已经被删除了或者没有找到
+              } else if (del_get_view_context->code.getCode() ==
+                             StatusCode::kDelete ||
+                         del_get_view_context->code.getCode() ==
+                             StatusCode::kNotFound) {
+                del_context->code.setCode(del_get_view_context->code.getCode());
+                del_context->key = std::move(del_get_view_context->key);
                 if (del_context->del_callback) {
                   del_context->del_callback(del_context);
                 }
