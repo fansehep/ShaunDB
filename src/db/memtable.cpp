@@ -196,6 +196,24 @@ void Memtable::decreaseRefs() { refs_--; }
 
 auto Memtable::getMemTableRef() -> MemBTree& { return memMap_; }
 
+/*
+ * 插入一条删除数据.
+ *
+ */
+void Memtable::InsertDeleteRecord(
+    const std::shared_ptr<DeleteContext>& del_insert_context) {
+  auto key_varint_size = varintLength(del_insert_context->key.size());
+  std::string del_get_str = fmt::format("{}{}", format32_vec[key_varint_size],
+                                        del_insert_context->key);
+  encodeVarint32(del_get_str.data(), del_insert_context->key.size());
+  // bloomfilter 同时也要插入该 key
+  bloomFilter_.Insert(del_insert_context->key);
+  memMap_.insert(del_get_str);
+  // 该函数只会在当前 memMap 找不到那条记录时触发, 所以
+  // memMap_ 中绝对没有那条记录, size 直接相加
+  memSize_ += del_get_str.size();
+}
+
 }  // namespace db
 
 }  // namespace fver

@@ -39,6 +39,16 @@ class MemTable_view {
 
   uint32_t getLevel();
 
+#ifdef DB_DEBUG
+
+  MemBTreeView* getIndexView();
+
+  char* getBloomFilterPtr();
+
+  uint32_t getBloomFilterSize();
+
+#endif
+
  private:
   uint32_t cur_level_;
 

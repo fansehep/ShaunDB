@@ -21,6 +21,20 @@ namespace db {
  | kv_data|
 */
 
+#ifdef DB_DEBUG
+
+MemBTreeView* MemTable_view::getIndexView() { return &memMapView_; }
+
+char* MemTable_view::getBloomFilterPtr() {
+  return bloomFilter_->getFilterData()->getData();
+}
+
+uint32_t MemTable_view::getBloomFilterSize() {
+  return bloomFilter_->getFilterData()->getSize();
+}
+
+#endif
+
 MemTable_view::MemTable_view(const char* data, const uint32_t data_size,
                              const uint32_t n, const uint32_t lev)
     : cur_level_(lev), number_n_(n) {
@@ -31,10 +45,8 @@ bool MemTable_view::Init(std::string_view mmap_view) {
   uint64_t bloomfilter_seed;
   auto end_ptr =
       getVarint64Ptr(mmap_view.data(), mmap_view.data() + 5, &bloomfilter_seed);
-  assert(bloomfilter_seed == 12);
   uint32_t bloomfilter_size;
   getVarint32Ptr(end_ptr, end_ptr + 4, &bloomfilter_size);
-  assert(bloomfilter_size == 2 * 1024 * 1024 / 8);
   bloomFilter_ = std::make_unique<util::BloomFilter<>>(
       end_ptr, bloomfilter_size * 8, bloomfilter_seed);
   // 作为视图压入到 MemTable_view 中

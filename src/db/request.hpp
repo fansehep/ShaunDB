@@ -61,15 +61,9 @@ struct PutContextBatch {
   }
 };
 
-struct GetContextBatch {
+struct GetContextBatch {};
 
-};
-
-
-struct DeleteContextBatch {
-
-};
-
+struct DeleteContextBatch {};
 
 // TODO: get request need a condition_variable to notify the wait thread
 //  to tell the
@@ -86,11 +80,19 @@ struct GetContext {
       : key(key_view), get_callback(nullptr) {}
 };
 
+struct GetContext_view {
+  std::string_view key;
+  std::string_view value;
+  Status code;
+};
+
 struct DeleteContext {
   DeleteContext() = default;
   std::string key;
   Status code;
   uint64_t number;
+  //
+  std::function<void(const std::shared_ptr<DeleteContext>&)> del_callback;
 };
 
 struct ExistContext {
@@ -105,6 +107,9 @@ struct RemoveReadOnlyMemTableContext {
   RemoveReadOnlyMemTableContext() = default;
 };
 
+struct DeleteRecordContext {
+  std::string_view key;
+};
 
 }  // namespace db
 

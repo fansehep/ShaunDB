@@ -32,19 +32,30 @@ struct GetCallBackCompare {
  public:
   std::string_view value;
   void CompareEQ(const std::shared_ptr<GetContext>& get_context) {
+    if (value != get_context->value ||
+        get_context->code.getCode() != StatusCode::kOk) {
+      LOG_INFO("value: {} get_context_value: {}", value, get_context->value);
+      assert(false);
+      exit(-1);
+    }
     ASSERT_EQ(value, get_context->value);
     ASSERT_EQ(get_context->code.getCode(), StatusCode::kOk);
-    assert(false);
     delete this;
   }
   void CompareNotExist(const std::shared_ptr<GetContext>& get_context) {
+    if (get_context->code.getCode() != StatusCode::kNotFound) {
+      assert(false);
+      exit(-1);
+    }
     ASSERT_EQ(get_context->code.getCode(), StatusCode::kNotFound);
-    assert(false);
     delete this;
   }
   void CompareDelete(const std::shared_ptr<GetContext>& get_context) {
+    if (get_context->code.getCode() != StatusCode::kDelete) {
+      assert(false);
+      exit(-1);
+    }
     ASSERT_EQ(get_context->code.getCode(), StatusCode::kDelete);
-    assert(false);
     delete this;
   }
 };

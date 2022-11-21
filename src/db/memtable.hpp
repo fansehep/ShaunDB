@@ -26,11 +26,28 @@ class Memtable {
   Memtable();
   ~Memtable() = default;
 
+  /*
+   * 为 Set 请求
+   */
   void Set(const std::shared_ptr<SetContext>& set_context);
 
+  /*
+   * Get 请求
+   */
   void Get(const std::shared_ptr<GetContext>& get_context);
 
+  /*
+   * 尝试删除当前内存表的 kv 记录
+   */
   void Delete(const std::shared_ptr<DeleteContext>& del_context);
+
+  /*
+   * 当尝试删除的 kv 不在当前的内存表中时,
+   * 但是再 readonly_memtable_vec 或者  memtable_view_vec
+   * 中找到时, 需要插入一条删除记录.
+   */
+  //
+  void InsertDeleteRecord(const std::shared_ptr<DeleteContext>& del_insert_context);
 
   // 获取当前 memMap 的所占内容容量
   uint32_t getMemSize();
@@ -58,17 +75,11 @@ class Memtable {
   // 返回 bloom_filter 数据
   auto* getFilterData() { return bloomFilter_.getFilterData(); }
 
-  auto getCompactionN() {
-    return compaction_number_;
-  }
+  auto getCompactionN() { return compaction_number_; }
 
-  auto setCompactionN(const uint32_t n) {
-    compaction_number_ = n;
-  }
+  auto setCompactionN(const uint32_t n) { compaction_number_ = n; }
 
-  uint64 getBloomSeed() {
-    return bloomFilter_.getFilterSeed();
-  }
+  uint64 getBloomSeed() { return bloomFilter_.getFilterSeed(); }
 
  private:
   // 当前内存表所花费的内存

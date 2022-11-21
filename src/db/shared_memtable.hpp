@@ -32,15 +32,21 @@ namespace db {
 class Compactor;
 
 using Memtask =
-    std::variant<std::shared_ptr<SetContext>,
-                 std::shared_ptr<GetContext>,
+    std::variant<std::shared_ptr<SetContext>, std::shared_ptr<GetContext>,
                  std::shared_ptr<DeleteContext>,
                  std::shared_ptr<RemoveReadOnlyMemTableContext>>;
 
 class TaskWorker {
  public:
-  // TaskWorker 共享 std::shared_ptr<Memtable> 的所有权
-  std::shared_ptr<Memtable> memtable_;
+// for test
+#ifdef DB_DEBUG
+  std::map<std::string, std::string> test_Map_;
+  void TestMemTableView(const std::shared_ptr<MemTable_view>& memtable_view,
+                        const std::shared_ptr<Memtable>& memtable);
+#endif
+
+      // TaskWorker 共享 std::shared_ptr<Memtable> 的所有权
+      std::shared_ptr<Memtable> memtable_;
 
   // 保护 handle_vec_;
   std::mutex vec_mtx_;
@@ -142,7 +148,7 @@ class SharedMemtable : public NonCopyable {
 
   /*
    * @n : 对应的 memtable 号码
-   *  
+   *
    */
   void PushRemoveReadonlyMemtableContext(const uint32_t n);
 
