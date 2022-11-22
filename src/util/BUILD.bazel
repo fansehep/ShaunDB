@@ -9,13 +9,14 @@ cc_library(
     srcs=glob(["*.cpp"]),
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
-    linkopts=[
-        "-lpthread",
-        "-luring",
-    ],
     deps=[
         "//src/util/hash:util_hash_lib",
         "//src/util/file:fver_util_file_lib",
         "//src/base/log:fver_log_lib",
+        "@abseil//absl/container:flat_hash_map",
+    ],
+    linkopts=[
+        "-lpthread",
+        "-luring",
     ],
 )

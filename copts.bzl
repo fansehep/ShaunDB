@@ -12,14 +12,28 @@ FVER_FLAGS = [
     "-Wvarargs",
     "-Wvla",
     "-Wwrite-strings",
-    # "-Werror",
     "-DNOMINMAX",
     "-std=c++20",
-    "-O2",
-    "-g",
     "-fno-exceptions",
     "-ggdb",
+    "-g",
+    "-O2",
+    # "-Werror",
 ]
+
+# use clang-addresssanitizer
+FVER_DEBUG = [
+    "-O0",
+    "-g",
+    "-ggdb",
+    "-fsanitize=address",
+    "-fno-omit-frame-pointer",
+]
+
+FVER_DEBUG_LINK = [
+    "-asan",
+]
+
 
 FVER_BENCHMARK_FLAGS = [
     "-O2",

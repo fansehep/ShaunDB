@@ -44,6 +44,12 @@ git_repository(
     remote = "https://github.com/jbeder/yaml-cpp",
 )
 
+git_repository(
+    name = "abseil",
+    branch = "master",
+    remote = "git@github.com:abseil/abseil-cpp.git",
+)
+
 
 http_archive(
     name = "rules_cc",

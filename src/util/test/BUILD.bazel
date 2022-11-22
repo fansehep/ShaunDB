@@ -1,7 +1,6 @@
 package(default_visibility=["//visibility:public"])
 
-load("//:copts.bzl", "FVER_FLAGS")
-
+load("//:copts.bzl", "FVER_FLAGS", "FVER_DEBUG_LINK")
 
 cc_test(
     name="bloomfilter_test",
@@ -11,6 +10,7 @@ cc_test(
     deps=[
         "//src/util:fver_util_lib",
         "@com_google_googletest//:gtest_main",
+        "@abseil//absl/hash",
     ],
     linkopts=[
         "-lpthread",
@@ -26,6 +26,7 @@ cc_test(
     deps=[
         "//src/util:fver_util_lib",
         "@com_google_googletest//:gtest_main",
+        "@abseil//absl/hash",
     ],
     linkopts=[
         "-lpthread",
@@ -51,6 +52,22 @@ cc_test(
 cc_test(
     name="hash_func_test",
     srcs=glob(["hash_func_test.cpp"]),
+    visibility=["//visibility:public"],
+    copts=FVER_FLAGS,
+    deps=[
+        "//src/util:fver_util_lib",
+        "@com_google_googletest//:gtest_main",
+        "//src/util/hash:util_hash_lib",
+    ],
+    linkopts=[
+        "-lpthread",
+        "-luuid",
+    ],
+)
+
+cc_test(
+    name="klrucache_test",
+    srcs=glob(["klrucache_test.cpp"]),
     visibility=["//visibility:public"],
     copts=FVER_FLAGS,
     deps=[
