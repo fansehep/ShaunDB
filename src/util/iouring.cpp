@@ -1,5 +1,6 @@
 #include "src/util/iouring.hpp"
 
+#include <asm-generic/errno-base.h>
 #include <liburing.h>
 #include <liburing/io_uring.h>
 
@@ -65,8 +66,8 @@ struct ConSumptionQueue IOUring::PeekFinishQueue() {
   // 消费队列
   struct ConSumptionQueue result;
   auto ue = ::io_uring_peek_cqe(&ring_, &(result._con_queue_));
-  if (ue != 0) {
-    LOG_WARN("io_uring peek errno result: {}", ue);
+  if (ue == -EAGAIN) {
+    LOG_WARN("io_uring peek errno result: {} error: {}", ue, ::strerror(errno));
   }
   return result;
 }

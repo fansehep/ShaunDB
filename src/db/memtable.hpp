@@ -74,6 +74,7 @@ class Memtable {
 
   uint64 getBloomSeed() { return bloomFilter_.getFilterSeed(); }
 
+
  private:
   // 当前内存表所花费的内存
   uint32_t memSize_;

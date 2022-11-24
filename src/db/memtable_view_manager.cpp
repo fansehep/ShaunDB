@@ -16,6 +16,11 @@ void MemTableViewManager::Init(const uint32_t memtable_n) {
   }
 }
 
+uint32_t MemTableViewManager::getMemViewVecSize(const uint32_t number) {
+  return mem_all_vec_[number]->memtable_vec_.size();
+}
+
+
 void MemTableViewManager::PushTableView(const uint32_t number, const char *data,
                                         const uint32_t data_size) {
   // btree_view_vec_[number].push_back(

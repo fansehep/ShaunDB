@@ -11,6 +11,6 @@ cc_library(
     copts=FVER_FLAGS,
     deps=[
         "//src/base/log:fver_log_lib",
-        "@abseil//absl/hash",
+        "@com_google_absl//absl/hash",
     ],
 )

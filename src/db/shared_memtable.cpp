@@ -25,26 +25,6 @@ void TaskWorker::Notify() { cond_.notify_one(); }
 uint32_t g_thread_n = 0;
 std::string ThreadNpName = "memworker_";
 
-// for test the MemTable_view is right?
-#ifdef DB_DEBUG
-
-void TaskWorker::TestMemTableView(
-    const std::shared_ptr<MemTable_view>& memtable_view,
-    const std::shared_ptr<Memtable>& memtable) {
-  // 1. 测试 bloom_filter 是否正确被格式化
-  std::string_view memtable_bloomfilter_view(
-      memtable_view->getBloomFilterPtr(), memtable_view->getBloomFilterSize());
-  std::string_view memtable_bloomfilter(memtable->getFilterData()->getData(),
-                                        memtable->getFilterData()->getSize());
-  if (memtable_bloomfilter_view != memtable_bloomfilter) {
-    LOG_ERROR("format error!");
-    assert(false);
-  }
-  // 2. 验证 memtable_view 和 memtable 的正确性
-}
-
-#endif
-
 void TaskWorker::Run() {
   isRunning_ = true;
 
@@ -77,9 +57,6 @@ void TaskWorker::Run() {
         if (handle.index() == 0) {
           auto set_context = std::get<std::shared_ptr<SetContext>>(handle);
           assert(set_context != nullptr);
-#ifdef DB_DEBUG
-          test_Map_[set_context->key] = set_context->value;
-#endif
           memtable_->Set(set_context);
           LOG_INFO("memtable set key: {} value: {} ok mem_size: {}",
                    set_context->key, set_context->value,
@@ -168,15 +145,26 @@ void TaskWorker::Run() {
           if (del_context->del_callback) {
             del_context->del_callback(del_context);
           }
-        } else if (handle.index() == 3) {
-          // 释放已经变成 memtable_view 的 memtable
-          // TODO: erase the vec.begin() performance ???
-          // but
-          if (false == readonly_memtable_vec_.empty()) {
-            readonly_memtable_vec_.erase(readonly_memtable_vec_.begin());
-          }
         }
       }
+      LOG_INFO(
+          "remove_N: {} remove_N: {} read_only_memtable_size: {} "
+          "memtable_view_vec_size: {}",
+          remove_N_, preRemove_N_, readonly_memtable_vec_.size(),
+          memview_manager_->getMemViewVecSize(memtable_->getMemNumber()));
+      if (remove_N_ > preRemove_N_) {
+        uint32_t l = 0;
+        auto size = remove_N_ - preRemove_N_;
+        LOG_INFO("size: {}, readonly_memtable_vec_size: {}", size,
+                 readonly_memtable_vec_.size());
+        for (; l < size; l++) {
+          readonly_memtable_vec_.erase(readonly_memtable_vec_.begin());
+        }
+        LOG_INFO("size: {} preRemove_N: {} remove_N: {}",
+                 readonly_memtable_vec_.size(), preRemove_N_, remove_N_);
+        preRemove_N_ = remove_N_;
+      }
+
       handle_vec_.clear();
       // 当当前的写入超过 预期时, 将当前正在写入的表换下
       // 等待 compactor 刷入成为 sstable
@@ -218,6 +206,8 @@ void SharedMemtable::Init(const DBConfig& dbconfig) {
   for (; i < memtable_N_; i++) {
     taskworkers_[i] = std::make_shared<TaskWorker>();
     taskworkers_[i]->memtable_ = std::make_shared<Memtable>();
+    taskworkers_[i]->remove_N_ = 0;
+    taskworkers_[i]->preRemove_N_ = 0;
     // 编号
     taskworkers_[i]->memtable_->setNumber(i);
     taskworkers_[i]->maxMemTableSize_ = this->singleMemTableSize_;
@@ -264,6 +254,7 @@ void SharedMemtable::Delete(const std::shared_ptr<DeleteContext>& del_context) {
 
 SharedMemtable::~SharedMemtable() {
   for (auto& iter : taskworkers_) {
+    iter->isRunning_ = false;
     iter->Notify();
     iter->Stop();
   }
@@ -286,9 +277,7 @@ void SharedMemtable::SetMemTableViewRef(
 }
 
 void SharedMemtable::PushRemoveReadonlyMemtableContext(const uint32_t n) {
-  assert(n >= 0 && n < taskworkers_.size());
-  Memtask task = std::make_shared<RemoveReadOnlyMemTableContext>();
-  taskworkers_[n]->addTask(task);
+  taskworkers_[n]->remove_N_++;
 }
 
 }  // namespace db

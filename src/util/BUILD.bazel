@@ -13,7 +13,7 @@ cc_library(
         "//src/util/hash:util_hash_lib",
         "//src/util/file:fver_util_file_lib",
         "//src/base/log:fver_log_lib",
-        "@abseil//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
     linkopts=[
         "-lpthread",

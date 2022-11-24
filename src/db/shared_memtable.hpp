@@ -36,19 +36,16 @@ namespace db {
 class Compactor;
 
 using Memtask =
-    std::variant<std::shared_ptr<SetContext>, std::shared_ptr<GetContext>,
-                 std::shared_ptr<DeleteContext>,
-                 std::shared_ptr<RemoveReadOnlyMemTableContext>>;
+    std::variant<std::shared_ptr<SetContext>,
+                 std::shared_ptr<GetContext>,
+                 std::shared_ptr<DeleteContext>>;
 
 class TaskWorker {
  public:
-// for test
-#ifdef DB_DEBUG
-  std::map<std::string, std::string> test_Map_;
-  void TestMemTableView(const std::shared_ptr<MemTable_view>& memtable_view,
-                        const std::shared_ptr<Memtable>& memtable);
-#endif
-
+  //
+  uint64_t remove_N_;
+  // 单个 TaskWorker 保存上一次的 remove 的序列号.
+  uint64_t preRemove_N_;
   // TaskWorker 共享 std::shared_ptr<Memtable> 的所有权
   std::shared_ptr<Memtable> memtable_;
 
@@ -121,8 +118,6 @@ class TaskWorker {
   }
 };
 
-// 一组 SharedMemtable 拥有四个内存kv 表
-static constexpr int kDefaultSharedMemtableSize = 4;
 
 // TODO: 需要一种负载均衡的算法
 //  默认使用 std_hash()

@@ -36,6 +36,9 @@ class MemTableViewManager {
   void getRequest(const uint32_t number,
                   const std::shared_ptr<GetContext>& get_context);
 
+  // 返回 编号为 number 的 memtable_vec的容量
+  uint32_t getMemViewVecSize(const uint32_t number);
+
  private:
   // 内存表的数量
   uint32_t memtable_n_;

@@ -39,17 +39,16 @@ class MemTable_view {
 
   uint32_t getLevel();
 
-#ifdef DB_DEBUG
 
-  MemBTreeView* getIndexView();
-
-  char* getBloomFilterPtr();
-
-  uint32_t getBloomFilterSize();
-
-#endif
 
  private:
+
+  // mmap 映射的指针
+  const char* memViewPtr_;
+
+  // mmap 映射的大小
+  uint32_t memViewSize_;
+
   uint32_t cur_level_;
 
   // 当前是否可读.

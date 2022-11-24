@@ -1,5 +1,6 @@
 #include "src/db/compactor.hpp"
 
+#include <chrono>
 #include <cstring>
 #include <iterator>
 
@@ -116,45 +117,49 @@ void CompWorker::Run() {
     while (true == isRunning_) {
       struct util::iouring::ConSumptionQueue conn;
       // 后续若收集到就绪事件, 直接在 sync_data_map_ref
-      do {
-        conn = iouring_.PeekFinishQueue();
-        if (conn.isEmpty()) {
-          break;
-        }
-        auto iter =
-            sync_data_map_.find(static_cast<const char*>(conn.getData()));
-        if (iter != sync_data_map_.end()) {
-          /*
-            io_uring 将数据刷入了磁盘
-            构造 MemTable_view push 到 MemTableWorker 中.
-          */
-          auto ue = iter->second.sstable_ref->InitMmap();
-          if (false == ue) {
-            LOG_ERROR("memtable: {} name: {} mmap error",
-                      iter->second.memtable_n,
-                      iter->second.sstable_ref->getfileName());
-            assert(false);
-          }
-          this->memview_manager_->PushTableView(
-              iter->second.sstable_ref->getNumber(),
-              iter->second.sstable_ref->getMmapPtr(),
-              iter->second.sstable_ref->getFileSize());
-          LOG_TRACE("mem_view_table: {} name: {} mmap finish",
-                    iter->second.sstable_ref->getNumber(),
-                    iter->second.sstable_ref->getfileName());
-          this->shared_memtable_ref_->PushRemoveReadonlyMemtableContext(
-              iter->second.sstable_ref->getNumber());
-          LOG_INFO("erase: {}", iter->first);
-          sync_data_map_.erase(iter);
-          iouring_.DeleteEvent(&conn);
-        }
-      } while (true);
       // TODO: 这里是否线程安全?
       if (bg_wait_to_sync_sstable_.empty()) {
         std::unique_lock<std::mutex> lgk(notify_mtx_);
-        cond_.wait(lgk);
+        cond_.wait_for(lgk, std::chrono::seconds(2));
       }
-
+      // 如果没有刷盘任务, 那么查看当前是否有需要回收的数据,
+      if (bg_wait_to_sync_sstable_.empty() == true) {
+        do {
+          // 这里不能阻塞.
+          conn = iouring_.PeekFinishQueue();
+          if (conn.isEmpty()) {
+            break;
+          }
+          auto iter =
+              sync_data_map_.find(static_cast<const char*>(conn.getData()));
+          if (iter != sync_data_map_.end()) {
+            /*
+              io_uring 将数据刷入了磁盘
+              构造 MemTable_view push 到 MemTableWorker 中.
+            */
+            auto ue = iter->second.sstable_ref->InitMmap();
+            if (false == ue) {
+              LOG_ERROR("memtable: {} name: {} mmap error",
+                        iter->second.memtable_n,
+                        iter->second.sstable_ref->getfileName());
+              assert(false);
+            }
+            this->memview_manager_->PushTableView(
+                iter->second.sstable_ref->getNumber(),
+                iter->second.sstable_ref->getMmapPtr(),
+                iter->second.sstable_ref->getFileSize());
+            LOG_TRACE("mem_view_table: {} name: {} mmap finish",
+                      iter->second.sstable_ref->getNumber(),
+                      iter->second.sstable_ref->getfileName());
+            this->shared_memtable_ref_->PushRemoveReadonlyMemtableContext(
+                iter->second.sstable_ref->getNumber());
+            LOG_INFO("erase: {}", iter->first);
+            sync_data_map_.erase(iter);
+            iouring_.DeleteEvent(&conn);
+          }
+        } while (true);
+        continue;
+      }
       // 快速交换, 以免阻塞
       {
         task_mtx_.lock();

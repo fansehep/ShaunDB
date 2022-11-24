@@ -90,7 +90,7 @@ TEST_F(SharedMemtableTest, Multi_thread_insert) {
   table.Init(dbconfig);
   table.Run();
   // 8 个线程同时插入
-  const int curreny_N = 8;
+  const int curreny_N = 16;
   std::vector<std::thread> workers_;
 
   std::mutex origin_map_mtx;

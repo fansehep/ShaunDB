@@ -42,27 +42,30 @@ MemTable_view::MemTable_view(const char* data, const uint32_t data_size,
 }
 
 bool MemTable_view::Init(std::string_view mmap_view) {
+  memViewPtr_ = mmap_view.data();
+  memViewSize_ = mmap_view.size();
   uint64_t bloomfilter_seed;
   auto end_ptr =
       getVarint64Ptr(mmap_view.data(), mmap_view.data() + 5, &bloomfilter_seed);
   uint32_t bloomfilter_size;
-  getVarint32Ptr(end_ptr, end_ptr + 4, &bloomfilter_size);
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 4, &bloomfilter_size);
   bloomFilter_ = std::make_unique<util::BloomFilter<>>(
       end_ptr, bloomfilter_size * 8, bloomfilter_seed);
+  end_ptr += bloomfilter_size;
   // 作为视图压入到 MemTable_view 中
   uint32_t key_size;
   uint32_t value_size;
   while (end_ptr < (mmap_view.data() + mmap_view.size())) {
     auto begin_ptr = end_ptr;
     end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &key_size);
+    auto end_2_ptr = end_ptr;
     assert(end_ptr);
     end_ptr += key_size;
-    auto mid_ptr = end_ptr;
     end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &value_size);
     // 如果当前 kv 记录被删除, 那么就不会存储 value, 所以这里 getVarint32Ptr
     // 会返回 nullptr, 我们只需要保存 key_view 即可.
     if (end_ptr == nullptr) {
-      std::string_view kv_str_view(begin_ptr, mid_ptr);
+      std::string_view kv_str_view(end_2_ptr, key_size);
       memMapView_.insert(kv_str_view);
       continue;
     }
@@ -89,8 +92,8 @@ uint32_t MemTable_view::getLevel() { return cur_level_; }
 void MemTable_view::Get(const std::shared_ptr<GetContext>& get_context) {
   if (false == bloomFilter_->IsMatch(get_context->key)) {
     get_context->code.setCode(StatusCode::kNotFound);
-    LOG_INFO("memtable_view: {} lev: {} bloomFilter can not find: {}",
-             getNumber(), getLevel(), get_context->key);
+    LOG_INFO("memtable_view: {} lev: {} bloomFilter can not find: {} cur_memtable_size: {}",
+             getNumber(), getLevel(), get_context->key, memMapView_.size());
     return;
   }
   auto pre_key_var_size = varintLength(get_context->key.size());
@@ -118,7 +121,7 @@ void MemTable_view::Get(const std::shared_ptr<GetContext>& get_context) {
   end_ptr += key_size;
   uint32_t value_size;
   //
-  getVarint32Ptr(end_ptr, end_ptr + 5, &value_size);
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &value_size);
   get_context->value = std::string_view(end_ptr, value_size);
   get_context->code.setCode(StatusCode::kOk);
   LOG_INFO("memtable_view: {} lev: {} get key: {} vlaue: {} ok", getNumber(),
