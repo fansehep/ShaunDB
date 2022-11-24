@@ -22,9 +22,9 @@ class kLRUCacheTest : public ::testing::Test {
 
 TEST_F(kLRUCacheTest, onemillion_test) {
   // 热数据使用 4MB 空间
-  const uint32_t hot_memory_usage = 128 * 4;
+  const uint32_t hot_memory_usage = 128 * 4 * 1024;
   // 冷数据使用 1MB 空间
-  const uint32_t cold_memory_usage = 128;
+  const uint32_t cold_memory_usage = 128 * 1024;
   std::unordered_map<std::string, std::string> test_map;
   kLRUCache klrucache(cold_memory_usage, hot_memory_usage);
   uuid_t uuid_key;

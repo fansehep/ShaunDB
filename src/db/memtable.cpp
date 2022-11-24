@@ -138,15 +138,6 @@ void Memtable::Get(const std::shared_ptr<GetContext>& get_context) {
 
 void Memtable::Delete(const std::shared_ptr<DeleteContext>& del_context) {
   //
-  // 使用 bloomFilter 进行快速判断
-  //
-  if (false == bloomFilter_.IsMatch(del_context->key)) {
-    del_context->code.setCode(StatusCode::kNotFound);
-    LOG_INFO("from bloomfilter delete key: {} can not found", del_context->key);
-    return;
-  }
-  //
-  //
   auto key_size_32_varint_size = varintLength(del_context->key.size());
   //
   //
@@ -157,27 +148,12 @@ void Memtable::Delete(const std::shared_ptr<DeleteContext>& del_context) {
       format64_vec[sequence_number_64_varint_size], kEmpty1Space);
   char* start_ptr = simple_del_str.data();
   start_ptr = encodeVarint32(start_ptr, del_context->key.size());
-
-  auto iter = memMap_.find(simple_del_str);
-
-  if (iter == memMap_.end()) {
-    LOG_WARN("del key: {} can not find in memtable", del_context->key);
-    del_context->code.setCode(StatusCode::kNotFound);
-    return;
-  }
-  //
-  // 标记 删除
-  // 获取 key_size;
-  uint32_t mem_key_size = 0;
-  auto end_ptr = getVarint32Ptr(iter->data(), iter->data() + 5, &mem_key_size);
-  assert(end_ptr != nullptr);
-  // 标志位删除.
-  uint64_t mem_number = 0;
-  end_ptr = getVarint64Ptr(end_ptr + mem_key_size, end_ptr + mem_key_size + 9,
-                           &mem_number);
-  //
-  *(const_cast<char*>(end_ptr)) = ValueType::kTypeDeletion;
-  LOG_INFO("del key: {} ok", del_context->key);
+  start_ptr += del_context->key.size();
+  start_ptr = encodeVarint32(start_ptr, del_context->number);
+  formatEncodeFixed8(StatusCode::kDelete, start_ptr);
+  // 直接插入
+  bloomFilter_.Insert(del_context->key);
+  memMap_.insert(simple_del_str);
 }
 
 uint32_t Memtable::getMemSize() { return memSize_; }
@@ -198,21 +174,9 @@ auto Memtable::getMemTableRef() -> MemBTree& { return memMap_; }
 
 /*
  * 插入一条删除数据.
- *
+ * 格式为 | key_size | key | number |
+ *       | var_size | key | var_64 |
  */
-void Memtable::InsertDeleteRecord(
-    const std::shared_ptr<DeleteContext>& del_insert_context) {
-  auto key_varint_size = varintLength(del_insert_context->key.size());
-  std::string del_get_str = fmt::format("{}{}", format32_vec[key_varint_size],
-                                        del_insert_context->key);
-  encodeVarint32(del_get_str.data(), del_insert_context->key.size());
-  // bloomfilter 同时也要插入该 key
-  bloomFilter_.Insert(del_insert_context->key);
-  memMap_.insert(del_get_str);
-  // 该函数只会在当前 memMap 找不到那条记录时触发, 所以
-  // memMap_ 中绝对没有那条记录, size 直接相加
-  memSize_ += del_get_str.size();
-}
 
 }  // namespace db
 

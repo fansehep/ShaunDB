@@ -4,6 +4,7 @@
 
 #include "src/base/log/logging.hpp"
 #include "src/db/compactor.hpp"
+#include "src/db/exportdb.hpp"
 #include "src/db/memtable.hpp"
 #include "src/db/request.hpp"
 #include "src/db/status.hpp"
@@ -98,6 +99,25 @@ void TaskWorker::Run() {
               get_context->get_callback(get_context);
             }
           }
+          //
+          bool isErase = false;
+          auto ue =
+              klrucache_.get(get_context->key, &(get_context->value), &isErase);
+          if (ue == true) {
+            // 当前 kv 记录已经被删除
+            if (isErase == true) {
+              get_context->code.setCode(StatusCode::kDelete);
+              if (get_context->get_callback) {
+                get_context->get_callback(get_context);
+              }
+            } else {
+              get_context->code.setCode(StatusCode::kOk);
+              if (get_context->get_callback) {
+                get_context->get_callback(get_context);
+              }
+            }
+          }
+
           // 没有在当前内存表中找到
           if (get_context->code.getCode() == StatusCode::kNotFound) {
             // 从只读内存表中找
@@ -126,6 +146,17 @@ void TaskWorker::Run() {
               get_context->get_callback(get_context);
             }
           }
+          // 在 memtable_view_vec 中寻找
+          // 这是一个很缓慢的过程
+          // 将慢查询的kv数据放入到 klrucache 中去
+          // 没有找到 和 被删除的 kv 都加入
+          if (get_context->code.getCode() == StatusCode::kNotFound ||
+              get_context->code.getCode() == StatusCode::kDelete) {
+            // 结果不存在
+            klrucache_.setEraseRecord(get_context->key);
+          } else if (get_context->code.getCode() == StatusCode::kOk) {
+            klrucache_.set(get_context->key, get_context->value);
+          }
           // Delete 请求
         } else if (handle.index() == 2) {
           auto del_context = std::get<std::shared_ptr<DeleteContext>>(handle);
@@ -134,89 +165,9 @@ void TaskWorker::Run() {
           // TODO
           // 当无法在 memtable 中找到需要被删除的
           memtable_->Delete(del_context);
-          // 所需要删除 kv 记录就在当前内存表中
-          if (del_context->code.getCode() == StatusCode::kOk) {
-            // 直接触发回调函数即可
-            if (del_context) {
-              del_context->del_callback(del_context);
-            }
-          } else if (del_context->code.getCode() == StatusCode::kNotFound) {
-            // TODO should be view
-            auto get_for_del_context = std::make_shared<GetContext>();
-            /*
-             * 当前是一个只读的 readonly_memtable_vec
-             *
-             *
-             */
-            get_for_del_context->key = std::move(del_context->key);
-            for (auto r_iter = readonly_memtable_vec_.rbegin();
-                 r_iter != readonly_memtable_vec_.rend(); r_iter++) {
-              (*r_iter)->Get(get_for_del_context);
-              (*r_iter)->Get(get_for_del_context);
-              // 如果在 read_only_memtable_vec 中找到
-              // 那么我们此时只能在当前的 memtable 中新加入一条删除记录.
-              if (get_for_del_context->code.getCode() == StatusCode::kOk) {
-                memtable_->InsertDeleteRecord(del_context);
-                // 在 read_only_memtable_vec 中发现该条记录已经被删除
-                // 那么直接返回即可
-                del_context->key = std::move(get_for_del_context->key);
-                del_context->code.setCode(StatusCode::kOk);
-                if (del_context->del_callback) {
-                  //
-                  del_context->del_callback(del_context);
-                }
-                break;
-              } else if (get_for_del_context->code.getCode() ==
-                         StatusCode::kDelete) {
-                // 当前所需要删除的 kv 记录已经被删除
-                del_context->code.setCode(StatusCode::kDelete);
-                if (del_context->del_callback) {
-                  del_context->del_callback(del_context);
-                }
-              }
-              break;
-            }
-            // 在 read_only_memtable_view_vec 中查找
-            if (del_context->code.getCode() == StatusCode::kNotFound) {
-              auto del_get_view_context = std::make_shared<GetContext>();
-              del_get_view_context->key = std::move(del_context->key);
-              memview_manager_->getRequest(memtable_->getMemNumber(),
-                                           del_get_view_context);
-              // 如果找到.
-              if (del_get_view_context->code.getCode() == StatusCode::kOk) {
-                del_context->code.setCode(StatusCode::kOk);
-                del_context->key = std::move(del_get_view_context->key);
-                // 并且没有被删除
-                // 那么就需要在当前的内存表中插入一条删除记录.
-                auto del_get_insert_record = std::make_shared<DeleteContext>();
-                del_get_insert_record->key = del_context->key;
-                memtable_->InsertDeleteRecord(del_get_insert_record);
-                if (del_context->del_callback) {
-                  del_context->del_callback(del_context);
-                }
-                // 如果发现已经被删除了或者没有找到
-              } else if (del_get_view_context->code.getCode() ==
-                             StatusCode::kDelete ||
-                         del_get_view_context->code.getCode() ==
-                             StatusCode::kNotFound) {
-                del_context->code.setCode(del_get_view_context->code.getCode());
-                del_context->key = std::move(del_get_view_context->key);
-                if (del_context->del_callback) {
-                  del_context->del_callback(del_context);
-                }
-              }
-            }
+          if (del_context->del_callback) {
+            del_context->del_callback(del_context);
           }
-          // erase the read_only memtable_vec head
-#ifdef DB_DEBUG
-          auto test_iter = test_Map_.find(del_context->key);
-          if (test_iter == test_Map_.end()) {
-          }
-#endif
-          // TODO: 事实上, 我们并不需要让 RemoveReadOnlyMemTableContext 成为
-          // 这里的 MemTask 的一员, 因为 MemTask 只会由主线程分发,
-          // remove...context 将会由 Compactor 线程分发 告诉当前的 worker
-          // 可以触发 read_only_memtable 析构
         } else if (handle.index() == 3) {
           // 释放已经变成 memtable_view 的 memtable
           // TODO: erase the vec.begin() performance ???
@@ -257,14 +208,13 @@ void TaskWorker::Run() {
   });
 }
 
-void SharedMemtable::Init(const uint32_t memtable_N,
-                          const uint32_t singletableSize) {
-  assert(memtable_N != 0);
-  memtable_N_ = memtable_N;
+void SharedMemtable::Init(const DBConfig& dbconfig) {
+  assert(dbconfig.memtable_N != 0);
+  memtable_N_ = dbconfig.memtable_N;
   taskworkers_.resize(memtable_N_);
   int i = 0;
   // 每个 memtable 的容量
-  singleMemTableSize_ = singletableSize;
+  singleMemTableSize_ = dbconfig.memtable_trigger_size;
   for (; i < memtable_N_; i++) {
     taskworkers_[i] = std::make_shared<TaskWorker>();
     taskworkers_[i]->memtable_ = std::make_shared<Memtable>();
@@ -272,6 +222,9 @@ void SharedMemtable::Init(const uint32_t memtable_N,
     taskworkers_[i]->memtable_->setNumber(i);
     taskworkers_[i]->maxMemTableSize_ = this->singleMemTableSize_;
     taskworkers_[i]->compactor_ = this->comp_actor_;
+    //
+    taskworkers_[i]->klrucache_.Init((dbconfig.lru_cache_size / 5),
+                                     (dbconfig.lru_cache_size / 5) * 4);
   }
 }
 

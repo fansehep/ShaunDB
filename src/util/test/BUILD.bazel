@@ -1,6 +1,6 @@
 package(default_visibility=["//visibility:public"])
 
-load("//:copts.bzl", "FVER_FLAGS", "FVER_DEBUG_LINK")
+load("//:copts.bzl", "FVER_FLAGS")
 
 cc_test(
     name="bloomfilter_test",

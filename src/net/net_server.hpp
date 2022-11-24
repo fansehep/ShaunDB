@@ -32,8 +32,8 @@ void FverLogInit(int serverity, const char* msg);
 void ListenerCallback(struct evconnlistener* ev, evutil_socket_t socket,
                       struct sockaddr* addr, int socklen, void* arg);
 
-// 默认支持最大连接是 1000 个连接
-static constexpr uint32_t kMaxConnectionN = 1000;
+// 默认支持最大连接是 10000 个连接
+static constexpr uint32_t kMaxConnectionN = 10000;
 
 class NetServer : public base::NonCopyable {
  public:

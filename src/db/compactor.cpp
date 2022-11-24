@@ -115,7 +115,7 @@ void CompWorker::Run() {
 
     while (true == isRunning_) {
       struct util::iouring::ConSumptionQueue conn;
-      // 后续若收集到就绪事件, 直接在sync_data_map_ref
+      // 后续若收集到就绪事件, 直接在 sync_data_map_ref
       do {
         conn = iouring_.PeekFinishQueue();
         if (conn.isEmpty()) {

@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "src/base/log/logging.hpp"
+#include "src/db/dbconfig.hpp"
 #include "src/db/request.hpp"
 
 extern "C" {
@@ -40,7 +41,11 @@ struct CallBackCompare {
 TEST_F(SharedMemtableTest, simple_insert_tset) {
   SharedMemtable table;
   // 默认一个 SharedMemtable 拥有 4 个 memTable
-  table.Init(8, 256 * 1024 * 1024);
+  struct DBConfig dbconfig;
+  dbconfig.memtable_N = 8;
+  dbconfig.memtable_trigger_size = 128 * 1024 * 1024;
+  dbconfig.lru_cache_size = 16 * 1024 * 1024;
+  table.Init(dbconfig);
   table.Run();
   auto set_context_1 = std::make_shared<SetContext>();
   const std::string key_1 = "123123";
@@ -78,7 +83,11 @@ TEST_F(SharedMemtableTest, simple_insert_tset) {
 TEST_F(SharedMemtableTest, Multi_thread_insert) {
   SharedMemtable table;
   // 默认一个 SharedMemtable 拥有 4 个 memTable
-  table.Init(4, 256 * 1024 * 1024);
+  struct DBConfig dbconfig;
+  dbconfig.memtable_N = 8;
+  dbconfig.memtable_trigger_size = 128 * 1024 * 1024;
+  dbconfig.lru_cache_size = 16 * 1024 * 1024;
+  table.Init(dbconfig);
   table.Run();
   // 8 个线程同时插入
   const int curreny_N = 8;

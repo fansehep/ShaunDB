@@ -8,8 +8,10 @@
 #include "src/db/request.hpp"
 #include "src/db/shared_memtable.hpp"
 #include "src/db/wal_writer.hpp"
+#include "src/db/dbconfig.hpp"
 #include "src/util/file/wal_log.hpp"
 #include "src/db/memtable_view_manager.hpp"
+#include "src/db/compactor.hpp"
 
 
 using ::fver::base::NonCopyable;
@@ -42,39 +44,6 @@ WAL_LOG 的文件名称是  WAL_LOG.log
 
 const std::string kDefaultWalLogFileName = "WAL_LOG.log";
 
-struct DBConfig {
-
-  // 预写日志的容量大小
-  uint32_t wal_log_size;
-
-  // kv 引擎文件所放置的目录
-  std::string db_path;
-
-  // NightSheep DB 拥有多个内存表
-  // 此配置表示 NightSheepDB 的内存表的数量
-  uint32_t memtable_N;
-
-  // 单个内存表的最大容量
-  // 注意, 一个内存表被写满之后, 并不能立即被刷入
-  // 他将会等待 Compactor 被刷入到  SStable 中去
-  // 所以峰值内存占用的计算公式是:
-  // (2 * memtable_N * memtable_trigger_size) + (2 * memtable_N * 8MB)
-  // 注意峰值内存占用, 不然直接 oom
-  uint32_t memtable_trigger_size;
-
-  // compactor 的线程个数
-  // 当内存表过多时, 映射的 Compactor 如果线程数量太少, Compaction 操作明显变慢
-  // BEST: 使用 memtable_trigger_size / 4 个线程 来进行 Compaction
-  // 当然, 这里我们还应该考虑单个 memtable 的大小.
-  uint32_t compactor_thread_size;
-
-  // 如果打开的目录已经存在, 是否尝试恢复
-  // 否: 清空所有数据, 新建立一个 DB
-  // 是: 尝试恢复数据, 读取原有的预写日志, 并尝试恢复
-  // 尝试恢复之后, 若数据恢复失败, 则会停止启动服务器
-  bool isRecover;
-
-};
 
 //
 // TODO: 我们应该考虑 const std::shared_ptr<>&

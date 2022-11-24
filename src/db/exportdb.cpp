@@ -56,7 +56,7 @@ void DB::NewDBimp(const DBConfig& db_config) {
   comp_actor_->SetCompWorkerCompactorRef(comp_actor_); 
   LOG_INFO("compactor init success");
   // 初始化 shared_memtable
-  shared_memtable_->Init(db_config.memtable_N, db_config.memtable_trigger_size);
+  shared_memtable_->Init(db_config);
   // 让 shared_memtable 同时获得 Compactor 的引用
   shared_memtable_->SetCompactorRef(comp_actor_);
   comp_actor_->SetSharedMemTableRef(shared_memtable_);

@@ -1,3 +1,2 @@
-build:gcc17-later --cxxopt
 build --repo_env=CC=clang
-build --cxxopt -Wno-error=format-security
+build --cxxopt=-std=c++20

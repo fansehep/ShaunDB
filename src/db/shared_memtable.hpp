@@ -16,12 +16,16 @@
 #include "src/db/memtable_view.hpp"
 #include "src/db/memtable_view_manager.hpp"
 #include "src/db/request.hpp"
+#include "src/util/klrucache.hpp"
+#include "src/db/dbconfig.hpp"
 
 using ::fver::base::NonCopyable;
+using ::fver::util::kLRUCache;
 
 namespace fver {
 
 namespace db {
+
 
 // struct task {
 //   std::optional<std::shared_ptr<SetContext>> set_context;
@@ -45,8 +49,8 @@ class TaskWorker {
                         const std::shared_ptr<Memtable>& memtable);
 #endif
 
-      // TaskWorker 共享 std::shared_ptr<Memtable> 的所有权
-      std::shared_ptr<Memtable> memtable_;
+  // TaskWorker 共享 std::shared_ptr<Memtable> 的所有权
+  std::shared_ptr<Memtable> memtable_;
 
   // 保护 handle_vec_;
   std::mutex vec_mtx_;
@@ -92,6 +96,9 @@ class TaskWorker {
   // 当 CompWorker 完成minor_compaction 之后
   // 才会取消 readonly_memtable_vec_ 中的数据.
   std::vector<std::shared_ptr<Memtable>> readonly_memtable_vec_;
+  //
+
+  kLRUCache klrucache_;
 
   TaskWorker() : isRunning_(false) {}
 
@@ -134,7 +141,7 @@ class SharedMemtable : public NonCopyable {
   void Run();
 
   // memtable 的数量, 每个 memtable 的峰值容量
-  void Init(const uint32_t memtable_N, const uint32_t singleMemTableSize);
+  void Init(const DBConfig& db_config);
   void Set(const std::shared_ptr<SetContext>& set_context);
   void Get(const std::shared_ptr<GetContext>& get_context);
   void Delete(const std::shared_ptr<DeleteContext>& del_context);

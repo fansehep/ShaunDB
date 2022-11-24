@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "src/db/sstable.hpp"
+#include "src/db/dbconfig.hpp"
 
 namespace fver {
 
@@ -30,9 +31,11 @@ class SSTableManager {
   // 有多少个 memtable
   uint32_t memtable_n_;
 
-  //
+  // 数据库的地址
   std::string db_path_;
-
+  // sstable 的最大层数
+  uint32_t max_sstable_level_;
+  //
   std::vector<std::vector<std::shared_ptr<SSTable>>> sstable_vec_;
 };
 

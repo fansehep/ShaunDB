@@ -21,6 +21,8 @@ struct CacheHandle {
   // 由于 lsm_tree 的特殊性
   bool isExist;
   CacheHandle() = default;
+  CacheHandle(const CacheHandle& ch)
+      : key(ch.key), value(ch.value), isHot(ch.isHot), isExist(ch.isExist) {}
   explicit CacheHandle(const std::string& v)
       : key(nullptr), value(v), isHot(false), isExist(true) {}
   CacheHandle(CacheHandle&& handle)
@@ -44,9 +46,11 @@ struct CacheHandle {
       : key(nullptr), value(v), isHot(0), isExist(false) {}
 };
 
-
 class kLRUCache {
  public:
+  kLRUCache() = default;
+  //
+  void Init(const uint32_t cold_memory_usage, const uint32_t hot_memory_usage);
   /*
    * @cold_data_usage: 冷数据使用容量
    * @max_memory_usage: 最大内存使用容量
@@ -85,7 +89,7 @@ class kLRUCache {
   // 冷数据队列
   std::list<CacheHandle> probation_list_;
   // cache map
-  absl::flat_hash_map<std::string, std::list<CacheHandle>::iterator> cache_map_;
+  std::unordered_map<std::string, std::list<CacheHandle>::iterator> cache_map_;
 };
 
 }  // namespace util

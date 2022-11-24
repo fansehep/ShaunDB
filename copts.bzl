@@ -26,12 +26,6 @@ FVER_DEBUG = [
     "-O0",
     "-g",
     "-ggdb",
-    "-fsanitize=address",
-    "-fno-omit-frame-pointer",
-]
-
-FVER_DEBUG_LINK = [
-    "-asan",
 ]
 
 

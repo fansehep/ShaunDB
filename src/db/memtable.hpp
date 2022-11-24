@@ -41,13 +41,6 @@ class Memtable {
    */
   void Delete(const std::shared_ptr<DeleteContext>& del_context);
 
-  /*
-   * 当尝试删除的 kv 不在当前的内存表中时,
-   * 但是再 readonly_memtable_vec 或者  memtable_view_vec
-   * 中找到时, 需要插入一条删除记录.
-   */
-  //
-  void InsertDeleteRecord(const std::shared_ptr<DeleteContext>& del_insert_context);
 
   // 获取当前 memMap 的所占内容容量
   uint32_t getMemSize();
