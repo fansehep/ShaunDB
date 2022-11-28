@@ -123,6 +123,20 @@ void DeleteContextWalLogFormat(
   formatEncodeFixed32(crc32_check_sum, log->data());
 }
 
+std::string_view getMemTableViewKeyView(std::string_view& iter) {
+  uint32_t key_size;
+  auto end_ptr = getVarint32Ptr(iter.data(), iter.data() + 5, &key_size);
+  assert(end_ptr != nullptr);
+  return std::string_view(end_ptr, key_size);
+}
+
+std::string_view getMemTableViewKeyViewIter(MemBTreeView::iterator iter) {
+  uint32_t key_size;
+  auto end_ptr = getVarint32Ptr(iter->data(), iter->data() + 5, &key_size);
+  assert(end_ptr != nullptr);
+  return std::string_view(end_ptr, key_size);
+}
+
 //
 SSTableKeyValueStyle formatMemTableToSSTable(const MemBTree::iterator& iter) {
   SSTableKeyValueStyle sstable_key_value;

@@ -44,9 +44,22 @@ MemTable_view::MemTable_view(const char* data, const uint32_t data_size,
 bool MemTable_view::Init(std::string_view mmap_view) {
   memViewPtr_ = mmap_view.data();
   memViewSize_ = mmap_view.size();
+  uint32_t version;
+  auto end_ptr = getVarint32Ptr(mmap_view.data(), (mmap_view.data() + 5), &version);
+  // TODO: check it
+  uint64_t create_time;
+  end_ptr = getVarint64Ptr(end_ptr, end_ptr + 9, &create_time);
+  uint32_t cur_lev;
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &cur_lev);
+  uint32_t cur_number;
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &cur_number);
+  uint32_t all_key_size;
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &all_key_size);
+  assert(cur_lev == cur_level_);
+  assert(cur_number == cur_number);
   uint64_t bloomfilter_seed;
-  auto end_ptr =
-      getVarint64Ptr(mmap_view.data(), mmap_view.data() + 5, &bloomfilter_seed);
+  end_ptr =
+      getVarint64Ptr(end_ptr, mmap_view.data() + 5, &bloomfilter_seed);
   uint32_t bloomfilter_size;
   end_ptr = getVarint32Ptr(end_ptr, end_ptr + 4, &bloomfilter_size);
   bloomFilter_ = std::make_unique<util::BloomFilter<>>(
@@ -73,6 +86,7 @@ bool MemTable_view::Init(std::string_view mmap_view) {
     std::string_view kv_str_view(begin_ptr, end_ptr);
     memMapView_.insert(kv_str_view);
   }
+  assert(all_key_size == memMapView_.size());
   LOG_INFO("memtable_view: {} lev: {} construct ok size: {}", getNumber(),
            getLevel(), memMapView_.size());
   return true;

@@ -108,6 +108,12 @@ class TaskWorker {
   // 启动后台执行任务者.
   void Run();
 
+  // 当前的 MemTaskWorker 的繁忙程度
+  // TODO: is really thread safe?
+  uint32_t getWorkerBusyN() {
+    return handle_vec_.size() + bg_handle_vec_.size();
+  }
+
   // 停止线程运行
   void Stop() {
     isRunning_ = false;
@@ -147,6 +153,11 @@ class SharedMemtable : public NonCopyable {
   // 让单个 mem_worker 拥有 memtable_view_manager 的所有权.
   void SetMemTableViewRef(
       const std::shared_ptr<MemTableViewManager>& memtable_view_manager);
+
+
+  auto getMemTaskWorkerLevel(const uint32_t n) {
+    return taskworkers_[n]->memtable_->getCompactionN();
+  }
 
   /*
    * @n : 对应的 memtable 号码

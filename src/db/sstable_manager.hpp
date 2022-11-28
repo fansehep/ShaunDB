@@ -13,7 +13,7 @@ namespace db {
 
 class SSTableManager {
  public:
-  void Init(const uint32_t memtable_n, const std::string& dbpath);
+  void Init(const DBConfig& db_config);
 
   // 新创建一个 sstable.
   auto newSSTable(const uint32_t number, const uint32_t level)

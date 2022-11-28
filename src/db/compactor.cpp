@@ -5,6 +5,7 @@
 #include <iterator>
 
 #include "src/base/log/logging.hpp"
+#include "src/base/timestamp.hpp"
 #include "src/db/key_format.hpp"
 #include "src/db/memtable.hpp"
 #include "src/db/request.hpp"
@@ -22,16 +23,20 @@ void CompWorker::AddSStable(const std::shared_ptr<Memtable>& memtable) {
   cond_.notify_one();
 }
 
-void Compactor::Init(const uint32_t size, const uint32_t worker_size,
-                     const std::string& db_path) {
+void Compactor::Init(const DBConfig& db_config) {
   // sstable 的目录
-  db_path_ = db_path;
-  memtable_n_ = size;
-  task_workers_n_ = worker_size;
-  LOG_INFO("size: {} worker_size: {}", size, worker_size);
+  db_path_ = db_config.db_path;
+  memtable_n_ = db_config.memtable_N;
+  task_workers_n_ = db_config.compactor_thread_size;
+  max_level_n_ = db_config.max_level_size;
+  // 初始化最大层数
+  CompWorker::max_level_n_ = db_config.max_level_size;
+  CompWorker::memtable_N_ = db_config.memtable_N;
+  CompWorker::cur_version_ = db_config.version_;
+  LOG_INFO("size: {} worker_size: {}", memtable_n_, task_workers_n_);
   current_comp_index_ = 0;
   // 初始化 CompactorWorker
-  bg_comp_workers_.resize(worker_size);
+  bg_comp_workers_.resize(task_workers_n_);
   for (auto& iter : bg_comp_workers_) {
     iter = std::make_shared<CompWorker>();
   }
@@ -40,10 +45,10 @@ void Compactor::Init(const uint32_t size, const uint32_t worker_size,
   // 初始化 sstable_manager
   sstable_manager_ = std::make_shared<SSTableManager>();
   //
-  sstable_manager_->Init(memtable_n_, db_path);
+  sstable_manager_->Init(db_config);
   for (auto& iter : bg_comp_workers_) {
     iter->sstable_manager_ = sstable_manager_;
-    iter->path = db_path;
+    iter->path = db_path_;
   }
 }
 
@@ -191,17 +196,49 @@ void CompWorker::Run() {
         auto mem_bloom_filter_seed_var_size =
             varintLength(iter->getBloomSeed());
 
+        // 元数据
+        // 当前版本
+        auto cur_version = CompWorker::cur_version_;
+        auto cur_version_var_size = varintLength(cur_version);
+        // 创建时间
+        auto time_now_date = TimeStamp::Now().getNowU64();
+        auto time_now_date_var_size = varintLength(time_now_date);
+        // 当前所对应的层级
+        auto cur_level = iter->getCompactionN();
+        auto cur_level_var_size = varintLength(cur_level);
+        // 当前所对应的memtable号码
+        auto cur_number = iter->getMemNumber();
+        auto cur_number_var_size = varintLength(cur_number);
+        // 所有的 key size
+        auto all_key_size = iter->getMemTableRef().size();
+        auto all_key_size_var_size = varintLength(all_key_size);
+        //
         // bloom_filter_seed | bloom_filter_var_size | bloom_filter_data
-        fmt::format_to(std::back_inserter(*comp_kv_data_str_), "{}{}{}",
+        fmt::format_to(std::back_inserter(*comp_kv_data_str_),
+                       "{}{}{}{}{}{}{}{}", format32_vec[cur_version_var_size],
+                       format64_vec[time_now_date_var_size],
+                       format32_vec[cur_level_var_size],
+                       format32_vec[cur_number_var_size],
+                       format32_vec[all_key_size_var_size],
                        format64_vec[mem_bloom_filter_seed_var_size],
                        format32_vec[mem_bloom_filter_var_size],
                        std::string_view(mem_bloom_filter_data_ref->getData(),
                                         mem_bloom_filter_data_ref->getSize()));
         assert(comp_kv_data_str_->size() >
                mem_bloom_filter_data_ref->getSize());
-        // bloom_filter seed 赋值
+        // 写入该文件的版本
         auto end_ptr =
-            encodeVarint64(comp_kv_data_str_->data(), iter->getBloomSeed());
+            encodeVarint32(comp_kv_data_str_->data(), CompWorker::cur_version_);
+        // 创建时间
+        end_ptr = encodeVarint64(end_ptr, time_now_date);
+        // 对应的 level
+        end_ptr = encodeVarint32(end_ptr, cur_level);
+        // 对应的 号码
+        end_ptr = encodeVarint32(end_ptr, cur_number);
+        // 当前 memtable 的 sum of key
+        end_ptr = encodeVarint32(end_ptr, all_key_size_var_size);
+        // bloom_filter 的随机数种子
+        end_ptr = encodeVarint64(end_ptr, iter->getBloomSeed());
 
         // 给 bloom_filter_varint_size 赋值
         encodeVarint32(end_ptr, mem_bloom_filter_data_ref->getSize());
@@ -293,6 +330,65 @@ void CompWorker::Run() {
       }
       //
       wait_to_sync_sstable_.clear();
+      //
+      //
+      uint32_t j = 0;
+      for (; j < memtable_N_; j++) {
+        // 如果当前的memtable 的层数 > 最大层数
+        // 则要进行 level merge
+        if (shared_memtable_ref_->getMemTaskWorkerLevel(j) > max_level_n_) {
+          auto cur_memtable_view_vec = memview_manager_->getMemNVec(j);
+          uint32_t l = 0;
+          uint32_t cur_mem_view_size =
+              cur_memtable_view_vec->memtable_vec_.size() - 1;
+          // 如果成功或者当前 memtable_view_vec 的锁
+          if (true == cur_memtable_view_vec->getCompactLock()) {
+            for (; l < cur_mem_view_size; l++) {
+              // first_view_iter 表示相对于的 第一层的 sstable 数据
+              CompData comp_data;
+              comp_data.sync_data = std::make_shared<std::vector<char>>();
+              // 表示该数据来自 level_merge
+              comp_data.isMajorCompact = true;
+              // 编号
+              comp_data.memtable_n = cur_memtable_view_vec->memtable_vec_[l]->getNumber(); 
+              auto first_view_iter = cur_memtable_view_vec->memtable_vec_[l]
+                                         ->getMemViewPtr()
+                                         ->begin();
+              // second_view_iter 表示相对于的 第二层的 sstable 数据
+              auto second_view_iter =
+                  cur_memtable_view_vec->memtable_vec_[l + 1]
+                      ->getMemViewPtr()
+                      ->begin();
+              auto first_end = cur_memtable_view_vec->memtable_vec_[l]
+                                   ->getMemViewPtr()
+                                   ->end();
+              auto second_end = cur_memtable_view_vec->memtable_vec_[l + 1]
+                                    ->getMemViewPtr()
+                                    ->end();
+              while (first_view_iter != first_end &&
+                     second_view_iter != second_end) {
+                // 如果相等直接丢弃 第二层的 iter
+                auto first_key_view = getMemTableViewKeyViewIter(first_view_iter);
+                auto second_key_view = getMemTableViewKeyViewIter(second_view_iter);
+                if (first_key_view > second_key_view) {
+                  fmt::format_to(std::back_inserter(*comp_data.sync_data), "{}", *second_view_iter);
+                  second_view_iter++;
+                } else if (first_key_view < second_key_view) {
+                  fmt::format_to(std::back_inserter(*comp_data.sync_data), "{}", *first_view_iter);
+                  first_view_iter++;
+                } else {
+                  fmt::format_to(std::back_inserter(*comp_data.sync_data), "{}", *first_view_iter);
+                  first_view_iter++;
+                  second_view_iter++;
+              }
+            }
+            // 完成 memtable 当前的两个 level 的merge
+            
+            }
+            cur_memtable_view_vec->finishCompact();
+          }
+        }
+      }
     }
   });
 }

@@ -40,17 +40,22 @@ struct DBConfig {
   // 单个 worker 都带有一个 klrucache 缓存
   // 缓存容量的大小
   uint32_t lru_cache_size = 15 * 1024 * 1024;
+  //
   // 每个 memtable 都拥有多层 level,
   // 限制 level 的最大层数.
   // 当超出了这些 level 之后,
   // 则会让 compactor 触发 major_compaction
-  uint32_t max_level_size;
+  // 默认当超过 7 层时, 开始触发 major_compaction
+  uint32_t max_level_size = 7;
 
   // 如果打开的目录已经存在, 是否尝试恢复
   // 否: 清空所有数据, 新建立一个 DB
   // 是: 尝试恢复数据, 读取原有的预写日志, 并尝试恢复
   // 尝试恢复之后, 若数据恢复失败, 则会停止启动服务器
   bool isRecover;
+
+  // 当前版本信息
+  uint32_t version_;
 };
 
 }  // namespace db

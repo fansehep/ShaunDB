@@ -12,6 +12,7 @@
 #include "src/util/file/wal_log.hpp"
 #include "src/db/memtable_view_manager.hpp"
 #include "src/db/compactor.hpp"
+#include "src/db/sstable.hpp"
 
 
 using ::fver::base::NonCopyable;

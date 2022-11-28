@@ -1,5 +1,6 @@
 #include "src/db/sstable_manager.hpp"
 
+#include "src/db/dbconfig.hpp"
 #include "src/db/sstable.hpp"
 
 namespace fver {
@@ -8,14 +9,13 @@ namespace db {
 
 const uint32_t kDefaultSSTableSize = 12;
 
-void SSTableManager::Init(const uint32_t memtable_n,
-                          const std::string& dbpath) {
-  memtable_n_ = memtable_n;
-  sstable_vec_.resize(memtable_n);
+void SSTableManager::Init(const DBConfig& db_config) {
+  memtable_n_ = db_config.memtable_N;
+  sstable_vec_.resize(memtable_n_);
   for (auto& iter : sstable_vec_) {
     iter.reserve(kDefaultSSTableSize);
   }
-  db_path_ = dbpath;
+  db_path_ = db_config.db_path;
 }
 
 auto SSTableManager::newSSTable(const uint32_t number, const uint32_t level)

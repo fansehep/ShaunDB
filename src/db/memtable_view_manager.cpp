@@ -12,7 +12,7 @@ void MemTableViewManager::Init(const uint32_t memtable_n) {
   this->memtable_n_ = memtable_n;
   mem_all_vec_.resize(memtable_n_);
   for (auto &iter : mem_all_vec_) {
-    iter = std::make_unique<MemTableViewVec>();
+    iter = std::make_shared<MemTableViewVec>();
   }
 }
 
@@ -28,7 +28,7 @@ void MemTableViewManager::PushTableView(const uint32_t number, const char *data,
   assert(mem_all_vec_.size() > number);
   mem_all_vec_[number]->mtx_.lock();
   auto cur_memtable_vec_size = mem_all_vec_[number]->memtable_vec_.size();
-  mem_all_vec_[number]->memtable_vec_.push_back(std::make_unique<MemTable_view>(
+  mem_all_vec_[number]->memtable_vec_.push_back(std::make_shared<MemTable_view>(
       data, data_size, number, cur_memtable_vec_size));
   mem_all_vec_[number]->mtx_.unlock();
 }

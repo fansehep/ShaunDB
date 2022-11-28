@@ -172,6 +172,11 @@ struct SSTableKeyValueStyle {
 
 [[nodiscard]] SSTableKeyValueStyle formatMemTableToSSTableStr(std::string&);
 
+// memtable_view_key | key_size | key_val | vlaue_size | value_val |
+[[nodiscard]] std::string_view getMemTableViewKeyView(std::string_view&);
+
+[[nodiscard]] std::string_view getMemTableViewKeyViewIter(MemBTreeView::iterator);
+
 // 对 16 个 sstable_key_value_style 进行前缀压缩.
 /*
  * @ std::pair<std::string_view, std::string_view>

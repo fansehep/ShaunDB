@@ -39,7 +39,9 @@ class MemTable_view {
 
   uint32_t getLevel();
 
-
+  auto getMemViewPtr() {
+    return &memMapView_;
+  }
 
  private:
 

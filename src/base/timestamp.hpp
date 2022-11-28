@@ -11,10 +11,8 @@
 namespace fver {
 namespace base {
 
-
 class TimeStamp {
  public:
-
   constexpr TimeStamp() = default;
   ~TimeStamp() = default;
   TimeStamp(const uint64_t time_sec, const uint64_t time_usec)
@@ -28,6 +26,14 @@ class TimeStamp {
   std::string ToFormatTodayNowMs();
   std::string ToFormatTodayNowUs();
   std::string ToFormatLogName();
+  
+
+  // return std::time_t
+  uint64_t getNowU64() {
+    return sinceepoch_;
+  }
+
+  // 返回一个现在时间戳
   static TimeStamp Now();
 
  private:

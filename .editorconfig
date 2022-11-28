@@ -9,7 +9,7 @@ indent_style = space
 [*.BUILD,*.bzl,*.bazel]
 indent_size = 4
 
-[*.h,*.cc]
+[*.hpp,*.cpp]
 indent_size = 2
 
 [*.md]

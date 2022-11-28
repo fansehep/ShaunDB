@@ -50,8 +50,7 @@ void DB::NewDBimp(const DBConfig& db_config) {
   //
   memviewtable_manager_->Init(db_config.memtable_N);
   LOG_INFO("compactor make_shared success");
-  comp_actor_->Init(db_config.memtable_N, db_config.compactor_thread_size,
-                    db_config.db_path);
+  comp_actor_->Init(db_config);
   // compworker 拥有 Compactor 共享权
   comp_actor_->SetCompWorkerCompactorRef(comp_actor_); 
   LOG_INFO("compactor init success");
