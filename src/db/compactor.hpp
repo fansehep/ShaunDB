@@ -80,7 +80,7 @@ constexpr static uint32_t kDefaultIOUringSize = 128;
  * 
  *
  *
-*/
+ */
 
 /*
  * comp_kv_meta_str:
@@ -103,7 +103,9 @@ struct CompData {
   std::shared_ptr<SSTable> sstable_ref;
   // CompData 有可能是 mino Compaction 或者 MajorCompaction.
   bool isMajorCompact = false;
-  //
+  // 如果是 两层数据之间的 merge,
+  std::pair<uint32_t, uint32_t> level_info;
+
   CompData(const std::shared_ptr<std::vector<char>>& data_ref,
            const uint32_t memtable_N, const std::shared_ptr<SSTable>& sstable)
       : sync_data(data_ref), memtable_n(memtable_N), sstable_ref(sstable) {}

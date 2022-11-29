@@ -56,6 +56,10 @@ class BloomFilter {
   // 设置随机数
   void setSeed(const uint64_t seed) { seed_ = seed; }
 
+  uint32_t getBitSetSize() {
+    return filter_.getSize();
+  }
+
  private:
   uint64_t seed_;
   std::hash<std::string_view> stdHash_;

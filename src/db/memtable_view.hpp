@@ -43,7 +43,22 @@ class MemTable_view {
     return &memMapView_;
   }
 
+  auto getCurVersion() {
+    return version_;
+  }
+
+  auto getBloomFilterPtr() {
+    return bloomFilter_.get();
+  }
+
+  auto getBloomFilterSize() {
+    return bloomFilter_->getBitSetSize();
+  }
+
  private:
+
+  // 当前映射的 version
+  uint32_t version_;
 
   // mmap 映射的指针
   const char* memViewPtr_;

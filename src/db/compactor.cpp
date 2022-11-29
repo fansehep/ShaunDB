@@ -3,13 +3,16 @@
 #include <chrono>
 #include <cstring>
 #include <iterator>
+#include <optional>
 
 #include "src/base/log/logging.hpp"
 #include "src/base/timestamp.hpp"
 #include "src/db/key_format.hpp"
 #include "src/db/memtable.hpp"
 #include "src/db/request.hpp"
+#include "src/db/shared_memtable.hpp"
 #include "src/db/sstable_manager.hpp"
+#include "src/util/bloomfilter.hpp"
 #include "src/util/iouring.hpp"
 
 namespace fver {
@@ -138,6 +141,14 @@ void CompWorker::Run() {
           auto iter =
               sync_data_map_.find(static_cast<const char*>(conn.getData()));
           if (iter != sync_data_map_.end()) {
+            
+            // 对 level merge 的数据进行特殊处理.
+            if (iter->second.isMajorCompact == true) {
+              //
+              auto ue = iter->second.sstable_ref->InitMmap();
+            
+            }
+
             /*
               io_uring 将数据刷入了磁盘
               构造 MemTable_view push 到 MemTableWorker 中.
@@ -342,6 +353,7 @@ void CompWorker::Run() {
           uint32_t cur_mem_view_size =
               cur_memtable_view_vec->memtable_vec_.size() - 1;
           // 如果成功或者当前 memtable_view_vec 的锁
+
           if (true == cur_memtable_view_vec->getCompactLock()) {
             for (; l < cur_mem_view_size; l++) {
               // first_view_iter 表示相对于的 第一层的 sstable 数据
@@ -349,8 +361,13 @@ void CompWorker::Run() {
               comp_data.sync_data = std::make_shared<std::vector<char>>();
               // 表示该数据来自 level_merge
               comp_data.isMajorCompact = true;
+              comp_data.level_info.first = l;
+              comp_data.level_info.second = l + 1;
               // 编号
-              comp_data.memtable_n = cur_memtable_view_vec->memtable_vec_[l]->getNumber(); 
+              comp_data.memtable_n =
+                  cur_memtable_view_vec->memtable_vec_[l]->getNumber();
+              // level merge 元数据.
+              auto new_bloom_filter = std::make_shared<util::BloomFilter<>>();
               auto first_view_iter = cur_memtable_view_vec->memtable_vec_[l]
                                          ->getMemViewPtr()
                                          ->begin();
@@ -365,29 +382,103 @@ void CompWorker::Run() {
               auto second_end = cur_memtable_view_vec->memtable_vec_[l + 1]
                                     ->getMemViewPtr()
                                     ->end();
+              // 合并之后的所有的 key 的数量
+              uint32_t memtable_key_size = 0;
+
               while (first_view_iter != first_end &&
                      second_view_iter != second_end) {
                 // 如果相等直接丢弃 第二层的 iter
-                auto first_key_view = getMemTableViewKeyViewIter(first_view_iter);
-                auto second_key_view = getMemTableViewKeyViewIter(second_view_iter);
+                auto first_key_view =
+                    getMemTableViewKeyViewIter(first_view_iter);
+                auto second_key_view =
+                    getMemTableViewKeyViewIter(second_view_iter);
                 if (first_key_view > second_key_view) {
-                  fmt::format_to(std::back_inserter(*comp_data.sync_data), "{}", *second_view_iter);
+                  fmt::format_to(std::back_inserter(*comp_data.sync_data), "{}",
+                                 *second_view_iter);
                   second_view_iter++;
+                  new_bloom_filter->Insert(*second_view_iter);
                 } else if (first_key_view < second_key_view) {
-                  fmt::format_to(std::back_inserter(*comp_data.sync_data), "{}", *first_view_iter);
+                  fmt::format_to(std::back_inserter(*comp_data.sync_data), "{}",
+                                 *first_view_iter);
                   first_view_iter++;
+                  new_bloom_filter->Insert(*first_view_iter);
+                  // 两个 key 相等, 取上一层的为结果
                 } else {
-                  fmt::format_to(std::back_inserter(*comp_data.sync_data), "{}", *first_view_iter);
+                  fmt::format_to(std::back_inserter(*comp_data.sync_data), "{}",
+                                 *first_view_iter);
+                  new_bloom_filter->Insert(*first_view_iter);
                   first_view_iter++;
                   second_view_iter++;
+                }
+                memtable_key_size++;
               }
-            }
-            // 完成 memtable 当前的两个 level 的merge
-            
+              // 合并两个 level, 对于 bloom_filter 则也要进行合并
+              // 当合并了
+              // 完成 memtable 当前的两个 level 的merge
+              // level 以第一个为主
+              //
+              auto cu_memtable_number =
+                  shared_memtable_ref_->getMemTaskWorkerNumber(j);
+              auto cu_sstable =
+                  sstable_manager_->newCompactionSSTable(cu_memtable_number, l);
+              assert(nullptr != cu_sstable.get());
+              //
+              auto cu_sstable_compact_name = fmt::format(
+                  "memtable_merge_{}_merge_{}_{}.sst",
+                  shared_memtable_ref_->getMemTaskWorkerNumber(j), l, l + 1);
+              auto ue = cu_sstable->Init(path, cu_sstable_compact_name, l,
+                                         cu_memtable_number);
+              assert(ue == true);
+              assert(memtable_key_size > 0);
+              auto memtable_key_size_var_size = varintLength(memtable_key_size);
+              auto cur_version = CompWorker::cur_version_;
+              auto cur_version_var_size = varintLength(cur_version);
+              auto time_now_date = TimeStamp::Now().getNowU64();
+              auto cur_level_var_size = varintLength(l);
+              auto time_now_date_var_size = varintLength(time_now_date);
+              auto cur_memtable_number_var_size =
+                  varintLength(cu_memtable_number);
+              auto bloom_filter_size = new_bloom_filter->getBitSetSize();
+              auto bloom_filter_var_size = varintLength(bloom_filter_size);
+              auto bloom_filter_seed = new_bloom_filter->getFilterSeed();
+              auto bloom_filter_seed_var_size = varintLength(bloom_filter_seed);
+              // 版本信息 uint32_t
+              // 创建时间 uint64_t
+              // 当前 Merge_SSTable 所对应的 level, uint32_t
+              // 当前 Merge_SSTable 所对应的 memtable 号码 uint32_t
+              // merge 之后的所有的 key 的容量 uint32_t
+              // bloomfilter 的大小
+              // bloomfilter 的随机值
+              // bloomfilter 的 binary_size...
+              fmt::format_to(
+                  std::back_inserter(*comp_kv_data_str_),
+                  "{}{}{}{}{}{}{}{}",
+                  format32_vec[cur_version_var_size],
+                  format64_vec[time_now_date_var_size],
+                  format32_vec[cur_level_var_size],
+                  format32_vec[cur_memtable_number_var_size],
+                  format32_vec[memtable_key_size_var_size],
+                  format32_vec[bloom_filter_var_size],
+                  format64_vec[bloom_filter_seed_var_size],
+                  std::string_view(
+                      new_bloom_filter->getFilterData()->getData(),
+                      new_bloom_filter->getFilterData()->getSize()));
+              // TODO: 这里为了由于要统计上 key 的信息, 事实上, 我们不知道两层 level合并之后
+              // 的keyval 整体信息. 所以 ...., 这里只能将元数据放在后面了.
+              util::iouring::WriteRequest write_request(
+                  cu_sstable->getFd(), (comp_data.sync_data->data()),
+                  comp_data.sync_data->size());
+              assert(compactor_ref_.get() != nullptr);
+              sync_data_map_[comp_data.sync_data->data()] = comp_data;
+              iouring_.PrepWrite(&write_request);
+              iouring_.Submit();
             }
             cur_memtable_view_vec->finishCompact();
+            l++;
           }
         }
+
+        //
       }
     }
   });

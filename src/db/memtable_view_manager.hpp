@@ -56,6 +56,7 @@ class MemTableViewManager {
     return mem_all_vec_[n];
   }
 
+
  private:
   // 内存表的数量
   uint32_t memtable_n_;

@@ -46,7 +46,7 @@ struct DBConfig {
   // 当超出了这些 level 之后,
   // 则会让 compactor 触发 major_compaction
   // 默认当超过 7 层时, 开始触发 major_compaction
-  uint32_t max_level_size = 7;
+  uint32_t max_level_size = 8;
 
   // 如果打开的目录已经存在, 是否尝试恢复
   // 否: 清空所有数据, 新建立一个 DB

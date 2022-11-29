@@ -8,7 +8,6 @@ namespace db {
 
 class SSTable {
  public:
-
   SSTable();
   ~SSTable();
   /*
@@ -24,6 +23,10 @@ class SSTable {
   */
   bool Init(const std::string& path, const std::string& name,
             const uint32_t level, const uint32_t number);
+
+  //
+  bool InitCompactFile(const std::string& path, const std::string& name,
+                       const uint32_t number);
 
   /*
     close the sstable.
@@ -48,22 +51,15 @@ class SSTable {
   // 启动当前文件 mmap 映射
   bool InitMmap();
 
-
   void CloseMmap();
 
   char* getMmapPtr();
 
-  const std::string& getfileName() {
-    return fullfilename_;
-  }
+  const std::string& getfileName() { return fullfilename_; }
 
-  const std::string& getPath() {
-    return filePath_;
-  }
-
+  const std::string& getPath() { return filePath_; }
 
  private:
-  
   // 是否初始化 mmap
   bool isMmap_;
   // mmap 所使用的指针
@@ -77,7 +73,7 @@ class SSTable {
   uint32_t sstable_number_;
   uint32_t sstable_level_;
   std::string fullfilename_;
-  //TODO, use std::string_view instead of std::string in Init.
+  // TODO, use std::string_view instead of std::string in Init.
   std::string fileName_;
   std::string filePath_;
 };

@@ -47,6 +47,7 @@ bool MemTable_view::Init(std::string_view mmap_view) {
   uint32_t version;
   auto end_ptr = getVarint32Ptr(mmap_view.data(), (mmap_view.data() + 5), &version);
   // TODO: check it
+  version_ = version;
   uint64_t create_time;
   end_ptr = getVarint64Ptr(end_ptr, end_ptr + 9, &create_time);
   uint32_t cur_lev;

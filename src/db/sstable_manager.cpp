@@ -24,6 +24,13 @@ auto SSTableManager::newSSTable(const uint32_t number, const uint32_t level)
   return sstable_vec_[number][level];
 }
 
+auto SSTableManager::newCompactionSSTable(const uint32_t number,
+                                          const uint32_t level)
+    -> std::shared_ptr<SSTable> {
+  comp_sstable_vec_[number].push_back(std::make_shared<SSTable>());
+  return sstable_vec_[number][level];
+}
+
 auto SSTableManager::getSSTable(const uint32_t number, const uint32_t level) {
   return sstable_vec_[number][level];
 }

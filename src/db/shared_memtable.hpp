@@ -159,6 +159,10 @@ class SharedMemtable : public NonCopyable {
     return taskworkers_[n]->memtable_->getCompactionN();
   }
 
+  auto getMemTaskWorkerNumber(const uint32_t n) {
+    return taskworkers_[n]->memtable_->getMemNumber();
+  }
+
   /*
    * @n : 对应的 memtable 号码
    *

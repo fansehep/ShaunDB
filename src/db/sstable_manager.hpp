@@ -4,8 +4,8 @@
 #include <memory>
 #include <vector>
 
-#include "src/db/sstable.hpp"
 #include "src/db/dbconfig.hpp"
+#include "src/db/sstable.hpp"
 
 namespace fver {
 
@@ -17,6 +17,10 @@ class SSTableManager {
 
   // 新创建一个 sstable.
   auto newSSTable(const uint32_t number, const uint32_t level)
+      -> std::shared_ptr<SSTable>;
+
+  // 新创建一个 level_1 到 level_2 之间的用于合并的 memtable
+  auto newCompactionSSTable(const uint32_t number, const uint32_t level)
       -> std::shared_ptr<SSTable>;
 
   //
@@ -38,6 +42,9 @@ class SSTableManager {
   uint32_t max_sstable_level_;
   //
   std::vector<std::vector<std::shared_ptr<SSTable>>> sstable_vec_;
+  // 为 mino Compaction 准备的 vec
+  // 暂时存放
+  std::vector<std::vector<std::shared_ptr<SSTable>>> comp_sstable_vec_;
 };
 
 }  // namespace db
