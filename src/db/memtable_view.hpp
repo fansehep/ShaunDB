@@ -9,16 +9,37 @@ namespace fver {
 
 namespace db {
 
+class SSTable;
+
+struct CompactInfo {
+  // 第一层 merge 的层 number
+  uint32_t firstLevel;
+  // 第二层 merge 的层 number
+  uint32_t secondLevel;
+  // 当 Compactor 完成 mino Compaction 之后
+  // MemTaskWorker 需要将 合并之后的结果
+  // 替换掉原有的2个 memtable_view
+  bool IsInstead;
+};
+
 // readonly
 class MemTable_view {
  public:
   //
   MemTable_view() : isReadable_(false) {}
-  ~MemTable_view() = default;
+  ~MemTable_view();
   //
 
   MemTable_view(const char* data, const uint32_t data_size, const uint32_t n,
-                const uint32_t lev);
+                const uint32_t lev, const std::shared_ptr<SSTable>& sstable);
+
+  //
+  MemTable_view(const char* data,
+                const uint32_t data_size,
+                const uint32_t number,
+                const uint32_t level_1,
+                const uint32_t level_2,
+                const std::shared_ptr<SSTable>& sstable);
 
   bool Init(std::string_view mmap_view);
 
@@ -56,6 +77,10 @@ class MemTable_view {
   }
 
  private:
+
+  std::shared_ptr<SSTable> sstable_ref_;
+  // compaction 的信息.
+  CompactInfo info_;
 
   // 当前映射的 version
   uint32_t version_;

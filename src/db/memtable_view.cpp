@@ -35,19 +35,90 @@ uint32_t MemTable_view::getBloomFilterSize() {
 
 #endif
 
+MemTable_view::MemTable_view(const char* data,
+                             const uint32_t data_size,
+                             const uint32_t number,
+                             const uint32_t level_1,
+                             const uint32_t level_2,
+                             const std::shared_ptr<SSTable>& sstable)
+    : number_n_(number) {
+  sstable_ref_ = sstable;
+  // 该数据还没有被 MemTaskWorker 替换
+  this->info_.firstLevel = level_1;
+  this->info_.secondLevel = level_2;
+  this->info_.IsInstead = false;
+  // level_merged_memtable 的数据比较特殊.
+  memViewPtr_ = data;
+  memViewSize_ = data_size;
+  // version
+  auto end_ptr = getVarint32Ptr(data, data + 5, &version_);
+  uint64_t createTime;
+  // create time
+  end_ptr = getVarint64Ptr(end_ptr, end_ptr + 9, &createTime);
+  uint32_t cur_lev_1;
+  // current version
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &cur_lev_1);
+  //
+  uint32_t cur_lev_2;
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &cur_lev_2);
+  // 验证
+  assert(cur_lev_2 == level_1);
+  //
+  uint32_t memtable_number;
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &memtable_number);
+  assert(memtable_number == number_n_);
+  //
+  uint32_t all_key_size;
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &all_key_size);
+  uint32_t bloom_filter_size;
+  end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &bloom_filter_size);
+  uint64_t bloom_filter_seed;
+  //
+  bloomFilter_ = std::make_unique<util::BloomFilter<>>(end_ptr,
+    bloom_filter_size * 8, bloom_filter_seed);
+  //
+  end_ptr += bloom_filter_size;
+  // 作为视图压入到 MemTable_view 中.
+  uint32_t key_size;
+  uint32_t value_size;
+  auto memViewEndPtr = memViewPtr_ + memViewSize_;
+  while (end_ptr < memViewEndPtr) {
+    auto begin_ptr = end_ptr;
+    end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &key_size);
+    auto end_2_ptr = end_ptr;
+    assert(end_ptr);
+    end_ptr += key_size;
+    end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &value_size);
+    // 表示没有 value
+    if (end_ptr == nullptr) {
+      std::string_view kv_str_view(end_2_ptr, key_size);
+      memMapView_.insert(kv_str_view);
+      end_ptr = end_2_ptr;
+      continue;
+    }
+    end_ptr += value_size;
+    std::string_view kv_str_view(begin_ptr, end_ptr);
+    memMapView_.insert(kv_str_view);
+  }
+  assert(all_key_size == memMapView_.size());
+  LOG_INFO("memtable_view: {} lev: {} construct ok size: {}", getNumber(),
+    getLevel(), memMapView_.size());
+}
+
 MemTable_view::MemTable_view(const char* data, const uint32_t data_size,
-                             const uint32_t n, const uint32_t lev)
+                             const uint32_t n, const uint32_t lev,
+                             const std::shared_ptr<SSTable>& sstable)
     : cur_level_(lev), number_n_(n) {
+  sstable_ref_ = sstable;
   this->Init(std::string_view(data, data_size));
 }
 
 bool MemTable_view::Init(std::string_view mmap_view) {
   memViewPtr_ = mmap_view.data();
   memViewSize_ = mmap_view.size();
-  uint32_t version;
-  auto end_ptr = getVarint32Ptr(mmap_view.data(), (mmap_view.data() + 5), &version);
+  auto end_ptr =
+      getVarint32Ptr(mmap_view.data(), (mmap_view.data() + 5), &version_);
   // TODO: check it
-  version_ = version;
   uint64_t create_time;
   end_ptr = getVarint64Ptr(end_ptr, end_ptr + 9, &create_time);
   uint32_t cur_lev;
@@ -59,8 +130,7 @@ bool MemTable_view::Init(std::string_view mmap_view) {
   assert(cur_lev == cur_level_);
   assert(cur_number == cur_number);
   uint64_t bloomfilter_seed;
-  end_ptr =
-      getVarint64Ptr(end_ptr, mmap_view.data() + 5, &bloomfilter_seed);
+  end_ptr = getVarint64Ptr(end_ptr, mmap_view.data() + 5, &bloomfilter_seed);
   uint32_t bloomfilter_size;
   end_ptr = getVarint32Ptr(end_ptr, end_ptr + 4, &bloomfilter_size);
   bloomFilter_ = std::make_unique<util::BloomFilter<>>(
@@ -69,7 +139,8 @@ bool MemTable_view::Init(std::string_view mmap_view) {
   // 作为视图压入到 MemTable_view 中
   uint32_t key_size;
   uint32_t value_size;
-  while (end_ptr < (mmap_view.data() + mmap_view.size())) {
+  auto mmapViewEndPtr = (mmap_view.data() + mmap_view.size());
+  while (end_ptr < mmapViewEndPtr) {
     auto begin_ptr = end_ptr;
     end_ptr = getVarint32Ptr(end_ptr, end_ptr + 5, &key_size);
     auto end_2_ptr = end_ptr;
@@ -81,6 +152,7 @@ bool MemTable_view::Init(std::string_view mmap_view) {
     if (end_ptr == nullptr) {
       std::string_view kv_str_view(end_2_ptr, key_size);
       memMapView_.insert(kv_str_view);
+      end_ptr = end_2_ptr;
       continue;
     }
     end_ptr += value_size;
@@ -107,8 +179,10 @@ uint32_t MemTable_view::getLevel() { return cur_level_; }
 void MemTable_view::Get(const std::shared_ptr<GetContext>& get_context) {
   if (false == bloomFilter_->IsMatch(get_context->key)) {
     get_context->code.setCode(StatusCode::kNotFound);
-    LOG_INFO("memtable_view: {} lev: {} bloomFilter can not find: {} cur_memtable_size: {}",
-             getNumber(), getLevel(), get_context->key, memMapView_.size());
+    LOG_INFO(
+        "memtable_view: {} lev: {} bloomFilter can not find: {} "
+        "cur_memtable_size: {}",
+        getNumber(), getLevel(), get_context->key, memMapView_.size());
     return;
   }
   auto pre_key_var_size = varintLength(get_context->key.size());
@@ -141,6 +215,10 @@ void MemTable_view::Get(const std::shared_ptr<GetContext>& get_context) {
   get_context->code.setCode(StatusCode::kOk);
   LOG_INFO("memtable_view: {} lev: {} get key: {} vlaue: {} ok", getNumber(),
            getLevel(), get_context->key, get_context->value);
+}
+
+MemTable_view::~MemTable_view() {
+  
 }
 
 }  // namespace db

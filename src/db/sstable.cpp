@@ -25,6 +25,9 @@ SSTable::~SSTable() {
   if (isOpen_ == true) {
     ::close(fd_);
   }
+  if (true == isMmap_) {
+    CloseMmap();
+  }
 }
 
 int SSTable::getFd() { return fd_; }
@@ -79,15 +82,14 @@ bool SSTable::InitMmap() {
     LOG_ERROR("mmap file: {} error: {}", fullfilename_, ::strerror(errno));
     return false;
   }
+  ::close(fd_);
+  isOpen_ = false;
   isMmap_ = true;
   return true;
 }
 
 void SSTable::CloseMmap() {
-  if (isMmap_ == true) {
-    ::munmap(static_cast<void*>(mmapBasePtr_), fileLength_);
-    isMmap_ = false;
-  }
+  ::munmap(static_cast<void*>(mmapBasePtr_), fileLength_);
 }
 
 char* SSTable::getMmapPtr() { return mmapBasePtr_; }

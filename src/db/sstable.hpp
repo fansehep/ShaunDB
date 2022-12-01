@@ -24,10 +24,6 @@ class SSTable {
   bool Init(const std::string& path, const std::string& name,
             const uint32_t level, const uint32_t number);
 
-  //
-  bool InitCompactFile(const std::string& path, const std::string& name,
-                       const uint32_t number);
-
   /*
     close the sstable.
   */

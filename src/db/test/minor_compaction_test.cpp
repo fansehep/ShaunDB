@@ -53,6 +53,7 @@ TEST_F(MinorCompactionTest, simple_compaction_test) {
   config.memtable_trigger_size = 1024 * 1024 / 12;
   config.compactor_thread_size = 1;
   config.isRecover = false;
+  config.max_level_size = 8;
   DB db;
   std::unordered_map<std::string, std::string> test_map;
   std::mutex test_mtx_;

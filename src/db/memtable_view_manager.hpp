@@ -22,10 +22,10 @@ struct MemTableViewVec {
     return isCompaction_.compare_exchange_strong(expectedVal, true);
   }
   // 完成 Compaction 后标记当前level已经完成
-  void finishCompact() {
-    isCompaction_ = true;
-  }
+  void finishCompact() { isCompaction_ = true; }
 };
+
+class SSTable;
 
 class MemTableViewManager {
  public:
@@ -34,15 +34,32 @@ class MemTableViewManager {
 
   void Init(const uint32_t memtable_n);
 
-  /*
-   @number: 需要 push 的序列号
-   @data: mmap 文件起始地址
-   @data_size:
-  */
+  /**
+   * @number: 需要 push 的序列号
+   * @data: mmap 文件起始地址
+   * @data_size:
+   * 当 compactor 完成 read_only_memtable => memtable 之后
+   * 将视图放入这里.
+   */
   void PushTableView(const uint32_t number, const char* data,
-                     const uint32_t data_size);
+                     const uint32_t data_size,
+                     const std::shared_ptr<SSTable>& sstable);
 
-  /*
+  /**
+   * @number: memtable的编号
+   * @data: 
+   * @data_size
+   * 当 compactor 完成任意两层之间的 level 之间的合并时,
+   * 都需要将合并之后的数据 Push进来.
+   */
+  void PushTableMergeView(const uint32_t number,
+                          const char* data,
+                          const uint32_t data_size,
+                          const uint32_t level_1,
+                          const uint32_t level_2,
+                          const std::shared_ptr<SSTable>& sstable);
+
+  /**
    * @number: 内存表的序列号
    * @get_context: 获取请求
    */
@@ -55,7 +72,6 @@ class MemTableViewManager {
   std::shared_ptr<MemTableViewVec> getMemNVec(const uint32_t n) {
     return mem_all_vec_[n];
   }
-
 
  private:
   // 内存表的数量

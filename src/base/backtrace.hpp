@@ -1,8 +1,10 @@
 #ifndef SRC_BASE_BACKTRACE_H_
 #define SRC_BASE_BACKTRACE_H_
 
+extern "C" {
 #include <cxxabi.h>
 #include <execinfo.h>
+}
 
 #include <string>
 

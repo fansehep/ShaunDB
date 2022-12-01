@@ -164,7 +164,8 @@ void TaskWorker::Run() {
                  readonly_memtable_vec_.size(), preRemove_N_, remove_N_);
         preRemove_N_ = remove_N_;
       }
-
+      // 替换 Compactor Merge 之后的数据.
+      
       handle_vec_.clear();
       // 当当前的写入超过 预期时, 将当前正在写入的表换下
       // 等待 compactor 刷入成为 sstable

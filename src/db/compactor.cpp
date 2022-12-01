@@ -141,14 +141,29 @@ void CompWorker::Run() {
           auto iter =
               sync_data_map_.find(static_cast<const char*>(conn.getData()));
           if (iter != sync_data_map_.end()) {
-            
             // 对 level merge 的数据进行特殊处理.
             if (iter->second.isMajorCompact == true) {
               //
               auto ue = iter->second.sstable_ref->InitMmap();
-            
+              //
+              if (false == ue) {
+                LOG_ERROR(
+                    "level merge sstable memtable number: {} name: {} mmap "
+                    "error",
+                    iter->second.memtable_n,
+                    iter->second.sstable_ref->getfileName());
+                assert(false);
+              }
+              this->memview_manager_->PushTableMergeView(
+                  iter->second.sstable_ref->getNumber(),
+                  iter->second.sstable_ref->getMmapPtr(),
+                  iter->second.sstable_ref->getFileSize(),
+                  iter->second.level_info.first,
+                  iter->second.level_info.second,
+                  iter->second.sstable_ref);
+              sync_data_map_.erase(iter);
+              iouring_.DeleteEvent(&conn);
             }
-
             /*
               io_uring 将数据刷入了磁盘
               构造 MemTable_view push 到 MemTableWorker 中.
@@ -163,7 +178,8 @@ void CompWorker::Run() {
             this->memview_manager_->PushTableView(
                 iter->second.sstable_ref->getNumber(),
                 iter->second.sstable_ref->getMmapPtr(),
-                iter->second.sstable_ref->getFileSize());
+                iter->second.sstable_ref->getFileSize(),
+                iter->second.sstable_ref);
             LOG_TRACE("mem_view_table: {} name: {} mmap finish",
                       iter->second.sstable_ref->getNumber(),
                       iter->second.sstable_ref->getfileName());
@@ -250,7 +266,6 @@ void CompWorker::Run() {
         end_ptr = encodeVarint32(end_ptr, all_key_size_var_size);
         // bloom_filter 的随机数种子
         end_ptr = encodeVarint64(end_ptr, iter->getBloomSeed());
-
         // 给 bloom_filter_varint_size 赋值
         encodeVarint32(end_ptr, mem_bloom_filter_data_ref->getSize());
         // copy bloom_filter_varint_元数据.
@@ -355,6 +370,7 @@ void CompWorker::Run() {
           // 如果成功或者当前 memtable_view_vec 的锁
 
           if (true == cur_memtable_view_vec->getCompactLock()) {
+            LOG_INFO("start to compact merge");
             for (; l < cur_mem_view_size; l++) {
               // first_view_iter 表示相对于的 第一层的 sstable 数据
               CompData comp_data;
@@ -417,6 +433,7 @@ void CompWorker::Run() {
               // 完成 memtable 当前的两个 level 的merge
               // level 以第一个为主
               //
+              LOG_INFO("here?");
               auto cu_memtable_number =
                   shared_memtable_ref_->getMemTaskWorkerNumber(j);
               auto cu_sstable =
@@ -434,7 +451,8 @@ void CompWorker::Run() {
               auto cur_version = CompWorker::cur_version_;
               auto cur_version_var_size = varintLength(cur_version);
               auto time_now_date = TimeStamp::Now().getNowU64();
-              auto cur_level_var_size = varintLength(l);
+              auto cur_level_first_var_size = varintLength(l);
+              auto cur_level_second_var_size = varintLength(l + 1);
               auto time_now_date_var_size = varintLength(time_now_date);
               auto cur_memtable_number_var_size =
                   varintLength(cu_memtable_number);
@@ -442,35 +460,54 @@ void CompWorker::Run() {
               auto bloom_filter_var_size = varintLength(bloom_filter_size);
               auto bloom_filter_seed = new_bloom_filter->getFilterSeed();
               auto bloom_filter_seed_var_size = varintLength(bloom_filter_seed);
-              // 版本信息 uint32_t
-              // 创建时间 uint64_t
-              // 当前 Merge_SSTable 所对应的 level, uint32_t
-              // 当前 Merge_SSTable 所对应的 memtable 号码 uint32_t
-              // merge 之后的所有的 key 的容量 uint32_t
-              // bloomfilter 的大小
-              // bloomfilter 的随机值
-              // bloomfilter 的 binary_size...
-              fmt::format_to(
-                  std::back_inserter(*comp_kv_data_str_),
-                  "{}{}{}{}{}{}{}{}",
-                  format32_vec[cur_version_var_size],
-                  format64_vec[time_now_date_var_size],
-                  format32_vec[cur_level_var_size],
-                  format32_vec[cur_memtable_number_var_size],
-                  format32_vec[memtable_key_size_var_size],
-                  format32_vec[bloom_filter_var_size],
-                  format64_vec[bloom_filter_seed_var_size],
-                  std::string_view(
-                      new_bloom_filter->getFilterData()->getData(),
-                      new_bloom_filter->getFilterData()->getSize()));
-              // TODO: 这里为了由于要统计上 key 的信息, 事实上, 我们不知道两层 level合并之后
-              // 的keyval 整体信息. 所以 ...., 这里只能将元数据放在后面了.
-              util::iouring::WriteRequest write_request(
-                  cu_sstable->getFd(), (comp_data.sync_data->data()),
-                  comp_data.sync_data->size());
+              auto meta_data_ptr = comp_data.sync_data->data();
+              fmt::format_to(std::back_inserter(*comp_data.sync_data),
+                             "{}{}{}{}{}{}{}{}",
+                             format32_vec[cur_version_var_size],
+                             format64_vec[time_now_date_var_size],
+                             format32_vec[cur_level_first_var_size],
+                             format32_vec[cur_level_second_var_size],
+                             format32_vec[cur_memtable_number_var_size],
+                             format32_vec[memtable_key_size_var_size],
+                             format32_vec[bloom_filter_var_size],
+                             format64_vec[bloom_filter_seed_var_size],
+                             std::string_view(
+                                 new_bloom_filter->getFilterData()->getData(),
+                                 new_bloom_filter->getFilterData()->getSize()));
+              // 版本信息
+              auto end_ptr = encodeVarint32(meta_data_ptr, cur_version);
+              // 创建时间
+              end_ptr = encodeVarint64(end_ptr, time_now_date);
+              // 第一层被合并的 lev
+              end_ptr = encodeVarint32(end_ptr, l);
+              // 第二层被合并的 lev
+              end_ptr = encodeVarint32(end_ptr, l + 1);
+              // 内存表 number
+              end_ptr = encodeVarint32(end_ptr, cu_memtable_number);
+              // 合并之后的所有的 key size
+              end_ptr = encodeVarint32(end_ptr, memtable_key_size);
+              // 元数据的长度
+              // 这里我们无法先知道两层 level 合并之后的 key 的数量
+              // 但由于我们默认的还是要先写元数据
+              auto meta_data_size =
+                  ((comp_data.sync_data->data() + comp_data.sync_data->size()) -
+                   meta_data_ptr);
+              // TODO: 这里为了由于要统计上 key 的信息, 事实上, 我们不知道两层
+              // level合并之后 的keyval 整体信息. 所以 ....,
+              // 这里只能将元数据放在后面了.
+              util::iouring::WriteRequest write_request_meta_data(
+                  cu_sstable->getFd(), meta_data_ptr,
+                  meta_data_size);
+              util::iouring::WriteRequest write_request_kv_data(
+                cu_sstable->getFd(), comp_data.sync_data->data(),
+                (meta_data_ptr - comp_data.sync_data->data())
+              );
               assert(compactor_ref_.get() != nullptr);
-              sync_data_map_[comp_data.sync_data->data()] = comp_data;
-              iouring_.PrepWrite(&write_request);
+              sync_data_map_[meta_data_ptr] = comp_data;
+              // 先写入元数据
+              iouring_.PrepWriteLink(&write_request_meta_data);
+              // 再写入kv
+              iouring_.PrepWrite(&write_request_kv_data);
               iouring_.Submit();
             }
             cur_memtable_view_vec->finishCompact();
