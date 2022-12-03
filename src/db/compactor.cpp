@@ -327,7 +327,7 @@ void CompWorker::Run() {
         //
         assert(cu_sstable.get() != nullptr);
         auto cu_sstable_name =
-            fmt::format("memtable_{}_level{}.sst", current_memtable_number,
+            fmt::format("memtable_{}_level_{}.sst", current_memtable_number,
                         current_memtable_level);
         // 初始化当前 sstable
         auto re =
@@ -400,7 +400,7 @@ void CompWorker::Run() {
                                     ->end();
               // 合并之后的所有的 key 的数量
               uint32_t memtable_key_size = 0;
-
+              LOG_INFO("here?");
               while (first_view_iter != first_end &&
                      second_view_iter != second_end) {
                 // 如果相等直接丢弃 第二层的 iter
@@ -493,8 +493,8 @@ void CompWorker::Run() {
                   ((comp_data.sync_data->data() + comp_data.sync_data->size()) -
                    meta_data_ptr);
               // TODO: 这里为了由于要统计上 key 的信息, 事实上, 我们不知道两层
-              // level合并之后 的keyval 整体信息. 所以 ....,
-              // 这里只能将元数据放在后面了.
+              // level合并之后 的keyval 整体信息. 所以 ....
+              // 这里只能将元数据放在后面了
               util::iouring::WriteRequest write_request_meta_data(
                   cu_sstable->getFd(), meta_data_ptr,
                   meta_data_size);

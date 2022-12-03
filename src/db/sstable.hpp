@@ -16,7 +16,7 @@ class SSTable {
   */
   auto getFd() -> int;
 
-  /*
+  /**
     @return : return init success
     @path: the new sstable_path
     @name: the new sstable_name

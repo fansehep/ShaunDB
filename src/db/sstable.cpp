@@ -49,7 +49,12 @@ bool SSTable::Init(const std::string& path, const std::string& filename,
   return true;
 }
 
-void SSTable::Close() { ::close(fd_); }
+void SSTable::Close() {
+  if (true == isOpen_) {
+    ::close(fd_);
+    isOpen_ = false;
+   }
+}
 
 auto SSTable::getLevel() { return sstable_level_; }
 
@@ -82,8 +87,6 @@ bool SSTable::InitMmap() {
     LOG_ERROR("mmap file: {} error: {}", fullfilename_, ::strerror(errno));
     return false;
   }
-  ::close(fd_);
-  isOpen_ = false;
   isMmap_ = true;
   return true;
 }
