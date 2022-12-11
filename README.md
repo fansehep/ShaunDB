@@ -1,6 +1,6 @@
-<div align=left> <img src="doc/image/shaundb_icon.jpg" width = 45%>
+<div align=left> <img src="doc/image/shaundb_icon.jpg" width = 25%>
 
-# ShaunDB
+# **ShaunDB**
 
 ShaunDB 是一款简单支持 Redis协议的KV数据库, 该项目旨在满足我对于一些 lsm tree 论文的复现及优化. 及结合我此前学过的一些知识, 简单构建一个kv系统.
 
