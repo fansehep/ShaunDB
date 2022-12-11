@@ -11,3 +11,4 @@ logbenchmark2022*
 *.sst
 /test/*.sst
 .vscode
+/doc/*.drawio

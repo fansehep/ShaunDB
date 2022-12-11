@@ -4,9 +4,9 @@ package(default_visibility=["//visibility:public"])
 
 
 cc_test(
-    name="flog_vs_glog_benchmark",
+    name="shaundblog_vs_glog_benchmark",
     srcs=glob([
-        "fverlog_glog_benchmark.cpp",
+        "shaundblog_glog_benchmark.cpp",
     ]),
     deps=[
         "//src/base:base_lib",
@@ -23,9 +23,9 @@ cc_test(
 
 
 cc_test(
-    name="fver_vs_spdlog_benchmark",
+    name="shaundblog_vs_spdlog_benchmark",
     srcs=glob([
-        "fverlog_spdlog_benchmark.cpp",
+        "shaundblog_spdlog_benchmark.cpp",
     ]),
     deps=[
         "//src/base:base_lib",

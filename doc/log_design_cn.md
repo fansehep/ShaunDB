@@ -15,7 +15,7 @@
       ```bash
       I20221125 18:22:37.371757 94279 log_out_test.cpp:5] the db size: 12 command: set 123 456.
       ```
-      以上就是ShaunDB 的一句简单日志打印, log 模块使用了 ```libfmt``` 来做格式化, libfmt 具有一定的编译器检查错误功能. 而且性能还比较客观. 如果要针对于输出做一些格式化, 那么只需要去阅读 libfmt 文档即可. 况且不久之后, libfmt 可能就将成为标准, 到时便可以直接使用 ```std::fmt```.
+      以上就是ShaunDB 的一句简单日志打印, log 模块使用了 ```libfmt``` 来做格式化, libfmt 具有一定的编译器检查错误功能. 而且性能还比较可观. 如果要针对于输出做一些格式化, 那么只需要去阅读 libfmt 文档即可. 况且不久之后, libfmt 可能就将成为标准, 到时便可以直接使用 ```std::fmt```.
       
       ---
       默认的, 当不对 ShaunDB::log 进行初始化时, 日志将带有彩色的输出到标准输出上.
@@ -41,7 +41,20 @@
     使用```thread_local``` 关键字让每一个线程都拥有一个```logger```, ```logger``` 负责日志的格式化及保存, 每个```logger``` 都拥有两块```logbuffer```, 进行交替写入, ```logger``` 在构造的时候会使用```std::shared_ptr``` 来让```logthread```获取自己, 当单个logger 到达阈值(默认是60%), 会通知logthread, 让logthread 来负责单个logbuffer的刷盘.
     未初始化情况下, 将日志打印到标准输出之上, 此时大概率是处于调试模式, 为了更友好的调试, ShaundDB::log 提供了彩色输出, 来帮助开发者更友好的观看日志.
 
+
 5. log 类图
 
+    ![](./image/log_class.png).
 
-6. benchmark         
+    采用 Per Thread one Logger 的设计, LogThread 会有阈值的且定期的遍历所有的 Logger 来进行日志落盘.
+6. benchmark
+
+    性能测试代码详见 ```/benchmark/logbenchmark/shaundblog_glog_benchmark```,
+    
+    测试环境:
+        ![](./image/environment.jpg)
+    - CPU: Intel Xeon E5-2660 v2 10核 20线程,主频 3.0GHZ
+    - 内存: 三星 DDR3L 1600MHZ 32GB (16 * 2)
+    - 硬盘: Kingston SA400S37240G (240GB 固态硬盘)
+    
+    表现: 在上述环境中测试发现, 在相同时间内(默认是10s)的 ShaunDBLog 的写入量是 glog 的 26 倍. 但 CPU 利用率也偏高.
