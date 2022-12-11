@@ -12,3 +12,4 @@ logbenchmark2022*
 /test/*.sst
 .vscode
 /doc/*.drawio
+tcmalloc
