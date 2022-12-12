@@ -21,4 +21,4 @@ LSMTree 的经典实现是 LevelDB, 我在学习完 LevelDB 的源码之后深�
 - 坏处: 无法有效利用多个 memtable 来进行更好的前缀压缩, 获取更好的空间利用率.
 
 ### ShaunDB Snapshot
-- 由于ShaunDB 采用了多线程且互相隔离的方式, 那么对于快照功能则需要所有的 MemTaskWorker 共同的完成才可以.
+- 由于ShaunDB 采用了多线程且互相隔离的方式, 那么对于快照功能则需要所有的 MemTaskWorker 全部完成才可以, MemTaskWorker 负责内存快照的写入
