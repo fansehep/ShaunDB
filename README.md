@@ -7,7 +7,7 @@ ShaunDB 是一款简单支持 Redis协议的KV数据库, 该项目旨在满足�
 ```Shaun``` 该名字来源于[```<<Shaun the Sheep>>```](https://zh.wikipedia.org/zh-hant/%E5%B0%8F%E7%BE%8A%E8%82%96%E6%81%A9) (小羊肖恩) 该动画中主角名字.
 
 ## **架构**
-![](/doc/image/shaundb_design.png)
+![](/doc/image/shaundb_design.jpg)
 
 ## **设计**
 - 日志设计:
@@ -39,7 +39,7 @@ ShaunDB 是一款简单支持 Redis协议的KV数据库, 该项目旨在满足�
 
 ## **Countribute**
   ShaunDB 目前仍然处于开发阶段.
-  - ShaunDB 完全遵循 [Google C++ code style](https://google.github.io/styleguide/cppguide.html) 且使用 C++20 开发.
+  - ShaunDB 完全遵循 [Google C++ code style](https://google.github.io/styleguide/cppguide.html) , 使用 2 空格进行缩进, 使用 C++20 开发.
 
 ## **LICENSE**
   ShaunDB 以[GNU GENERAL PUBLIC LICENSE 3.0](LICENSE) 进行许可.
