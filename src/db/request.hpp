@@ -7,6 +7,7 @@
 #include <string>
 
 #include "src/db/status.hpp"
+#include "src/db/snapshot.hpp"
 
 namespace fver {
 
@@ -105,6 +106,11 @@ struct ExistContext {
 
 struct DeleteRecordContext {
   std::string_view key;
+};
+
+struct SnapShotContext {
+  SnapShot snapshot;
+  Status code;
 };
 
 }  // namespace db

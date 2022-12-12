@@ -53,6 +53,8 @@ const std::string kDefaultWalLogFileName = "WAL_LOG.log";
 // 此处做参数传递可以尽量使用 const std::shared_ptr<>&
 //
 
+extern DBConfig g_dbconfig;
+
 struct WALSequenceNumber {
   std::atomic<uint64_t> number_{0};
   void operator++() { number_++; }
@@ -67,7 +69,7 @@ class DB : public NonCopyable {
   void Set(const std::shared_ptr<SetContext>& set_context);
   void Get(const std::shared_ptr<GetContext>& get_context);
   void Delete(const std::shared_ptr<DeleteContext>& del_context);
-
+  void Snapshot(const std::shared_ptr<SnapShotContext>& snapshot_context);
  private:
   // 预写日志
   std::unique_ptr<WalWriter> walLog_;

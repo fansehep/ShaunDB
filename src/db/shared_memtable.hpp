@@ -38,7 +38,8 @@ class Compactor;
 using Memtask =
     std::variant<std::shared_ptr<SetContext>,
                  std::shared_ptr<GetContext>,
-                 std::shared_ptr<DeleteContext>>;
+                 std::shared_ptr<DeleteContext>,
+                 std::shared_ptr<SnapShotContext>>;
 
 class TaskWorker {
  public:
@@ -146,7 +147,7 @@ class SharedMemtable : public NonCopyable {
   void Set(const std::shared_ptr<SetContext>& set_context);
   void Get(const std::shared_ptr<GetContext>& get_context);
   void Delete(const std::shared_ptr<DeleteContext>& del_context);
-
+  void SnapShot(const std::shared_ptr<SnapShotContext>& snapshot_context);
   //!!! 必须在 Init 之前调用, 2.
   void SetCompactorRef(const std::shared_ptr<Compactor>& compactor);
 

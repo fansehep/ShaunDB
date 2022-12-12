@@ -2,10 +2,12 @@
 
 #include "src/base/log/logging.hpp"
 #include "src/db/compactor.hpp"
+#include "src/db/dbconfig.hpp"
 #include "src/db/memtable.hpp"
 #include "src/db/memtable_view_manager.hpp"
 #include "src/db/request.hpp"
 #include "src/db/shared_memtable.hpp"
+#include "src/db/snapshot.hpp"
 #include "src/db/status.hpp"
 #include "src/db/wal_writer.hpp"
 
@@ -20,6 +22,8 @@ namespace fver {
 
 namespace db {
 
+DBConfig g_dbconfig = {};
+
 bool DB::Init(const DBConfig& config) {
   walLog_ = std::make_unique<WalWriter>();
   // 初始化一个新的 DB
@@ -30,6 +34,7 @@ bool DB::Init(const DBConfig& config) {
     // 从现有的预写日志中读取数据
   }
   NewDBimp(config);
+  g_dbconfig = config;
   return true;
 }
 
@@ -44,7 +49,7 @@ void DB::NewDBimp(const DBConfig& db_config) {
   // 初始化内存表
   // 初始化压缩者
   comp_actor_ = std::make_shared<Compactor>();
-  
+
   // memtable 视图初始化
   memviewtable_manager_ = std::make_shared<MemTableViewManager>();
   //
@@ -52,7 +57,7 @@ void DB::NewDBimp(const DBConfig& db_config) {
   LOG_INFO("compactor make_shared success");
   comp_actor_->Init(db_config);
   // compworker 拥有 Compactor 共享权
-  comp_actor_->SetCompWorkerCompactorRef(comp_actor_); 
+  comp_actor_->SetCompWorkerCompactorRef(comp_actor_);
   LOG_INFO("compactor init success");
   // 初始化 shared_memtable
   shared_memtable_->Init(db_config);
@@ -87,6 +92,12 @@ void DB::Set(const std::shared_ptr<SetContext>& set_context) {
   ++global_number_;
   walLog_->AddRecord(simple_log);
   shared_memtable_->Set(set_context);
+}
+
+// snapshot don't need wal
+void DB::Snapshot(const std::shared_ptr<SnapShotContext>& snapshot_context) {
+  snapshot_context->snapshot.Init(global_number_.getValue(), g_dbconfig.memtable_N);
+  shared_memtable_->SnapShot(snapshot_context);
 }
 
 bool DB::isEmptyDir(const std::string& db_path) {

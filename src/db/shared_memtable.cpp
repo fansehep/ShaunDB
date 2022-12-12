@@ -145,6 +145,11 @@ void TaskWorker::Run() {
           if (del_context->del_callback) {
             del_context->del_callback(del_context);
           }
+          // 快照请求.
+        } else if (handle.index() == 3) {
+          auto snapshot_context =
+              std::get<std::shared_ptr<SnapShotContext>>(handle);
+          // 对于快照请求, 我们应该去遍历整个数据库
         }
       }
       LOG_INFO(
@@ -165,7 +170,7 @@ void TaskWorker::Run() {
         preRemove_N_ = remove_N_;
       }
       // 替换 Compactor Merge 之后的数据.
-      
+
       handle_vec_.clear();
       // 当当前的写入超过 预期时, 将当前正在写入的表换下
       // 等待 compactor 刷入成为 sstable
@@ -251,6 +256,15 @@ void SharedMemtable::Delete(const std::shared_ptr<DeleteContext>& del_context) {
   taskworkers_[idx]->addTask(task);
   // should notify.
   taskworkers_[idx]->Notify();
+}
+
+void SharedMemtable::SnapShot(
+    const std::shared_ptr<SnapShotContext>& snapshot_context) {
+  Memtask task = snapshot_context;
+  for (auto& iter : taskworkers_) {
+    iter->addTask(task);
+    iter->Notify();
+  }
 }
 
 SharedMemtable::~SharedMemtable() {
