@@ -5,6 +5,8 @@
 
 #include "src/base/noncopyable.hpp"
 #include "src/raft/raft_node.hpp"
+#include "src/raft/raft_service.hpp"
+
 using ::fver::base::NonCopyable;
 
 namespace fver {
@@ -13,20 +15,19 @@ namespace raft {
 
 struct RaftServerConfig;
 
-class RaftServer : public NonCopyable {
+class RaftServer {
  public:
-  RaftServer() = default;
-  void Init();
+
 
 
  private:
-  // 当前 Raft 集群对应其他所有的服务器集群
-  std::vector<RaftNode> vec_nodes_;
-  // 当前 Raft 集群的数量
-  int current_nodes_n_;
-  // 自身的 角色
-  RaftNode self_roles_;
+
+  RaftServiceImpl raft_service_impl_;
+  RaftNode raft_node_;
 };
+
+
+
 
 }  // namespace raft
 

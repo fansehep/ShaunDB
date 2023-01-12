@@ -1,21 +1,15 @@
-#ifndef SRC_RAFT_RAFT_NODE_H_
-#define SRC_RAFT_RAFT_NODE_H_
+#pragma once
 
 #include <string>
 
 #include "src/base/noncopyable.hpp"
-#include "src/base/timestamp.hpp"
-#include "src/net/active_conn.hpp"
-#include "src/net/net_server.hpp"
-#include "src/net/repeated_timer.hpp"
-#include "src/raft/raft.pb.h"
-#include <thread>
+#include "src/raft/log.hpp"
+
+extern "C" {
+#include <assert.h>
+}
 
 using ::fver::base::NonCopyable;
-using ::fver::base::TimeStamp;
-using ::fver::net::Connectioner;
-using ::fver::net::NetServer;
-using ::fver::net::RepeatedTimer;
 
 namespace fver {
 
@@ -28,74 +22,71 @@ enum RaftRoles {
   kFollower = 1,
   // 候选者
   kCandidates = 2,
+  // 学习者
+  kLearner = 3,
 };
 
 const std::string kRaftRolesStr[] = {
     "Leader",
     "Follower",
     "Candidates",
+    "Learner",
 };
 
 class RaftServer;
 
-// 单个 RaftNode 通过Connectioner持有 NetServer 的所有权
 class RaftNode : public NonCopyable {
  public:
   RaftNode() = default;
   ~RaftNode() = default;
-  void Init(const std::string& ip, const uint32_t port,
-            const std::shared_ptr<NetServer>& server);
-  // 发起选举
-  void RequetedVote(const RaftMes::RequestVoteArgs& request_vote_args);
 
-  // 追加日志 or 心跳
-  void AppendEntries(const RaftMes::AppendEntriesArgs& append_log_args);
+  RaftRoles getRoles() { return raft_role_; }
 
-  // 发送快照
-  void SendSnapshot(const RaftMes::InstallSnapshotArgs& install_snapshot_args);
+  void be_Leader() { raft_role_ = RaftRoles::kLeader; }
 
-  RaftRoles getRoles();
+  void be_Follower() { raft_role_ = RaftRoles::kFollower; }
 
-  std::string getRolesStr();
+  void be_Candidates() { raft_role_ = RaftRoles::kCandidates; }
 
-  uint64_t getTerm();
+  void be_Learner() { raft_role_ = RaftRoles::kLearner; }
+
+  RaftRoles get_Roles() { return raft_role_; }
+
+  /**
+   * @brief: for log
+   */
+  const std::string_view get_RolesStr() {
+    assert(raft_role_ >= 0 && raft_role_ <= 3);
+    return kRaftRolesStr[raft_role_];
+  }
+
+  const std::string_view get_NodeIp() { return node_ip_; }
+
+  uint32_t get_NodePort() { return node_port_; }
+  /**
+   * @brief: init
+   */
+  bool Init(const std::string& node_ip, const uint32_t node_port);
+
+  void addTerm() { node_term_++; }
+
+  uint64_t getTerm() { return node_term_; }
+
+  auto getLog() { return &node_logvec_; }
 
  private:
-
-  // TODO: 背景线程, 尽可能地不阻塞主要服务
-  std::thread bg_thread_;
-
-  // 连接者
-  Connectioner conner_;
-
-  // 对等方的 端口
-  uint32_t port_;
-
-  // 远程节点 所对应的 hostname
-  std::string ip_;
-
-  // 远程节点 所对应的 角色
-  RaftRoles self_roles_;
-
-  // 远程节点 所对应的 term
-  uint64_t term_;
-
-
-  // 最后活跃时间戳
-  TimeStamp last_timestamp_;
-
-
-
-  // 当前投票给了哪个节点
-  std::pair<std::string, uint32_t> current_vote_for_;
-
-  // for thread_safe
-  std::mutex mtx_;
-
+  // 当前节点的角色
+  RaftRoles raft_role_;
+  // 当前的 IP
+  std::string node_ip_;
+  // 当前监听的端口
+  uint32_t node_port_;
+  // 当前节点的term
+  uint64_t node_term_;
+  // 当前节点的日志
+  RaftLog node_logvec_;
 };
 
 }  // namespace raft
 
 }  // namespace fver
-
-#endif

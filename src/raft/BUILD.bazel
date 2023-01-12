@@ -1,0 +1,29 @@
+package(default_visibility=["//visibility:public"])
+
+load("//:copts.bzl", "FVER_FLAGS")
+
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
+
+cc_proto_library(
+  name="raft_proto_cc_pb",
+  visibility=["//visibility:public"],
+  deps=[
+    ":raft_proto_lib",
+  ],
+)
+
+proto_library(
+  name="raft_proto_lib",
+  srcs=["raft.proto"],
+  visibility=["//visibility:public"],
+)
+
+cc_grpc_library(
+  name="raft_cc_grpc_lib",
+  srcs=[":raft_proto_lib"],
+  grpc_only=True,
+  deps=["raft_proto_cc_pb"],
+)
+

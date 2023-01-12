@@ -6,7 +6,7 @@ message RaftNode {
   string IP = 1;
   uint32 Port = 2;
   uint64 Term = 3;
-  uint32 self_role = 4;
+  uint32 SelfRole = 4;
 }
 
 message LogEntry {
@@ -74,3 +74,8 @@ message ApplyMessage {
   optional SnapshotMessage snapshot = 5;
 }
 
+service RaftService {
+  rpc RequestVote (RequestVoteArgs) returns (RequestVoteReply);
+  rpc AppendEntries (AppendEntriesArgs) returns (AppendEntriesReply);
+  rpc InstallSnapshot (InstallSnapshotArgs) returns (InstallSnapshotReply);
+}

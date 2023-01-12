@@ -5,21 +5,6 @@ load("//:copts.bzl", "FVER_FLAGS")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
-
-# cc_proto_library(
-#   name="db_proto_cc_pb",
-#     visibility=["//visibility:public"],
-#     deps=[
-#       ":db_proto_lib",
-#     ],
-# )
-
-# proto_library(
-#   name="db_proto_lib",
-#   srcs=["db.proto"],
-#   visibility=["//visibility:public"],
-# )
-
 cc_library(
     name="fver_db_lib",
     hdrs=glob(["*.hpp"]),
