@@ -13,8 +13,10 @@ struct PeerNode {
 };
 
 struct RaftServerConfig {
-  // 自身的配置
-  PeerNode current_node_;
+  // 当前节点的对外 IP
+  std::string self_ip;
+  // 当前节点的对外 Port
+  uint32_t self_port;
   // 集群中的其他节点的集合
   std::vector<PeerNode> vec_nodes;
   // 最小选举超时时间

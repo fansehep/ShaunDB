@@ -27,3 +27,24 @@ cc_grpc_library(
   deps=["raft_proto_cc_pb"],
 )
 
+#TODO add boost lib to bazel WORKSPACE
+cc_library(
+  name="shaundb_raft_lib",
+  hdrs=glob(["*.hpp"]),
+  srcs=glob(["*.cpp"]),
+  visibility=["//visibility:public"],
+  copts=FVER_FLAGS,
+  deps=[
+    ":raft_cc_grpc_lib",
+    "//src/base/log:fver_log_lib",
+    "//src/net:fver_net_lib",
+    "@com_github_grpc_grpc//:grpc++",
+  ],
+  linkopts=[
+    "-lpthread",
+    "-lboost_fiber",
+    "-lboost_context",
+    "-lboost_coroutine",
+    "-lboost_atomic",
+  ],
+)

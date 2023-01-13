@@ -1,9 +1,10 @@
-#pragma once
+#ifndef SRC_RAFT_RAFT_NODE_H_
+#define SRC_RAFT_RAFT_NODE_H_
 
 #include <string>
 
 #include "src/base/noncopyable.hpp"
-#include "src/raft/log.hpp"
+#include "src/raft/raft_log.hpp"
 
 extern "C" {
 #include <assert.h>
@@ -40,7 +41,7 @@ class RaftNode : public NonCopyable {
   RaftNode() = default;
   ~RaftNode() = default;
 
-  RaftRoles getRoles() { return raft_role_; }
+  RaftRoles getRoles() const { return raft_role_; }
 
   void be_Leader() { raft_role_ = RaftRoles::kLeader; }
 
@@ -60,9 +61,9 @@ class RaftNode : public NonCopyable {
     return kRaftRolesStr[raft_role_];
   }
 
-  const std::string_view get_NodeIp() { return node_ip_; }
+  std::string_view get_NodeIp() const { return node_ip_; }
 
-  uint32_t get_NodePort() { return node_port_; }
+  uint32_t get_NodePort() const { return node_port_; }
   /**
    * @brief: init
    */
@@ -70,11 +71,21 @@ class RaftNode : public NonCopyable {
 
   void addTerm() { node_term_++; }
 
-  uint64_t getTerm() { return node_term_; }
+  uint64_t getTerm() const { return node_term_; }
 
-  auto getLog() { return &node_logvec_; }
+  auto getLog() const { return &node_logvec_; }
+
+  auto getID() const {
+    return node_id_;
+  }
+
+  void setID(const uint64_t id) {
+    node_id_ = id;
+  }
 
  private:
+  // 当前节点的 ID
+  uint64_t node_id_;
   // 当前节点的角色
   RaftRoles raft_role_;
   // 当前的 IP
@@ -90,3 +101,5 @@ class RaftNode : public NonCopyable {
 }  // namespace raft
 
 }  // namespace fver
+
+#endif

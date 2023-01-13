@@ -23,13 +23,13 @@ message Log {
 
 
 message RequestVoteArgs {
-  RaftNode node = 1;
-  uint64 LastLogIndex = 2;
-  uint64 LastLogTerm = 3;
+  uint64 Term = 1;
+  uint64 CandidateID = 2;
+  uint64 LastLogIndex = 3;
+  uint64 LastLogTerm = 4;
 }
 
 message RequestVoteReply {
-  RaftNode node = 2;
   bool voteGranted = 3;
 }
 

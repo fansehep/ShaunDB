@@ -1,13 +1,12 @@
-#ifndef SRC_RAFT_LOG_H_
-#define SRC_RAFT_LOG_H_
+#ifndef SRC_RAFT_RAFT_LOG_H_
+#define SRC_RAFT_RAFT_LOG_H_
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
-#include "src/base/noncopyable.hpp"
+#include <rocksdb/db.h>
 
-using ::fver::base::NonCopyable;
 
 namespace fver {
 
@@ -28,7 +27,11 @@ struct RaftLog{
   uint64_t log_MatchIndex_;
   // 当前已经应用到状态机的日志下标
   uint64_t LastAppliedIndex_;
+  // 存储在内存中的日志
   std::vector<LogEntry> logEntry_;
+
+  uint64_t getLastLogIndex() const;
+  uint64_t getLastLogTerm() const;
 };
 
 }  // namespace raft

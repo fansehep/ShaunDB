@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SRC_RAFT_RAFT_SERVICE_H_
+#define SRC_RAFT_RAFT_SERVICE_H_
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/server_context.h>
@@ -36,3 +37,5 @@ class RaftServiceImpl final : public RaftMes::RaftService::Service,
 }  // namespace raft
 
 }  // namespace fver
+
+#endif
