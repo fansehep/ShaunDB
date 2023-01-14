@@ -33,7 +33,9 @@ class RaftServer final : public NonCopyable {
    * @brief: use repeated timer trigger on time
    */
   int _RequestVoteOnTimed(RepeatedTimer* repeated_timer);
+
   int _AppendEntriesOnTimed(RepeatedTimer* repeated_timer);
+
   // timer trigger for request vote
   RepeatedTimer RequestVoteTimer_;
   // timer trigger for appendtries
@@ -42,6 +44,9 @@ class RaftServer final : public NonCopyable {
   std::vector<RaftPeerNode> peerNodeVec_;
   RaftServiceImpl raft_service_impl_;
   RaftNode raft_node_;
+
+  
+
 };
 
 }  // namespace raft

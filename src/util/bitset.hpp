@@ -86,7 +86,7 @@ class BitSet {
   uint32_t getSize() { return data_size; }
 
   // 获取 data
-  auto* getData() { return data; }
+  auto getData() { return data; }
 
  private:
   char* data;

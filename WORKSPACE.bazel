@@ -44,11 +44,6 @@ git_repository(
     remote = "https://github.com/jbeder/yaml-cpp",
 )
 
-git_repository(
-    name = "com_google_absl",
-    branch = "master",
-    remote = "git@github.com:abseil/abseil-cpp.git",
-)
 
 http_archive(
     name = "rules_fuzzing",

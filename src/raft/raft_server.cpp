@@ -29,7 +29,7 @@ bool RaftServer::Init(const std::shared_ptr<net::NetServer> &net_server,
 }
 
 int RaftServer::_RequestVoteOnTimed(net::RepeatedTimer *timer) {
-  go ([&]() {
+  go([&]() {
     uint32_t i = 0;
     //
     std::vector<
@@ -42,18 +42,22 @@ int RaftServer::_RequestVoteOnTimed(net::RepeatedTimer *timer) {
     }
     //
     for (auto &peer_node_server : peerNodeVec_) {
-      go ([&, i]() {
+      go([&, i]() {
         assert(i >= 0 && i <= peerNodeVec_.size());
         peer_node_server.RequestVote(this->raft_node_, request_info_vec[i]);
       }).detach();
       i++;
     }
     for (auto &iter : request_info_vec) {
-      boost::fibers::future<RaftMes::RequestVoteReply> future_reply =
-          iter->get_future();
-      future_reply.wait();
+      go([&]() -> void {
+        boost::fibers::future<RaftMes::RequestVoteReply> future_reply =
+            iter->get_future();
+        //
+        future_reply.wait_for(std::chrono::seconds());
+      }).detach();
     }
   }).detach();
+  return 0;
 }
 
 int RaftServer::_AppendEntriesOnTimed(net::RepeatedTimer *timer) {}

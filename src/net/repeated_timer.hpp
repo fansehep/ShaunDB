@@ -41,6 +41,15 @@ class RepeatedTimer : public NonCopyable {
 
   ~RepeatedTimer();
 
+  /**
+   * @timeval: in time.h
+   *           struct {
+   *              __time_t tv_sec;  sec 
+   *              __suseconds_t tv_usec;  ms 
+   *           };
+   * @sev: need a net::NetServer(epoll) to trigger.
+   * @name: timer_name, log.
+   */
   void Init(const struct timeval& time_val, RepeatedTimerCallback callback,
             const std::shared_ptr<NetServer>& sev, const std::string& name);
 
@@ -50,7 +59,10 @@ class RepeatedTimer : public NonCopyable {
 
   void Reset(const struct timeval& time_val, RepeatedTimerCallback callback,
              const std::string& name);
-
+  
+  std::string getTimerName() {
+    return timerName_;
+  }
  private:
   // 定时器的名称
   std::string timerName_;

@@ -20,11 +20,11 @@ struct RaftServerConfig {
   // 集群中的其他节点的集合
   std::vector<PeerNode> vec_nodes;
   // 最小选举超时时间
-  uint64_t min_election_interval_ms;
+  inline static uint64_t min_election_interval_ms = 700;
   // 最大选举超时时间
-  uint64_t max_election_interval_ms;
+  static uint64_t max_election_interval_ms;
   // 心跳间隔时间
-  uint64_t append_interval_ms;
+  static uint64_t append_interval_ms;
   // 默认配置
   RaftServerConfig()
       : min_election_interval_ms(700),
