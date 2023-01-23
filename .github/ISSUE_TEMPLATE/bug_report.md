@@ -13,12 +13,6 @@ about: Create a report to help us improve
 **Expected behavior (期望行为)**
 
 
-**Versions (各种版本)**
-OS:
-Compiler:
-brpc:
-protobuf:
-
 **Additional context/screenshots (更多上下文/截图)**
 
 
