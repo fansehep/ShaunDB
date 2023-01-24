@@ -39,6 +39,7 @@ ShaunDB 是一款简单支持 Redis协议的KV数据库, 该项目旨在满足�
   - 目前由于使用 iouring 做 compact, 只支持 ```linux kernel version >= 5.1```  的发行版.
   ```bash
   git submodule init
+  git submodule update
   bazel build "..."
   ```
 
