@@ -1,6 +1,6 @@
 #include "src/db/key_format.hpp"
 
-#include <fmt/format.h>
+#include "fmt/format.h"
 
 #include <cstdint>
 #include <string_view>

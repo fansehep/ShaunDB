@@ -1,9 +1,9 @@
 #ifndef SRC_BASE_LOG_LOGGER_H_
 #define SRC_BASE_LOG_LOGGER_H_
 
-#include <fmt/color.h>
-#include <fmt/core.h>
-#include <fmt/format.h>
+#include "fmt/color.h"
+#include "fmt/core.h"
+#include "fmt/format.h"
 #include <string.h>
 
 #include <atomic>
@@ -66,7 +66,7 @@ class Logger {
   ~Logger();
   void ClearSum() { sumWrites_ = 0; }
   template <typename... Args>
-  constexpr void LogMent(const char* filename, const int line,
+  void LogMent(const char* filename, const int line,
                          const LogLevel lev, const std::string format_str,
                          Args&&... args) {
     // 由于用户必须在调用前就使用 Init() 初始化,

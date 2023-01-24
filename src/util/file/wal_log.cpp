@@ -1,6 +1,6 @@
 #include "src/util/file/wal_log.hpp"
 
-#include <fmt/format.h>
+#include "fmt/format.h"
 
 extern "C" {
 #include <sys/stat.h>

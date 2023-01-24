@@ -1,6 +1,6 @@
 #include "src/raft/raft_peer.hpp"
 
-#include <fmt/format.h>
+#include "fmt/format.h"
 #include <grpcpp/client_context.h>
 #include <grpcpp/security/credentials.h>
 

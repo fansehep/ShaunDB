@@ -1,7 +1,7 @@
 #ifndef SRC_UTIL_XXHASH64_H_
 #define SRC_UTIL_XXHASH64_H_
 
-#include <fmt/format.h>
+#include "fmt/format.h"
 #include <stdint.h>
 
 #include <bitset>
