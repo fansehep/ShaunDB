@@ -1,7 +1,7 @@
 #ifndef SRC_DB_COMPACTOR_H_
 #define SRC_DB_COMPACTOR_H_
 
-#include <absl/container/btree_map.h>
+#include "absl/container/btree_map.h"
 
 #include "src/base/log/logging.hpp"
 #include "src/base/noncopyable.hpp"

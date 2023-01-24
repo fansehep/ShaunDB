@@ -1,10 +1,10 @@
 #ifndef SRC_UTIL_LRUCACHE_
 #define SRC_UTIL_LRUCACHE_
 
-#include <absl/container/flat_hash_map.h>
 
 #include <list>
 #include <string>
+#include <unordered_map>
 
 namespace fver {
 

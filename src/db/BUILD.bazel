@@ -14,8 +14,6 @@ cc_library(
     deps=[
         "//src/base/log:fver_log_lib",
         "//src/util:fver_util_lib",
-    ],
-    linkopts=[
-        "-lglog",
+        "@com_google_absl//absl/container:btree",
     ],
 )
