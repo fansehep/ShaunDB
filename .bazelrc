@@ -1,2 +1,5 @@
-build --repo_env=CC=clang
+build --repo_env=CC=gcc
 build --cxxopt=-std=c++20
+
+build --copt=-fdiagnostics-color=always
+run --copt=-fdiagnostics-color=always

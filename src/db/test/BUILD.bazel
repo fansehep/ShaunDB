@@ -34,7 +34,6 @@ cc_test(
         "-luuid",
         "-lpthread",
     ],
-    malloc="@com_google_tcmalloc//tcmalloc",
 )
 
 cc_test(
@@ -52,7 +51,6 @@ cc_test(
         "-luuid",
         "-lpthread",
     ],
-    malloc="@com_google_tcmalloc//tcmalloc",
 )
 
 cc_test(
@@ -105,7 +103,6 @@ cc_test(
         "-luuid",
         "-lpthread",
     ],
-    malloc="@com_google_tcmalloc//tcmalloc",
 )
 
 cc_test(

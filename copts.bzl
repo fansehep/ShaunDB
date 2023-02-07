@@ -1,13 +1,13 @@
 
 FVER_FLAGS = [
-    "-std=c++20",
     "-Wall",
     "-Wextra",
-    "-fno-exceptions",
+    "-fexceptions",
     "-ggdb",
     "-g",
     "-O2",
     # "-Werror",
+    "-Werror=array-bounds",
 ]
 
 # use clang-addresssanitizer

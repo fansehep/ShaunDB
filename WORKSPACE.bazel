@@ -2,20 +2,6 @@ workspace(name="shaundb")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-http_archive(
-    name="com_google_googletest",
-    sha256="a1d3123179024258f9c399d45da3e0b09c4aaf8d2c041466ce5b4793a8929f23",
-    strip_prefix="googletest-86add13493e5c881d7e4ba77fb91c1f57752b3a4",
-    urls=["https://github.com/google/googletest/archive/86add13493e5c881d7e4ba77fb91c1f57752b3a4.zip"],
-)
-
-http_archive(
-    name="com_google_benchmark",  # 2021-09-20T09:19:51Z
-    sha256="62e2f2e6d8a744d67e4bbc212fcfd06647080de4253c97ad5c6749e09faf2cb0",
-    strip_prefix="benchmark-0baacde3618ca617da95375e0af13ce1baadea47",
-    urls=["https://github.com/google/benchmark/archive/0baacde3618ca617da95375e0af13ce1baadea47.zip"],
-)
-
 git_repository(
     name = "fmt",
     branch = "master",
@@ -60,13 +46,6 @@ load("@rules_fuzzing//fuzzing:init.bzl", "rules_fuzzing_init")
 
 rules_fuzzing_init()
 
-
-local_repository(
-    name = "com_google_tcmalloc",
-    path = "tcmalloc",
-)
-
-
 http_archive(
     name = "rules_cc",
     urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.4/rules_cc-0.0.4.tar.gz"],
@@ -86,13 +65,13 @@ load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_
 rules_proto_dependencies()
 rules_proto_toolchains()
 
+# grpc version: 1.47.3 2023-01-19
 http_archive(
     name = "com_github_grpc_grpc",
-    strip_prefix = "grpc-1.45.0",
-    sha256 = "ec19657a677d49af59aa806ec299c070c882986c9fcc022b1c22c2a3caf01bcd",
-    urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.45.0.tar.gz"],
+    strip_prefix = "grpc-1.47.3",
+    urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.47.3.tar.gz"],
 )
- 
+
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
  
 grpc_deps()
@@ -101,8 +80,23 @@ load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
  
 grpc_extra_deps();
 
+http_archive(
+    name="com_google_googletest",
+    sha256="a1d3123179024258f9c399d45da3e0b09c4aaf8d2c041466ce5b4793a8929f23",
+    strip_prefix="googletest-86add13493e5c881d7e4ba77fb91c1f57752b3a4",
+    urls=["https://github.com/google/googletest/archive/86add13493e5c881d7e4ba77fb91c1f57752b3a4.zip"],
+)
+
+http_archive(
+    name="com_google_benchmark",  # 2021-09-20T09:19:51Z
+    sha256="62e2f2e6d8a744d67e4bbc212fcfd06647080de4253c97ad5c6749e09faf2cb0",
+    strip_prefix="benchmark-0baacde3618ca617da95375e0af13ce1baadea47",
+    urls=["https://github.com/google/benchmark/archive/0baacde3618ca617da95375e0af13ce1baadea47.zip"],
+)
 
 
+# 2022-02-07
+# bazel run @hedron_compile_commands//:refresh_all
 # Hedron's Compile Commands Extractor for Bazel
 # https://github.com/hedronvision/bazel-compile-commands-extractor
 http_archive(
