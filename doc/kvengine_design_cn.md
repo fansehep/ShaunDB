@@ -21,4 +21,30 @@ LSMTree 的经典实现是 LevelDB, 我在学习完 LevelDB 的源码之后深�
 - 坏处: 无法有效利用多个 memtable 来进行更好的前缀压缩, 获取更好的空间利用率.
 
 ### ShaunDB Snapshot
-- 由于ShaunDB 采用了多线程且互相隔离的方式, 那么对于快照功能则需要所有的 MemTaskWorker 全部完成才可以, MemTaskWorker 负责内存快照的写入
+- 由于ShaunDB 采用了多线程且互相隔离的方式, 那么对于快照功能则需要所有的 MemTaskWorker 全部完成才可以, MemTaskWorker 负责内存快照的写入, 当内存快照写入完毕之后, 则是磁盘中的 sstable 数据. 由于 ShaunDB 对于每一个 MemTaskWorker 都拥有当前 block 的 SSTableView, 所以需要再次进行 SSTableViewVec 的一次遍历, 从而生成数据库快照.
+
+### ShaunDB Mino Compaction 策略
+- 默认的, 当 MemTableTaskWorker 判断 SSTableViewVec.size() > 7 时, 会通知 Compactor 线程触发 mino compaction. 由于 lsm tree 的特殊性, 会让磁盘空间放大, 例如: 当 client 对某一个 key 的最后一个操作是 delete 时, 那么前面所有关于这个 key 的操作都是无效的. 需要进行 mino compaction. Compactor 会对 MemTableTaskWorker 所对应的 block 进行 合并. 先读取 第一层的 sstable 和 第二层的 sstable 文件. 因为最上一层的 key 的请求都是最新的, 所以对于相同 key 的请求都是只保留最上层的.
+
+```bash
+
+   +----------- ShaunDB::Compactor
+   |                    |
+ +---------------+      |                                                     +---------------+
+ | SSTable_0_1   | -----+                                       +------------>| MemTaskWorker |
+ +---------------+      |    +-------------+                    |             +---------------+
+                        |--->| SSTable_1_0 | ----+              |
+ +---------------+      |    +-------------+     |              |
+ | SSTable_0_2   | -----+                        |              |
+ +---------------+                               |       +------------+
+                                                 |------>| SSTable_2_0|
+ +---------------+                               |       +------------+
+ | SSTable_0_3   | -----+                        |
+ +---------------+      |    +------------+      |
+                        |--->| SSTable_1_1|  ----+
+ +---------------+      |    +------------+
+ | SSTable_0_4   | -----+
+ +---------------+
+
+```
+- 如上图所示, 这是 ShaunDB::MinoCompaction 的合并策略, 先将第一层的 SSTable_0 和 第二层的 SSTable_1 先进行合并, 之后再将第三层的 SSTable_2 和 第四层的 SSTable_4 合并, 此时 得到了 SSTable_1_0(经过 Compaction version == 1), 和第二层的 SSTable_1_1 再次合并一次, 至此, 将 4 层 SSTable 合并成一个 SSTable.
