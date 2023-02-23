@@ -57,4 +57,5 @@
     - 内存: 三星 DDR3L 1600MHZ 32GB (16 * 2)
     - 硬盘: Kingston SA400S37240G (240GB 固态硬盘)
     
-    表现: 在上述环境中测试发现, 在相同时间内(默认是10s)的 ShaunDBLog 的写入量是 glog 的 26 倍. 但 CPU 利用率也偏高.
+    表现: 在上述环境中测试发现, 在相同时间内(30s)的 ShaunDBLog 的写入量是 glog 的 26 倍. 但 CPU 利用率也偏高.
+         与 spdlog (version = 1.11.0-2) 的性能对比, 总的写入量是 spdlog 的 1.6 倍.

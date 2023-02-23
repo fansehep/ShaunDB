@@ -7,6 +7,7 @@
 
 #include "src/base/log/logging.hpp"
 
+
 /*
  * fverlog vs glog
  * 编译参数详见 fver/.coptsbzl
@@ -45,36 +46,10 @@ static void TEST_FLOG_TO_FILE_NOSYNC(benchmark::State& state) {
   }
 }
 
-static void TEST_GLOG_TO_FILE_NOSYNC(benchmark::State& state) {
-  fmt::print("test glog init!\n");
-  google::SetLogDestination(google::GLOG_INFO,
-                            "./benchmark/logbenchmark/");
-  FLAGS_logtostderr = false;
-  fLS::FLAGS_log_dir = "./benchmark/logbenchmark/";
-  google::InitGoogleLogging("");
+// 18471585
+// 25388906
 
-  for (auto _ : state) {
-    const int corrunyN = std::thread::hardware_concurrency();
-    std::vector<std::thread> workers;
-    bool isRunning = true;
-    int i = 0;
-    for (; i < corrunyN; i++) {
-      workers.emplace_back([&]() {
-        while (isRunning) {
-          LOG(INFO) << "I want to fly in the sky, " << rand() << ", " << rand()
-                    << ", " << rand() << ", " << std::to_string(rand());
-        }
-      });
-    }
-    std::this_thread::sleep_for(std::chrono::seconds(30));
-    isRunning = false;
-    for (auto& thid : workers) {
-      thid.join();
-    }
-  }
-}
 
-BENCHMARK(TEST_GLOG_TO_FILE_NOSYNC);
 BENCHMARK(TEST_FLOG_TO_FILE_NOSYNC);
 
 BENCHMARK_MAIN();
