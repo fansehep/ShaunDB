@@ -67,7 +67,7 @@ class Logger {
   void ClearSum() { sumWrites_ = 0; }
   template <typename... Args>
   void LogMent(const char* filename, const int line, const LogLevel lev,
-               const std::string format_str, Args&&... args) {
+               const char* format_str, Args&&... args) {
     // 由于用户必须在调用前就使用 Init() 初始化,
     // 所以一般认为将输出打到终端都处于调试模式
     // 可以给到彩色模式.

@@ -20,7 +20,7 @@
 // 且启用最低 INFO 日志等级
 // 3 个随机数, 1个随机数的 to_string
 // 测试对比 10s 内谁写入的日志数量最多
-// 本机测试 一般fverlog 的相同时间写入量是 glog 的 9 倍
+// 本机测试 一般fverlog 的相同时间写入量是 glog 的 20 倍
 static void TEST_FLOG_TO_FILE_NOSYNC(benchmark::State& state) {
   fver::base::log::Init("./benchmark/logbenchmark",
                         kLogLevel::kInfo, false, "test");
@@ -37,7 +37,7 @@ static void TEST_FLOG_TO_FILE_NOSYNC(benchmark::State& state) {
         }
       });
     }
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::this_thread::sleep_for(std::chrono::seconds(30));
     isRunning = false;
     for (auto& thid : workers) {
       thid.join();
@@ -66,7 +66,7 @@ static void TEST_GLOG_TO_FILE_NOSYNC(benchmark::State& state) {
         }
       });
     }
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::this_thread::sleep_for(std::chrono::seconds(30));
     isRunning = false;
     for (auto& thid : workers) {
       thid.join();
