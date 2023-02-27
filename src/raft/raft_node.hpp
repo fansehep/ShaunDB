@@ -1,10 +1,13 @@
 #ifndef SRC_RAFT_RAFT_NODE_H_
 #define SRC_RAFT_RAFT_NODE_H_
 
+#include <sys/select.h>
+
 #include <string>
 
 #include "src/base/noncopyable.hpp"
 #include "src/raft/raft_log.hpp"
+#include "src/raft/raftconf.hpp"
 
 extern "C" {
 #include <assert.h>
@@ -35,6 +38,19 @@ const std::string kRaftRolesStr[] = {
 };
 
 class RaftServer;
+
+struct RaftTime {
+ private:
+  struct timeval tval;
+
+ public:
+  uint64_t now_time;
+  RaftTime() : now_time(0) {}
+  void getNow() {
+    ::gettimeofday(&tval, nullptr);
+    now_time = tval.tv_sec * 1000000L * tval.tv_usec;
+  }
+};
 
 class RaftNode : public NonCopyable {
  public:
@@ -71,19 +87,34 @@ class RaftNode : public NonCopyable {
 
   void addTerm() { node_term_++; }
 
+  void setTerm(const uint64_t term) {
+    assert(term > node_term_);
+    node_term_ = term;
+  }
+
   uint64_t getTerm() const { return node_term_; }
 
   auto getLog() const { return &node_logvec_; }
 
-  auto getID() const {
-    return node_id_;
-  }
+  auto getID() const { return node_id_; }
 
-  void setID(const uint64_t id) {
-    node_id_ = id;
+  void setID(const uint64_t id) { node_id_ = id; }
+
+  bool is_timeout() {
+    _now_time_.getNow();
+    assert(_now_time_.now_time > node_time_.now_time);
+    if (_now_time_.now_time - node_time_.now_time >
+        RaftConfig::max_election_interval_ms) {
+      return true;
+    }
+    return false;
   }
 
  private:
+  // 获取当前时间, 与系统时间进行对比
+  RaftTime _now_time_;
+  // 计时器
+  RaftTime node_time_;
   // 当前节点的 ID
   uint64_t node_id_;
   // 当前节点的角色

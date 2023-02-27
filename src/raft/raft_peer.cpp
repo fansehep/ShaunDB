@@ -1,11 +1,11 @@
 #include "src/raft/raft_peer.hpp"
 
-#include "fmt/format.h"
 #include <grpcpp/client_context.h>
 #include <grpcpp/security/credentials.h>
 
 #include <future>
 
+#include "fmt/format.h"
 #include "src/base/log/logging.hpp"
 #include "src/raft/raft_node.hpp"
 
@@ -38,13 +38,13 @@ void RaftPeerNode::RequestVote(
   request_vote_args.set_candidateid(node.getID());
   request_vote_args.set_lastlogindex(node.getLog()->getLastLogIndex());
   request_vote_args.set_lastlogterm(node.getLog()->getLastLogTerm());
-  auto status = peer_stub_->RequestVote(&client_context, request_vote_args,
-                                        &request_vote_reply);
-  if (true == status.ok()) {
+  auto sts = peer_stub_->RequestVote(&client_context, request_vote_args,
+                                     &request_vote_reply);
+  if (true == sts.ok()) {
     request_vote_reply_promise->set_value(std::move(request_vote_reply));
   } else {
     LOG_WARN("requestvote to {} error, {}", server_info_,
-             status.error_message());
+             sts.error_message());
   }
 }
 

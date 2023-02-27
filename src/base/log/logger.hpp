@@ -13,6 +13,7 @@
 #include "fmt/color.h"
 #include "fmt/core.h"
 #include "fmt/format.h"
+#include "fmt/compile.h"
 #include "src/base/log/logbuffer.hpp"
 #include "src/base/timestamp.hpp"
 
@@ -74,7 +75,7 @@ class Logger {
     if (!isSync_) {
       timeNow_ = TimeStamp::Now();
       fmt::print(
-          "{}{} {}:{}] {}\n",
+          FMT_COMPILE("{}{} {}:{}] {}\n"),
           fmt::styled(kLogLevelNums[lev], fmt::fg(kLogFmtColorNums[lev])),
           fmt::styled(timeNow_.ToFormatTodayNowUs(),
                       fmt::fg(fmt::color::light_steel_blue)),

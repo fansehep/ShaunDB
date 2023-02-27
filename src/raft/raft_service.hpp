@@ -12,6 +12,8 @@ namespace fver {
 
 namespace raft {
 
+struct RaftNode;
+
 class RaftServiceImpl final : public RaftMes::RaftService::Service,
                               public fver::base::NonCopyable {
  public:
@@ -30,8 +32,13 @@ class RaftServiceImpl final : public RaftMes::RaftService::Service,
                                const RaftMes::InstallSnapshotArgs*,
                                RaftMes::InstallSnapshotReply*) override;
 
-  RaftServiceImpl() = default;
+  RaftServiceImpl();
   ~RaftServiceImpl() = default;
+
+  void Init(RaftNode* node);
+
+ private:
+  RaftNode* node_;
 };
 
 }  // namespace raft

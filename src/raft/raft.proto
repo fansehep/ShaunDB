@@ -30,7 +30,8 @@ message RequestVoteArgs {
 }
 
 message RequestVoteReply {
-  bool voteGranted = 3;
+  uint64 Term = 1;
+  bool voteGranted = 2;
 }
 
 message AppendEntriesArgs {

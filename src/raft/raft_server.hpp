@@ -16,8 +16,10 @@ namespace fver {
 
 namespace raft {
 
-struct RaftServerConfig;
+struct RaftConfig;
 class RaftPeerNode;
+
+
 
 class RaftServer final : public NonCopyable {
  public:
@@ -26,7 +28,7 @@ class RaftServer final : public NonCopyable {
    * @config: read config
    */
   bool Init(const std::shared_ptr<net::NetServer>& net_server,
-            const RaftServerConfig& config);
+            const RaftConfig& config);
 
  private:
   /**
