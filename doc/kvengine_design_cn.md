@@ -80,3 +80,6 @@ LSMTree 的经典实现是 LevelDB, 我在学习完 LevelDB 的源码之后深�
 
 ```
 - 如上图所示, 这是 ShaunDB::MinoCompaction 的合并策略, 先将第一层的 SSTable_0 和 第二层的 SSTable_1 先进行合并, 之后再将第三层的 SSTable_2 和 第四层的 SSTable_4 合并, 此时 得到了 SSTable_1_0(经过 Compaction version == 1), 和第二层的 SSTable_1_1 再次合并一次, 至此, 将 4 层 SSTable 合并成一个 SSTable.
+
+## ShaunDB WAL Design
+- 当使用单机形态 ShaunDB 时, ShaunDB 将会启用预写日志, ShaunDB 的预先写日志是环状设计, 当写入超过阈值时, 将会 ```seek``` 到文件开头继续写入, 但 ShaunDB::WAL::recovery 较为麻烦, 需要遍历到环状日志的结尾, 再进行恢复. 同时, 环状日志由于会被覆盖的特性, 所以默认的环形日志的容量需要大于 memtable_mem_size * memtable_count * 1.2, 否则当 memtable 还未落盘, 但是 WAL 被覆盖, 这怕不是一场莫大的悲剧. 

@@ -48,7 +48,10 @@ int main() {
   std::string server_host = "127.0.0.1:88880";
   TestTbkvClient client(
       grpc::CreateChannel(server_host, grpc::InsecureChannelCredentials()));
-  client.SetKv("123", "456");
+  auto ue = client.SetKv("123", "456");
+  if (false == ue) {
+    LOG_ERROR("client set error");
+  }
   std::string res;
   client.GetKv("123", &res);
   LOG_INFO("client get key: 123, value: {}", res);
