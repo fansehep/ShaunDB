@@ -27,10 +27,9 @@ ShaunDB 是一款简单支持 Redis协议的KV数据库, 该项目旨在满足�
 
   ShaunDB 有独特的缓存设计, 详情请见 [shaundb_klrucache_design](/doc/klrucache_design_cn.md).
 
-- 预写日志设计:
+- Raft 设计
 
-  ShaunDB 的预写日志设计为环形日志, 详情请见 [shaundb_wal_design](/doc/wal_design_cn.md).
-  
+  ShaunDB 节点之间通信使用 gRPC, 使用 boost::fiber 协程库来提高并发, 实现位于 [shaundb_raft_module](/src/raft/), 目前正在实现中.
 
 ## **构建**
   ShaunDB 目前只支持 Bazel 构建, 需要兼容5.3.2的Bazel版本.
