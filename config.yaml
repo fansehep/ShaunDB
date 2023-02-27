@@ -4,12 +4,33 @@
 # @log_name:     日志输出的名称
 # @log_issync:   日志是否同步写(同步写入会损失性能, 但可以减少日志损失)
 # @log_buf_size: 每个线程的日志buf容量限制. 当你的服务比较大时建议, 开启大容量
-# @listen_port:  服务器默认监听的端口
 log_config:
   log_path: ./
   log_lev: STD_OUT
   log_name: shaun_server
   log_issync: false
   log_buf_size: 16mb
+
+# TcpServer 设置
+# @listen_ip:    监听的 ip
+# @listen_port:  监听的 port
 server_config:
+  listen_ip: 192.168.30.162
   listen_port: 9090
+
+# kv 引擎的设置
+# @ lru_cache_size:    每个 memtable 都拥有一个 lrucache
+# @ memtable_counts:   内存表的数量
+# @ memtable_mem_size: 内存表的峰值内存容量
+# @ compactor_counts:  Compactor 的数量
+# @ max_level_size:    lsm tree 的峰值层数
+
+db_config:
+  lru_cache_size: 32
+  memtable_counts: 8
+  memtable_mem_size: 256
+  compactor_counts: 2
+  max_level_size: 7
+
+raft_config:
+  node_counts: 3
