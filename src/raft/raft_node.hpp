@@ -54,6 +54,7 @@ struct RaftTime {
 
 class RaftNode : public NonCopyable {
  public:
+
   RaftNode() = default;
   ~RaftNode() = default;
 
@@ -110,6 +111,10 @@ class RaftNode : public NonCopyable {
     return false;
   }
 
+  auto getVoteID() {
+    return vote_for_id_;
+  }
+
  private:
   // 获取当前时间, 与系统时间进行对比
   RaftTime _now_time_;
@@ -127,6 +132,8 @@ class RaftNode : public NonCopyable {
   uint64_t node_term_;
   // 当前节点的日志
   RaftLog node_logvec_;
+  // 当前节点最近一次投票的 ID
+  std::string vote_for_id_;
 };
 
 }  // namespace raft

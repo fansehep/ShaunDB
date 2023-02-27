@@ -1,6 +1,8 @@
 #include "src/raft/raft_service.hpp"
 #include "src/raft/raft_node.hpp"
+#include <grpcpp/server_context.h>
 #include <grpcpp/support/status.h>
+
 
 namespace fver {
 
@@ -30,18 +32,19 @@ grpc::Status RaftServiceImpl::RequestVote(
     node_->setTerm(arg->term());
     return grpc::Status::OK;
   }
-  
+  auto ip = context->peer();
+
 }
 
 grpc::Status RaftServiceImpl::AppendEntries(
     grpc::ServerContext* context,
-    const RaftMes::AppendEntriesArgs* append_entries_arg,
-    RaftMes::AppendEntriesReply* append_entries_reply) {}
+    const RaftMes::AppendEntriesArgs* arg,
+    RaftMes::AppendEntriesReply* reply) {}
 
 grpc::Status RaftServiceImpl::InstallSnapshot(
     grpc::ServerContext* context,
-    const RaftMes::InstallSnapshotArgs* install_snapshot_arg,
-    RaftMes::InstallSnapshotReply* install_snapshot_reply) {}
+    const RaftMes::InstallSnapshotArgs* arg,
+    RaftMes::InstallSnapshotReply* reply) {}
 
 
 

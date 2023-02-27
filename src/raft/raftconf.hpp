@@ -1,6 +1,7 @@
 #ifndef SRC_RAFT_RAFTCONF_H_
 #define SRC_RAFT_RAFTCONF_H_
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace fver {
@@ -13,10 +14,6 @@ struct PeerNode {
 };
 
 struct RaftConfig {
-  // 当前节点的对外 IP
-  std::string self_ip;
-  // 当前节点的对外 Port
-  uint32_t self_port;
   // 最小选举超时时间
   inline static uint64_t min_election_interval_ms = 700 * 1000;
   // 最大选举超时时间
@@ -26,9 +23,10 @@ struct RaftConfig {
   // 当前集群的节点数量 3, 5, 7
   inline static uint64_t node_counts = 3;
   RaftConfig() = default;
+
 };
 
-void ParseRaftConfig(struct RaftConfig* conf);
+void ParseRaftConfig(const std::string& ip, const uint32_t port);
 
 }  // namespace raft
 

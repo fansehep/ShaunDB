@@ -20,7 +20,7 @@ bool RaftPeerNode::Init(const std::string &peer_ip, const uint32_t peer_port) {
       grpc::CreateChannel(server_info_, grpc::InsecureChannelCredentials()));
   if (nullptr == this->peer_stub_.get()) {
     assert(false);
-    LOG_WARN("init peer server info: {} error!");
+    LOG_WARN("init peer server info: {} error!", server_info_);
     return false;
   }
   return true;

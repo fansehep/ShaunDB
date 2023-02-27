@@ -4,7 +4,7 @@ load("//:copts.bzl", "FVER_FLAGS")
 
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
-
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
 
 
 cc_proto_library(
@@ -21,15 +21,36 @@ proto_library(
     visibility=["//visibility:public"],
 )
 
-
-cc_test(
-  name="protobuf_test",
-  srcs=["protobuf_test.cpp"],
-  visibility=["//visibility:public"],
-  deps=[
-    ":testkv_proto_cc_pb",
-    "@com_google_googletest//:gtest_main",
-    "//src/base/log:fver_log_lib",
+cc_grpc_library(
+  name = "test_kv_grpc_lib",
+  srcs = [":testkv_proto_lib"],
+  visibility = ["//visibility:public"],
+  grpc_only = True,
+  deps = [
+    "testkv_proto_cc_pb",
   ],
-  copts=FVER_FLAGS,
+)
+
+cc_test (
+  name = "tbkv_client_test",
+  srcs = ["testkv_client.cpp"],
+  visibility = ["//visibility:public"],
+  deps = [
+    "test_kv_grpc_lib",
+    "//src/base/log:fver_log_lib",
+    "@com_github_grpc_grpc//:grpc++",
+  ],
+  copts = FVER_FLAGS,
+)
+
+cc_test (
+  name = "tbkv_server_test",
+  srcs = ["testkv_server.cpp"],
+  visibility = ["//visibility:public"],
+  deps = [
+    "test_kv_grpc_lib",
+    "//src/base/log:fver_log_lib",
+    "@com_github_grpc_grpc//:grpc++",
+  ],
+  copts = FVER_FLAGS,
 )

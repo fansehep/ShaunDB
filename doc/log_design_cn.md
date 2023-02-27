@@ -39,8 +39,12 @@
 4. 异步日志线程.
     ShaunDB::log 的设计是拥有一个异步的线程负责刷盘, 每个线程拥有2块buf.
     使用```thread_local``` 关键字让每一个线程都拥有一个```logger```, ```logger``` 负责日志的格式化及保存, 每个```logger``` 都拥有两块```logbuffer```, 进行交替写入, ```logger``` 在构造的时候会使用```std::shared_ptr``` 来让```logthread```获取自己, 当单个logger 到达阈值(默认是60%), 会通知logthread, 让logthread 来负责单个logbuffer的刷盘.
+
     未初始化情况下, 将日志打印到标准输出之上, 此时大概率是处于调试模式, 为了更友好的调试, ShaundDB::log 提供了彩色输出, 来帮助开发者更友好的观看日志.
 
+    ShaunDB::log 同时提供了栈回溯, 当受到 SIGINT || SIGQUIT || SIGBUS || SIGSEGV 等等信号时, 将会打印(标准错误或者日志文件中)当前运行时栈:
+
+    ![](./image/shaundb_log_backtrace.jpg)
 
 5. log 类图
 
@@ -58,4 +62,17 @@
     - 硬盘: Kingston SA400S37240G (240GB 固态硬盘)
     
     表现: 在上述环境中测试发现, 在相同时间内(30s)的 ShaunDBLog 的写入量是 glog 的 26 倍. 但 CPU 利用率也偏高.
-         与 spdlog (version = 1.11.0-2) 的性能对比, 总的写入量是 spdlog 的 1.6 倍.
+    
+    与 spdlog (version = 1.11.0-2) 的性能对比, 总的写入量是 spdlog 的 1.6 倍.
+
+7. feature
+
+    libfmt 的实现未必最好, 可以在 std::fmt 进入标准后, 进行性能对比, 然后考虑替换.
+
+    目前还尚未支持 LOG_CHECK 等等宏, 未来有空实现.
+
+    LogSyncThread 的刷新逻辑是遍历所有的 Logger, 如果某些线程并不繁忙, 这一次遍历是无用的, 第二版实现将采取 ```LogTaskQueue``` 和 ```LoggerMap``` 来进行确定性落盘.
+
+    当前采用 FILE* 来进行最终文件的写入, FILE* 自带有缓存, 且包装了 UnixFd, 对于这种批量日志落盘的场景, FILE* 是多余的, 而且由于 FILE 自带缓存, 还影响了性能, 后续考虑使用 UnixFd 替代.
+
+    支持 UnixSocket 日志文件写入.
