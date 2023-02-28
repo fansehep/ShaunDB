@@ -1,0 +1,9 @@
+CompileFlags:
+  Add: [-std=c++20, -Wall]
+
+Diagnostics:
+  UnusedIncludes: Strict
+
+Index:
+  StandardLibrary: yes
+
