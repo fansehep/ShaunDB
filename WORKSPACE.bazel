@@ -99,6 +99,19 @@ local_repository (
     path = "./tcmalloc",
 )
 
+http_archive(
+    name = "rules_foreign_cc",
+    # TODO: Get the latest sha256 value from a bazel debug message or the latest 
+    #       release on the releases page: https://github.com/bazelbuild/rules_foreign_cc/releases
+    #
+    # sha256 = "...",
+    strip_prefix = "rules_foreign_cc-b7074f111e835a2e4c817220f843669ff969d24c",
+    url = "https://github.com/bazelbuild/rules_foreign_cc/archive/b7074f111e835a2e4c817220f843669ff969d24c.tar.gz",
+)
+
+load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
+
+rules_foreign_cc_dependencies()
 
 # 2022-02-07
 # bazel run @hedron_compile_commands//:refresh_all

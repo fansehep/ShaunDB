@@ -24,13 +24,30 @@ server_config:
 # @ memtable_mem_size: 内存表的峰值内存容量
 # @ compactor_counts:  Compactor 的数量
 # @ max_level_size:    lsm tree 的峰值层数
-
+# @ db_path:           数据库存放文件目录
+# @ wal_path:          预写日志目录
 db_config:
   lru_cache_size: 32
   memtable_counts: 8
   memtable_mem_size: 256
   compactor_counts: 2
   max_level_size: 7
+  db_path: "/tmp",
+  wal_path: "/tmp",
 
+
+# raft副本模式配置
+# @ node_counts:        节点数量
+# @ node_ip_ports:      node_1 "向外监听 IP + Port"
+# @ max_election_ms:    最大选举超时时间(ms)
+# @ min_election_ms:    最小选举超时时间(ms)
+# @ append_interval_ms: 心跳(日志复制)间隔时间
 raft_config:
   node_counts: 3
+  node_ip_ports:
+   - node_1: "192.168.30.12:4989"
+   - node_2: "192.168.30.14:4989"
+   - node_3: "192.168.30.13:4989"
+  max_election_interval_ms: 700
+  min_election_interval_ms: 1000
+  append_interval_ms: 200
