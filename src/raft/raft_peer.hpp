@@ -19,7 +19,7 @@ struct RaftLogInfo;
 
 class RaftPeerNode {
  public:
-  RaftPeerNode(const std::shared_ptr<grpc::Channel>& channel)
+  explicit RaftPeerNode(const std::shared_ptr<grpc::Channel>& channel)
       : peer_stub_(RaftMes::RaftService::NewStub(channel)) {}
 
   /**

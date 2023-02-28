@@ -51,6 +51,7 @@ cc_test (
     "test_kv_grpc_lib",
     "//src/base/log:fver_log_lib",
     "@com_github_grpc_grpc//:grpc++",
+    "@com_github_rocksdb//:rocksdb",
   ],
   copts = FVER_FLAGS,
 )

@@ -19,8 +19,6 @@ namespace raft {
 struct RaftConfig;
 class RaftPeerNode;
 
-
-
 class RaftServer final : public NonCopyable {
  public:
   /**
@@ -46,9 +44,6 @@ class RaftServer final : public NonCopyable {
   std::vector<RaftPeerNode> peerNodeVec_;
   RaftServiceImpl raft_service_impl_;
   RaftNode raft_node_;
-
-  
-
 };
 
 }  // namespace raft

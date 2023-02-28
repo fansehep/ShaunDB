@@ -22,6 +22,17 @@ struct RaftConfig {
   inline static uint64_t append_interval_ms = 200 * 1000;
   // 当前集群的节点数量 3, 5, 7
   inline static uint64_t node_counts = 3;
+  // RaftStorage 的配置, 具体为 rocksdb 的配置
+  // rocksdb minor compaction 的线程数量
+  inline static uint32_t storage_compaction_thread_counts = 2;
+  // rocksdb log_dir
+  inline static std::string storage_log_dir;
+  // rocksdb db_dir
+  inline static std::string storage_db_dir;
+  // rocksdb wal_dir
+  inline static std::string storage_wal_dir;
+  
+  
   RaftConfig() = default;
 
 };
