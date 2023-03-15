@@ -48,7 +48,7 @@ int RaftServer::_RequestVoteOnTimed(net::RepeatedTimer *timer) {
     std::atomic<bool> is_leader = false;
     std::vector<
         std::shared_ptr<boost::fibers::promise<RaftMes::RequestVoteReply>>>
-        request_info_vec;
+        request_info_vec(RaftConfig::node_counts);
     //
     for (auto &iter : request_info_vec) {
       iter =

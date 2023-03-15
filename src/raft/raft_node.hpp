@@ -6,6 +6,7 @@
 #include <string>
 
 #include "src/base/noncopyable.hpp"
+#include "src/raft/fiber_define.hpp"
 #include "src/raft/raft_log.hpp"
 #include "src/raft/raftconf.hpp"
 
@@ -139,7 +140,7 @@ class RaftNode : public NonCopyable {
   // 当前节点最近一次投票的 ID
   std::string vote_for_id_;
   //
-  std::mutex mtx_;
+  fiber::fmutex mtx_;
 };
 
 }  // namespace raft

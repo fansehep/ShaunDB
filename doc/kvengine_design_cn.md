@@ -20,6 +20,10 @@ LSMTree 的经典实现是 LevelDB, 我在学习完 LevelDB 的源码之后深�
 - 好处: 更有效的利用多线程来进行请求的处理及 compact 的完成.
 - 坏处: 无法有效利用多个 memtable 来进行更好的前缀压缩, 获取更好的空间利用率.
 
+### Multi thread Unlocked Major Compaction (多线程无锁 Major Compaction)
+
+- ShaunDB::MemTaskWorker 由于只对 TcpServer 的 keyRequest 做处理, 对于单个 Worker, 拥有单个 SStableBlock, 多个 SSTableBlock 之间没有影响, 可以配置多个 Compactor 来进行多线程无锁 Compaction.
+
 ### ShaunDB Snapshot
 - 由于ShaunDB 采用了多线程且互相隔离的方式, 那么对于快照功能则需要所有的 MemTaskWorker 全部完成才可以, MemTaskWorker 负责内存快照的写入, 当内存快照写入完毕之后, 则是磁盘中的 sstable 数据. 由于 ShaunDB 对于每一个 MemTaskWorker 都拥有当前 block 的 SSTableView, 所以需要再次进行 SSTableViewVec 的一次遍历, 从而生成数据库快照.
 
@@ -58,7 +62,7 @@ LSMTree 的经典实现是 LevelDB, 我在学习完 LevelDB 的源码之后深�
 ### ShaunDB Major Compaction 策略
 - 默认的, 当 MemTableTaskWorker 判断 SSTableViewVec.size() > 7 时, 会通知 Compactor 线程触发 mino compaction. 由于 lsm tree 的特殊性, 会让磁盘空间放大, 例如: 当 client 对某一个 key 的最后一个操作是 delete 时, 那么前面所有关于这个 key 的操作都是无效的. 需要进行 mino compaction. Compactor 会对 MemTableTaskWorker 所对应的 block 进行 合并. 先读取 第一层的 sstable 和 第二层的 sstable 文件. 因为最上一层的 key 的请求都是最新的, 所以对于相同 key 的请求都是只保留最上层的.
 
-```c++
+```go
 
    +----------- ShaunDB::Compactor
    |                    |
@@ -79,7 +83,75 @@ LSMTree 的经典实现是 LevelDB, 我在学习完 LevelDB 的源码之后深�
  +---------------+
 
 ```
+- 我们将一个四层level的 sstable compact 成一个 sstable, 并且放入最后一层, 容量也在不断递增.
+
+一个典型的场景类似于:
+```c++
+
+
+        +----------------------+  +---------------------+
+Level_0 | SSTable_0_0 (~256MB) |  | SSTable_0_1(~256MB) |
+        +----------------------+  +---------------------+
+
+
+Level_1 +----------------------------------+ 
+        |     SSTable_1_0 (~357.3MB)       |
+        +----------------------------------+
+
+Level_2 +------------------------------------------------------+
+        |     SSTable_2_0 (~498MB)                             |
+        +------------------------------------------------------+
+
+Level_3 +--------------------------------------------------------------+
+        |     SSTabke_3_1 (~799.45MB)                                  |
+        +--------------------------------------------------------------+
+```
+
+
 - 如上图所示, 这是 ShaunDB::MinoCompaction 的合并策略, 先将第一层的 SSTable_0 和 第二层的 SSTable_1 先进行合并, 之后再将第三层的 SSTable_2 和 第四层的 SSTable_4 合并, 此时 得到了 SSTable_1_0(经过 Compaction version == 1), 和第二层的 SSTable_1_1 再次合并一次, 至此, 将 4 层 SSTable 合并成一个 SSTable.
 
-## ShaunDB WAL Design
+### ShaunDB::SSTable 格式
+
+- ShaunDB::SSTable 格式参考了 LevelDB::SSTable 的设计, 但根据 ShaunDB 整体架构做了更改.
+
+
+```rust
+
+ +-----------------------+
+ | MemTableNumber        |       当前 SSTable 的编号 VarintUint32
+ +-----------------------+
+ | Max_key_value_Index   |       SSTable 最大 Key 的索引 VarintUint32
+ +-----------------------+
+ | Min_key_value_Index   |       SSTable 最小 Key 的索引 VarintUint32
+ +-----------------------+
+ | Sum_KV_of_SSTable_N   |       SSTable 当前 KeyValue 记录的数量 VarintUint32
+ +-----------------------+
+ | BloomFilter_Seed      |       对于MemTable_BloomFilter 的随机数 VarintUint64
+ +-----------------------+
+ | BloomFilterDataSize   |       BloomFilter 的位图长度 VarintUint32       
+ +-----------------------+
+ |                       |
+ |                       |       
+ |  BloomFilterData      |       布隆过滤器的位图数据
+ |                       |
+ |                       |
+ +-----------------------+
+ |                       |       单条 KeyValueRecord 格式
+ |                       |       +-----------------+-----------------+-------------------+-------------------+
+ |  Key_Value_Record     |       | varint_key_size | key_val (string)| varint_value_size | value_val (string)|
+ |                       |       +-----------------+-----------------+-------------------+-------------------+
+ |                       |
+ +-----------------------+
+ |  Crc32CheckSumVec     |       对于每 32 条 KeyValue 记录, 会在这里追加一个 Crc32Sum, 当数据发生损坏时, 可以被检查出来.
+ +-----------------------+
+ |                       |
+ |                       |
+ +-----------------------+
+ |                       | ----> +------------+
+ |  Footer               |       | CreateTime |  创建时间
+ |                       |       +------------+
+ +-----------------------+       | DBVersion  |  数据库的版本
+```                              +------------+
+
+### ShaunDB WAL Design
 - 当使用单机形态 ShaunDB 时, ShaunDB 将会启用预写日志, ShaunDB 的预先写日志是环状设计, 当写入超过阈值时, 将会 ```seek``` 到文件开头继续写入, 但 ShaunDB::WAL::recovery 较为麻烦, 需要遍历到环状日志的结尾, 再进行恢复. 同时, 环状日志由于会被覆盖的特性, 所以默认的环形日志的容量需要大于 memtable_mem_size * memtable_count * 1.2, 否则当 memtable 还未落盘, 但是 WAL 被覆盖, 这怕不是一场莫大的悲剧. 
