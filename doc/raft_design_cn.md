@@ -13,7 +13,12 @@ boost::fiber 已经是一个比较高级的抽象,  我只对其做简单的封�
 ![](/doc/image/shaundb_arch.png)
 
 
+- ShaunDB::Raft 的 定时 AppendEntries 和 RequestVote 定时任务将使用 TcpServer::RepeatedTimer 触发, 从配置文件中读取 Raft 所需要的配置文件.
+
 - 目前已经完成 Raft::RequestVote 逻辑.
 
 - ShaunDB::RaftLog 的实现将参考 Tikv::RaftLog 的设计.
 
+- ShaunDB::Raft 预计实现 PreRequestVote (预选举) 和 Learner 功能.
+
+- 目前整体架构已经基本确定, 但目前还在努力实现中.
