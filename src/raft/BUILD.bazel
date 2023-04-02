@@ -27,7 +27,18 @@ cc_grpc_library(
   deps=["raft_proto_cc_pb"],
 )
 
-#TODO add boost lib to bazel WORKSPACE
+cc_library (
+  name = "fiber_define_lib",
+  srcs = ["fiber_define.hpp"],
+  deps = [
+    "@boost//:fiber",
+  ],
+  linkopts = [
+    "-lpthread",
+  ],
+)
+
+
 cc_library(
   name="shaundb_raft_lib",
   hdrs=glob(["*.hpp"]),
@@ -39,12 +50,10 @@ cc_library(
     "//src/base/log:fver_log_lib",
     "//src/net:fver_net_lib",
     "@com_github_grpc_grpc//:grpc++",
+    "@boost//:fiber",
   ],
   linkopts=[
     "-lpthread",
-    "-lboost_fiber",
-    "-lboost_context",
-    "-lboost_coroutine",
-    "-lboost_atomic",
-   ],
+    "-lrocksdb",
+  ],
 )
