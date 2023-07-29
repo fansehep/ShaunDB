@@ -1,0 +1,18 @@
+load("//:copts.bzl", "DEFAULT_FLAGS")
+package(default_visibility=["//visibility:public"])
+
+
+
+cc_test (
+  name = "lexer_test",
+  srcs = [
+    "lexer_test.cc",
+  ],
+  deps = [
+    "//src/sql:sql_lib",
+    "@com_google_googletest//:gtest_main",
+    "@fmt",
+    "//src/log:log_lib",
+  ],
+  copts = DEFAULT_FLAGS,
+)

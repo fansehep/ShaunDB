@@ -1,0 +1,15 @@
+load("//:copts.bzl", "DEFAULT_FLAGS")
+package(default_visibility=["//visibility:public"])
+
+
+
+cc_library (
+  name = "sql_lib",
+  hdrs = glob(
+    ["*.h"],
+  ),
+  srcs = glob(
+    ["*.cc"],
+  ),
+  copts = DEFAULT_FLAGS,
+)
