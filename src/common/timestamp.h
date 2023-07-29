@@ -1,13 +1,10 @@
 #pragma once
 
+#include <string>
+#include <stdint.h>
+
 namespace shaun {
 
-extern "C" {
-#include <sys/time.h>
-#include <time.h>
-}
-
-#include <string>
 
 class TimeStamp {
 public:
@@ -20,7 +17,7 @@ public:
   // return 2022-08-26 17:10 45.505045
   auto to_day_ms() -> std::string;
   auto to_day_us() -> std::string;
-  auto to_day() -> std::string;
+  auto to_day_min() -> std::string;
 
   // return std::time_t
   auto epoch() { return sinceepoch_; }
@@ -34,7 +31,7 @@ private:
   static constexpr uint64_t kMilliSecondsPerSecond = 1000ull;
   static constexpr uint64_t kMicroSecondsPerSecond = 1000ull * 1000;
 
-  std::time_t sinceepoch_;
+  int64_t sinceepoch_;
   struct timeval tval_;
 };
 
