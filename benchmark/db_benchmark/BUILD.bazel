@@ -1,2 +1,0 @@
-load("//:copts.bzl", "FVER_FLAGS", "FVER_BENCHMARK_FLAGS")
-package(default_visibility=["//visibility:public"])
