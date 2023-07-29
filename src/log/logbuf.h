@@ -23,7 +23,7 @@ public:
 
   auto is_need_swap() {
     auto cur_capacity = cur_buf_ptr_->
-    if (cur_buf_ptr_->size() > )
+    // if (cur_buf_ptr_->size() > )
   }
 
 private:

@@ -2,17 +2,13 @@ load("//:copts.bzl", "DEFAULT_FLAGS")
 package(default_visibility=["//visibility:public"])
 
 
-
-cc_library (
-  name = "common_lib",
-  hdrs = glob(
-    ["*.h"],
-  ),
-  srcs = glob(
-    ["*.cc"],
-  ),
+cc_test (
+  name = "basic_test",
+  srcs = [
+    "basic_test.cc",
+  ],
   deps = [
-    "@fmt",
+    "//src/log:log_lib",
   ],
   copts = DEFAULT_FLAGS,
   visibility = [

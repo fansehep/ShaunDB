@@ -1,35 +1,54 @@
 #pragma once
 
+#include "src/log/logger.h"
 
 namespace shaun {
 
+static thread_local LoggerImpl logimp;
 
-#define Info(str, ...)
+} // namespace shaun
 
-#define Warn(str, ...)
+#define Info(str, ...)                                                         \
+  shaun::logimp.get_logger()->to_log(                                          \
+      __FILE_NAME__, __LINE__, shaun::LogLevel::Info, str, ##__VA_ARGS__)
 
-#define Debug(str, ...)
+#define Warn(str, ...)                                                         \
+  shaun::logimp.get_logger()->to_log(                                          \
+      __FILE_NAME__, __LINE__, shaun::LogLevel::Warn, str, ##__VA_ARGS__)
 
-#define Trace(str, ...)
+#define Debug(str, ...)                                                        \
+  shaun::logimp.get_logger()->to_log(                                          \
+      __FILE_NAME__, __LINE__, shaun::LogLevel::Debug, str, ##__VA_ARGS__)
 
-#define Error(str, ...)
+#define Trace(str, ...)                                                        \
+  shaun::logimp.get_logger()->to_log(                                          \
+      __FILE_NAME__, __LINE__, shaun::LogLevel::Trace, str, ##__VA_ARGS__)
 
-#define Exit(str, ...)
-  
+#define Error(str, ...)                                                        \
+  shaun::logimp.get_logger()->to_log(                                          \
+      __FILE_NAME__, __LINE__, shaun::LogLevel::Error, str, ##__VA_ARGS__)
 
-#ifndef DEBUG
+#define Exit(str, ...)                                                         \
+  shaun::logimp.get_logger()->to_log(                                          \
+      __FILE_NAME__, __LINE__, shaun::LogLevel::Exit, str, ##__VA_ARGS__)
 
-#define Dinfo(str, ...)
+#ifdef DEBUG
 
-#define Dwarn(str, ...)
+#define Dinfo(str, ...)                                                        \
+  shaun::logimp.get_logger()->to_log(                                          \
+      __FILE_NAME__, __LINE__, shaun::LogLevel::DInfo, str, ##__VA_ARGS__)
 
-#define Dtrace(str, ...)
+#define Dwarn(str, ...)                                                        \
+  shaun::logimp.get_logger()->to_log(                                          \
+      __FILE_NAME__, __LINE__, shaun::LogLevel::Dwarn, str, ##__VA_ARGS__)
 
+#define Dtrace(str, ...)                                                       \
+  shaun::logimp.get_logger()->to_log(                                          \
+      __FILE_NAME__, __LINE__, shaun::LogLevel::Dtrace, str, ##__VA_ARGS__)
+#else
 
+#define Dinfo(str, ...) void(str);
+#define Dwarn(str, ...) void(str);
+#define Dtrace(str, ...) void(str);
 
-#define Dinfo(str, ...) void;
-#define 
-
-
-
-}
+#endif
