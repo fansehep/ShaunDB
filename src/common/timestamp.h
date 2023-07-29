@@ -13,33 +13,29 @@ class TimeStamp {
 public:
   constexpr TimeStamp() = default;
   ~TimeStamp() = default;
-  TimeStamp(const uint64_t time_sec, const uint64_t time_usec)
-      : time_sec_(time_sec), time_usec_(time_usec) {}
-  TimeStamp(std::time_t newtime) : sinceepoch_(newtime) {}
-  TimeStamp(const TimeStamp &lef) : sinceepoch_(lef.sinceepoch_) {}
-  TimeStamp &operator=(const TimeStamp &stamp);
+  TimeStamp &operator=(const TimeStamp &stamp) = default;
+  
   // return 2022-08-26
-  std::string ToFormatToday();
+  auto to_day() -> std::string;
   // return 2022-08-26 17:10 45.505045
-  std::string ToFormatTodayNowMs();
-  std::string ToFormatTodayNowUs();
-  std::string ToFormatLogName();
+  auto to_day_ms() -> std::string;
+  auto to_day_us() -> std::string;
+  auto to_day() -> std::string;
 
   // return std::time_t
-  uint64_t getNowU64() { return sinceepoch_; }
+  auto epoch() { return sinceepoch_; }
 
-  // 返回一个现在时间戳
-  static TimeStamp Now();
+  // 更新当前时间戳
+  auto update() -> void;
 
 private:
-  auto GetTimeofDayUs() -> uint64_t;
-  auto GetTimeofDayMs() -> uint64_t;
+  auto time_of_day_us() -> uint64_t;
+  auto time_of_day_ms() -> uint64_t;
   static constexpr uint64_t kMilliSecondsPerSecond = 1000ull;
   static constexpr uint64_t kMicroSecondsPerSecond = 1000ull * 1000;
 
   std::time_t sinceepoch_;
-  uint64_t time_sec_;
-  uint64_t time_usec_;
+  struct timeval tval_;
 };
 
 } // namespace shaun

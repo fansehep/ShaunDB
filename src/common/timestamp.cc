@@ -1,11 +1,11 @@
 #include "src/common/timestamp.h"
-#include "fmt/format.h"
+#include <fmt/format.h>
 
 namespace shaun {
 constexpr static int kMillSec = 1000000;
 
-std::string TimeStamp::ToFormatToday() {
-  sinceepoch_ = time_sec_ * kMicroSecondsPerSecond + time_usec_;
+std::string TimeStamp::to_day() {
+  sinceepoch_ = val_.tv_sec  * kMicroSecondsPerSecond + tval_.tv_usec;;
   time_t seconds =
       static_cast<time_t>(this->sinceepoch_ / kMicroSecondsPerSecond);
   struct tm tm_time;
@@ -14,8 +14,8 @@ std::string TimeStamp::ToFormatToday() {
                      tm_time.tm_mon + 1, tm_time.tm_mday);
 }
 
-std::string TimeStamp::ToFormatTodayNowMs() {
-  sinceepoch_ = time_sec_ * kMicroSecondsPerSecond + time_usec_;
+std::string TimeStamp::to_day_ms() {
+  sinceepoch_ = val_.tv_sec  * kMicroSecondsPerSecond + tval_.tv_usec;;
   time_t seconds =
       static_cast<time_t>(this->sinceepoch_ / kMicroSecondsPerSecond);
   struct tm tm_time;
@@ -26,8 +26,8 @@ std::string TimeStamp::ToFormatTodayNowMs() {
                      tm_time.tm_min, tm_time.tm_sec, microseconds);
 }
 
-std::string TimeStamp::ToFormatTodayNowUs() {
-  sinceepoch_ = time_sec_ * kMicroSecondsPerSecond + time_usec_;
+std::string TimeStamp::to_day_us() {
+  sinceepoch_ = val_.tv_sec  * kMicroSecondsPerSecond + tval_.tv_usec;
   auto seconds =
       static_cast<time_t>(this->sinceepoch_ / kMicroSecondsPerSecond);
   struct tm tm_time;
@@ -37,11 +37,11 @@ std::string TimeStamp::ToFormatTodayNowUs() {
                      tm_time.tm_year + 1900, tm_time.tm_mon + 1,
                      tm_time.tm_mday, tm_time.tm_hour + 8, tm_time.tm_min,
                      tm_time.tm_sec, microseconds,
-                     (time_sec_ * kMillSec + time_usec_) % 100000);
+                     (val_.tv_sec  * kMillSec + tval_.tv_usec; % 100000));
 }
 
-std::string TimeStamp::ToFormatLogName() {
-  sinceepoch_ = time_sec_ * kMicroSecondsPerSecond + time_usec_;
+std::string TimeStamp::to_day() {
+  sinceepoch_ = tval_.tv_sec * kMicroSecondsPerSecond + tval_.tv_usec ;
   time_t seconds =
       static_cast<time_t>(this->sinceepoch_ / kMicroSecondsPerSecond);
   struct tm tm_time;
@@ -51,29 +51,16 @@ std::string TimeStamp::ToFormatLogName() {
                      tm_time.tm_min, rand());
 }
 
-uint64_t TimeStamp::GetTimeofDayMs() {
-  timeval now;
-  gettimeofday(&now, nullptr);
-  return now.tv_sec * 1000L + now.tv_usec / 1000;
+uint64_t TimeStamp::time_of_day_ms() {
+  return tval_.tv_sec * 1000L + tval_.tv_usec / 1000;
 }
 
-uint64_t TimeStamp::GetTimeofDayUs() {
-  timeval now;
-  gettimeofday(&now, nullptr);
-  return now.tv_sec * 1000000L + now.tv_usec;
+uint64_t TimeStamp::time_of_day_us() {
+  return tval_.tv_sec * 1000000L + tval_.tv_usec;
 }
 
-TimeStamp TimeStamp::Now() {
-  struct timeval tval;
-  gettimeofday(&tval, nullptr);
-  return TimeStamp(tval.tv_sec, tval.tv_usec);
-}
-
-TimeStamp& TimeStamp::operator=(const TimeStamp& stamp) {
-  sinceepoch_ = stamp.sinceepoch_;
-  time_sec_ = stamp.time_sec_;
-  time_usec_ = stamp.time_usec_;
-  return *this;
+void TimeStamp::update() {
+  gettimeofday(&tval_, nullptr);
 }
 
 }
