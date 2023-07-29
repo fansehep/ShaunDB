@@ -1,0 +1,11 @@
+
+
+cc_test (
+  name = "timestamp_test",
+  srcs = [
+    "timestamp_test.cc",
+  ],
+  deps = [
+    "//src/common:common_lib",
+  ],
+)
