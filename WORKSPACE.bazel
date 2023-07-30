@@ -1,4 +1,5 @@
-workspace(name="shaundb")
+workspace(name = "shaundb")
+
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
@@ -9,7 +10,6 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 git_repository(
     name = "fmt",
     branch = "master",
-    remote = "https://github.com/fmtlib/fmt",
     patch_cmds = [
         "mv support/bazel/.bazelversion .bazelversion",
         "mv support/bazel/BUILD.bazel BUILD.bazel",
@@ -24,6 +24,7 @@ git_repository(
         "Move-Item -Path support/bazel/BUILD.bazel -Destination BUILD.bazel",
         "Move-Item -Path support/bazel/WORKSPACE.bazel -Destination WORKSPACE.bazel",
     ],
+    remote = "https://github.com/fmtlib/fmt",
 )
 
 # 2023 04-02
@@ -33,25 +34,25 @@ git_repository(
 # For more, see https://github.com/nelhage/rules_boost and https://www.boost.org
 http_archive(
     name = "com_github_nelhage_rules_boost",
+    strip_prefix = "rules_boost-96e9b631f104b43a53c21c87b01ac538ad6f3b48",
     # Replace the commit hash in both places (below) with the latest, rather than using the stale one here.
     # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
     url = "https://github.com/nelhage/rules_boost/archive/96e9b631f104b43a53c21c87b01ac538ad6f3b48.tar.gz",
-    strip_prefix = "rules_boost-96e9b631f104b43a53c21c87b01ac538ad6f3b48",
     # When you first run this tool, it'll recommend a sha256 hash to put here with a message like: "DEBUG: Rule 'com_github_nelhage_rules_boost' indicated that a canonical reproducible form can be obtained by modifying arguments sha256 = ..."
 )
-load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
-boost_deps()
 
+load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
+
+boost_deps()
 
 # 2023-07-16
 # gtest
 # version: 1.13
 http_archive(
-  name = "com_google_googletest",
-  urls = ["https://github.com/google/googletest/archive/5ab508a01f9eb089207ee87fd547d290da39d015.zip"],
-  strip_prefix = "googletest-5ab508a01f9eb089207ee87fd547d290da39d015",
+    name = "com_google_googletest",
+    strip_prefix = "googletest-0fe96607d85cf3a25ac40da369db62bbee2939a5",
+    url = "https://github.com/google/googletest/archive/0fe96607d85cf3a25ac40da369db62bbee2939a5.tar.gz",
 )
-
 
 # 2022-02-07
 # bazel run @hedron_compile_commands//:refresh_all
@@ -59,12 +60,14 @@ http_archive(
 # https://github.com/hedronvision/bazel-compile-commands-extractor
 http_archive(
     name = "hedron_compile_commands",
+    strip_prefix = "bazel-compile-commands-extractor-ed994039a951b736091776d677f324b3903ef939",
 
     # Replace the commit hash in both places (below) with the latest, rather than using the stale one here.
     # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
     url = "https://github.com/hedronvision/bazel-compile-commands-extractor/archive/ed994039a951b736091776d677f324b3903ef939.tar.gz",
-    strip_prefix = "bazel-compile-commands-extractor-ed994039a951b736091776d677f324b3903ef939",
     # When you first run this tool, it'll recommend a sha256 hash to put here with a message like: "DEBUG: Rule 'hedron_compile_commands' indicated that a canonical reproducible form can be obtained by modifying arguments sha256 = ..."
 )
+
 load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
+
 hedron_compile_commands_setup()
