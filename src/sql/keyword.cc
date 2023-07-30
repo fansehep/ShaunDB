@@ -1,23 +1,24 @@
 #include "src/sql/keyword.h"
+
 #include <string.h>
 
 namespace shaun {
 
 namespace sql {
 
-void to_upper(std::string* res) {
+void to_upper(std::string *res) {
   for (uint64_t i = 0; i < res->size(); i++) {
     (*res)[i] = toupper((*res)[i]);
   }
 }
 
 std::string keyword_to_str(int k) {
-  if (static_cast<uint64_t>(k) > (sizeof(KeywordString) / sizeof(std::string))) {
+  if (static_cast<uint64_t>(k) >=
+      (sizeof(KeywordString) / sizeof(std::string))) {
     return std::string("");
   }
   return KeywordString[k];
 }
-
 
 void KeywordMap::init() {
   for (unsigned long i = 0; i < sizeof(KeywordString) / sizeof(std::string);
@@ -47,6 +48,6 @@ auto KeywordMap::get_type(const std::string_view &str) -> Keyword {
   return find_iter->second;
 }
 
-} // namespace sql
+}  // namespace sql
 
-} // namespace shaun
+}  // namespace shaun

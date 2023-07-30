@@ -1,7 +1,9 @@
 #include "src/sql/lexer.h"
+
+#include <stdint.h>
+
 #include "src/sql/keyword.h"
 #include "src/sql/token.h"
-#include <stdint.h>
 
 namespace shaun {
 
@@ -37,98 +39,102 @@ auto Lexer::next_token() -> Token {
   Token tok;
   this->_skip_whitespace();
   switch (this->current_read_char_) {
-  case '=':
-    tok.set_type(TokenType::Equal);
-    break;
-  case '.':
-    tok.set_type(TokenType::Period);
-    break;
-  case '>':
-    if (_peek_char() == '=') {
-      tok.set_type(TokenType::GreaterThanOrEqual);
-    } else {
-      tok.set_type(TokenType::GreaterThan);
-    }
-    break;
-  case '<':
-    if (_peek_char() == '=') {
-      tok.set_type(TokenType::LessThanOrEqual);
-    } else if (_peek_char() == '>') {
-      tok.set_type(TokenType::LessOrGreaterThan);
-    } else {
-      tok.set_type(TokenType::LessThan);
-    }
-    break;
-  case '+':
-    tok.set_type(TokenType::Plus);
-    break;
-  case '-':
-    tok.set_type(TokenType::Minus);
-    break;
-  case '*':
-    tok.set_type(TokenType::Asterisk);
-    break;
-  case '/':
-    tok.set_type(TokenType::Slash);
-    break;
-  case '^':
-    tok.set_type(TokenType::Caret);
-    break;
-  case '%':
-    tok.set_type(TokenType::Percent);
-    break;
-  case '!':
-    if (_peek_char() == '=') {
-      tok.set_type(TokenType::NotEqual);
-    } else {
-      tok.set_type(TokenType::Exclamation);
-    }
-    break;
-  case '?':
-    tok.set_type(TokenType::Question);
-    break;
-  case '(':
-    tok.set_type(TokenType::LeftParen);
-    break;
-  case ')':
-    tok.set_type(TokenType::RightParen);
-    break;
-  case ',':
-    tok.set_type(TokenType::Comma);
-    break;
-  case ';':
-    tok.set_type(TokenType::Semicolon);
-    break;
-  case 0:
-    tok.set_type(TokenType::Eof);
-    break;
-  // 解析字符串
-  case '\'':
-    tok.set_type(TokenType::Str).set_value(_read_string());
-    break;
-  case '\"':
-    tok.set_type(TokenType::Str).set_value(_read_string());
-    break;
-  default:
-    if (_is_letter(this->current_read_char_)) {
-      tok.set_value(_read_identifier());
-      // tok.set_type(TokenType::KeyWord);
-      // tok.set_key_word(KeywordMap::get_type(tok.value));
-      auto t = KeywordMap::get_type(tok.value);
-      if (t == Keyword::UserIdent) {
-        tok.set_type(TokenType::Ident).set_key_word(t);
+    case '=':
+      tok.set_type(TokenType::Equal);
+      break;
+    case '.':
+      tok.set_type(TokenType::Period);
+      break;
+    case '>':
+      if (_peek_char() == '=') {
+        tok.set_type(TokenType::GreaterThanOrEqual);
+        _read_char();
       } else {
-        tok.set_type(TokenType::KeyWord).set_key_word(t);
+        tok.set_type(TokenType::GreaterThan);
       }
-      return tok;
-    } else if (_is_digit(current_read_char_)) {
-      tok.set_value(_read_number());
-      tok.set_type(TokenType::Number);
-      return tok;
-    } else {
-      tok.set_type(TokenType::Ident);
-    }
-    break;
+      break;
+    case '<':
+      if (_peek_char() == '=') {
+        tok.set_type(TokenType::LessThanOrEqual);
+        _read_char();
+      } else if (_peek_char() == '>') {
+        tok.set_type(TokenType::LessOrGreaterThan);
+        _read_char();
+      } else {
+        tok.set_type(TokenType::LessThan);
+      }
+      break;
+    case '+':
+      tok.set_type(TokenType::Plus);
+      break;
+    case '-':
+      tok.set_type(TokenType::Minus);
+      break;
+    case '*':
+      tok.set_type(TokenType::Asterisk);
+      break;
+    case '/':
+      tok.set_type(TokenType::Slash);
+      break;
+    case '^':
+      tok.set_type(TokenType::Caret);
+      break;
+    case '%':
+      tok.set_type(TokenType::Percent);
+      break;
+    case '!':
+      if (_peek_char() == '=') {
+        tok.set_type(TokenType::NotEqual);
+        _read_char();
+      } else {
+        tok.set_type(TokenType::Exclamation);
+      }
+      break;
+    case '?':
+      tok.set_type(TokenType::Question);
+      break;
+    case '(':
+      tok.set_type(TokenType::LeftParen);
+      break;
+    case ')':
+      tok.set_type(TokenType::RightParen);
+      break;
+    case ',':
+      tok.set_type(TokenType::Comma);
+      break;
+    case ';':
+      tok.set_type(TokenType::Semicolon);
+      break;
+    case 0:
+      tok.set_type(TokenType::Eof);
+      break;
+      // 解析字符串
+    case '\'':
+      tok.set_type(TokenType::Str).set_value(_read_string());
+      break;
+    case '\"':
+      tok.set_type(TokenType::Str).set_value(_read_string());
+      break;
+    default:
+      if (_is_letter(this->current_read_char_)) {
+        tok.set_value(_read_identifier());
+        // tok.set_type(TokenType::KeyWord);
+        // tok.set_key_word(KeywordMap::get_type(tok.value));
+        auto t = KeywordMap::get_type(tok.value);
+        if (t == Keyword::UserIdent) {
+          tok.set_type(TokenType::Ident).set_key_word(t);
+        } else {
+          tok.set_type(TokenType::KeyWord).set_key_word(t);
+        }
+        return tok;
+      } else if (_is_digit(current_read_char_)) {
+        tok.set_value(_read_number());
+        tok.set_type(TokenType::Number);
+        return tok;
+      } else {
+        tok.set_type(TokenType::Ident);
+      }
+      break;
   }
   _read_char();
   return tok;
@@ -224,11 +230,8 @@ auto Lexer::_read_string() -> std::string_view {
                           origin_sql_.c_str() + pos_);
 }
 
-auto Lexer::_is_decimal_point(char c) -> bool {
-  return c == '.';
-}
+auto Lexer::_is_decimal_point(char c) -> bool { return c == '.'; }
 
+}  // namespace sql
 
-} // namespace sql
-
-} // namespace shaun
+}  // namespace shaun

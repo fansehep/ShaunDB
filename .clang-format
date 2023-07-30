@@ -1,6 +1,4 @@
 ---
 Language:   Cpp
 BasedOnStyle: Google
-UseTap: False
-IndentWidth: 4
 ...

@@ -78,10 +78,10 @@ enum Keyword {
 };
 
 // clang-format off
-static const std::string KeywordString[] {
+static const std::string KeywordString[] = {
+  "AND",
   "AS",
   "ASC",
-  "AND",
   "BEGIN",
   "BOOL",
   "BOOLEAN",
@@ -151,10 +151,8 @@ std::string keyword_to_str(int k);
 // clang-format on
 
 class KeywordMap {
-public:
-  KeywordMap() {
-    init();
-  }
+ public:
+  KeywordMap() { init(); }
 
   static auto get_type(const std::string_view &str) -> Keyword;
 
@@ -167,7 +165,6 @@ public:
 
 static KeywordMap __key_word_map;
 
-} // namespace sql
+}  // namespace sql
 
-} // namespace shaun
-
+}  // namespace shaun
