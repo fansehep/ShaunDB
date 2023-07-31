@@ -119,7 +119,8 @@ struct Token {
   std::optional<int> key_word;
   TokenType type;
   Token() = default;
-
+  Token& operator = (const Token&) = default;
+  Token(const Token& t) = default;
   explicit Token(TokenType t) : type(t) {}
   explicit Token(TokenType t, int key_word_type)
       : key_word(key_word_type), type(t) {}
@@ -128,6 +129,12 @@ struct Token {
   explicit Token(TokenType t, const char* s)
       : value(s), type(t) {}
 
+      auto is_end() -> bool {
+        return type == TokenType::Eof;
+      }
+  auto is_keyword() -> bool {
+      return type == TokenType::KeyWord;
+  }
 
   auto &set_type(TokenType t) {
     type = t;
@@ -146,6 +153,14 @@ struct Token {
   auto &set_key_word(const int k) {
     key_word = k;
     return *this;
+  }
+
+  auto token_type() {
+      return type;
+  }
+
+  auto keyword_type() {
+      return key_word.value();
   }
 
   auto operator==(const Token &oth) const {
