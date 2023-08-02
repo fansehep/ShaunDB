@@ -501,7 +501,7 @@ TEST_F(LexerTest, JoinTokenTest) {
     ASSERT_EQ(t, it);
     i++;
   }
-  const char *sql3 = "ROLLBACK; COMMIT; BEGIN READ ONLY AS OF SYSTEM TIME 172";
+  const char *sql3 = "ROLLBACK; COMMIT; BEGIN READ ONLY AS OF SYSTEM TIME 172;";
   lexer.update(sql3);
   res = {
       Token(TokenType::KeyWord, Keyword::Rollback),
@@ -516,6 +516,8 @@ TEST_F(LexerTest, JoinTokenTest) {
       Token(TokenType::KeyWord, Keyword::System),
       Token(TokenType::KeyWord, Keyword::Time),
       Token(TokenType::Number, "172"),
+      Token(TokenType::Semicolon),
+      Token(TokenType::Eof),
   };
   i = 0;
   for (auto &it : res) {
