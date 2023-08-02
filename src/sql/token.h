@@ -163,6 +163,10 @@ struct Token {
       return key_word.value();
   }
 
+  auto is_type(TokenType t) -> bool {
+      return type == t;
+  }
+
   auto operator==(const Token &oth) const {
     if (this->type != oth.type) {
       return false;
