@@ -151,7 +151,8 @@ Level_3 +--------------------------------------------------------------+
  |  Footer               |       | CreateTime |  创建时间
  |                       |       +------------+
  +-----------------------+       | DBVersion  |  数据库的版本
-```                              +------------+
+                                 +------------+
+```
 
 ### ShaunDB MVCC and SnapShot 设计
 - 在kv 存储引擎中, 对于每一条kv的插入(batch 中的kv共享一个)都拥有一个全局唯一递增的 sequence_number, 在获取一个快照时, 只需要拿到当前的 seqeunce_number, 在进行查找时, 先去比较当前的 sequence_number 即可获得旧的快照的视图, 因为新插入的 kv 的 sequence_number > SnapShot::seqeunce_number, 当持有快照时, compactor 是不会进行 compaction. 这样就可以获得轻量级的快照.
