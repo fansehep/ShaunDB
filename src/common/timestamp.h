@@ -8,7 +8,7 @@ namespace shaun {
 
 class TimeStamp {
 public:
-  constexpr TimeStamp() = default;
+  TimeStamp() = default;
   ~TimeStamp() = default;
   TimeStamp &operator=(const TimeStamp &stamp) = default;
   
