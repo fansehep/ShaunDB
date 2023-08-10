@@ -5,55 +5,53 @@
 
 namespace shaun::sql {
 
-    class Parser {
+class Parser {
+ public:
+  auto parse_statement() -> std::optional<Statement *>;
 
-    public:
+  explicit Parser(const char *source) : lexer_(source) {}
 
-        auto parse_statement() -> std::optional<Statement*>;
+  explicit Parser(const std::string &source) : lexer_(source) {}
 
+ private:
+  auto next_token_is(Keyword k) -> bool;
 
-        explicit Parser(const char *source) : lexer_(source) {}
+  auto _parse_transaction() -> std::optional<Statement *>;
 
-        explicit Parser(const std::string &source) : lexer_(source) {}
+  auto _next_token() { next_token_ = lexer_.next_token(); }
 
+  auto _parse_ddl() -> std::optional<Statement *>;
 
-    private:
+  auto _parse_ddl_create_table() -> std::optional<Statement *>;
 
-        auto next_token_is(Keyword k) -> bool;
+  auto _parse_ddl_drop_table() -> std::optional<Statement *>;
 
-        auto _parse_transaction() -> std::optional<Statement*>;
+  auto _parse_ddl_columns() -> std::variant<Column, std::string>;
 
-        auto _next_token() {
-            next_token_ = lexer_.next_token();
-        }
+  auto _parse_delete_stmt() -> std::optional<Statement *>;
 
-        auto _parse_ddl() -> std::optional<Statement*>;
+  auto _parse_insert_stmt() -> std::optional<Statement *>;
 
-        auto _parse_ddl_create_table() -> std::optional<Statement*>;
+  auto _parse_update_stmt() -> std::optional<Statement *>;
+  //
+  auto _parse_clause_where() -> std::optional<Expression *>;
 
-        auto _parse_ddl_drop_table() -> std::optional<Statement*>;
+  auto _parse_select_stmt() -> std::optional<Statement *>;
 
-        auto _parse_ddl_columns() -> std::variant<Column, std::string>;
+  auto _parse_clause_select()
+      -> std::vector<std::pair<Expression *, std::string>>;
 
-        auto _parse_delete_stmt() -> std::optional<Statement*>;
+  auto _parse_expresion(int min_prec) -> std::optional<Expression *>;
 
-        auto _parse_insert_stmt() -> std::optional<Statement*>;
+  auto _parse_explain_stmt() -> std::optional<Statement *>;
 
-        auto _parse_update_stmt() -> std::optional<Statement*>;
-        //
-        auto _parse_clause_where() -> std::optional<Expression*>;
+  template <typename Oper>
+  auto _parse_next_if_operator(int min_prec) -> std::optional<Oper>;
 
-        auto _parse_select_stmt() -> std::optional<Statement*>;
+  Token current_token_;
+  Token next_token_;
 
-        auto _parse_expresion() -> std::optional<Expression*>;
+  Lexer lexer_;
+};
 
-        auto _parse_explain() -> std::optional<Statement*>;
-
-        Token current_token_;
-        Token next_token_;
-
-        Lexer lexer_;
-    };
-
-
-}
+}  // namespace shaun::sql
