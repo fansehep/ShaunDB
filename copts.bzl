@@ -5,7 +5,6 @@ DEFAULT_FLAGS = [
     "-Wextra",
     "-std=c++20",
     "-Wno-unused-function",
-    "-fno-exceptions",
 ]
 
 DEBUG_FLAGS = [
