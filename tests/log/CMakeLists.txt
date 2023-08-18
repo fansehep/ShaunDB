@@ -1,0 +1,9 @@
+add_executable(
+  log_basic_test
+  basic_test.cc
+)
+target_link_libraries(
+  log_basic_test
+  log_lib
+  common_lib
+)

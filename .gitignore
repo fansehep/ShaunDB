@@ -13,4 +13,4 @@ logbenchmark2022*
 .vscode
 /doc/*.drawio
 tcmalloc
-a.out
+build
